@@ -30,6 +30,7 @@ add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers.cpp
   compile_pass/public_headers/adapt_fn.cpp
   compile_pass/public_headers/adapt_member.cpp
+  compile_pass/public_headers/adaptors.cpp
   compile_pass/public_headers/core_concepts.cpp
   compile_pass/public_headers/core_describe.cpp
   compile_pass/public_headers/core_fixed_string.cpp
@@ -128,6 +129,17 @@ add_test(NAME pb_compile_fail_adapt_fn_callable_mismatch
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_adapt_fn_callable_mismatch PROPERTIES LABELS "compile-fail;diagnostics;adapter")
+
+add_test(NAME pb_compile_fail_adapt_member_callable_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/adapt_member_callable_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Adapted\ stage\ callable\ mismatch
+    -DEXPECTED_DIAGNOSTICS=adapted_stage
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_adapt_member_callable_mismatch PROPERTIES LABELS "compile-fail;diagnostics;adapter")
 
 add_test(NAME pb_compile_fail_invalid_stage
   COMMAND ${CMAKE_COMMAND}
