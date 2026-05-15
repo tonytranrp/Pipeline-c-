@@ -294,10 +294,10 @@ public:
       return input;
     } else if constexpr (
         [] {
-          using RunStagesResult = decltype(detail::run_stages<Output, Input, Stages...>(std::declval<Input>()));
-          return detail::is_result_type<RunStagesResult>::value;
-        }()) {
       using RunStagesResult = decltype(detail::run_stages<Output, Input, Stages...>(std::declval<Input>()));
+      return detail::is_result_type<RunStagesResult>::value;
+        }()) {
+      using RunStagesResult = decltype(detail::run_stages<Output, Input, Stages...>(nullptr, std::declval<Input>()));
       return detail::run_after_result<Output, typename detail::is_result_type<RunStagesResult>::error_type, Input, Stages...>(
           observer_, std::move(input));
     } else {
