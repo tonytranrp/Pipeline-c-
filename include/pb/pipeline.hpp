@@ -9,6 +9,7 @@
 #include "pb/core/stage_traits.hpp"
 #include "pb/core/validate.hpp"
 #include "pb/runtime/error.hpp"
+#include "pb/runtime/observer.hpp"
 #include "pb/runtime/result.hpp"
 #include "pb/runtime/sequential.hpp"
 
@@ -58,6 +59,7 @@ using runtime::has_message;
 using runtime::has_stage;
 using runtime::is_result_v;
 using runtime::make_result;
+using runtime::observer;
 using runtime::result;
 using runtime::stage_id;
 using runtime::to_result;
