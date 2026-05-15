@@ -155,7 +155,12 @@ template <class T>
   } else if constexpr (expected_like<Value>) {
     using Output = typename Value::value_type;
     if (value.has_value()) {
-      return result<Output>{std::forward<T>(value).value()};
+      if constexpr (std::same_as<Output, void>) {
+        std::forward<T>(value).value();
+        return result<void>{};
+      } else {
+        return result<Output>{std::forward<T>(value).value()};
+      }
     }
     return result<Output>{detail::normalize_expected_error(std::forward<T>(value).error())};
   } else {
@@ -167,6 +172,10 @@ template <class T>
 template <class T>
 [[nodiscard]] auto make_result(T&& value) {
   return to_result(std::forward<T>(value));
+}
+
+[[nodiscard]] inline auto make_result() -> result<void> {
+  return {};
 }
 
 } // namespace pb::runtime
