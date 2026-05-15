@@ -1,0 +1,48 @@
+Start testing: May 14 18:04 HST
+----------------------------------------------------------
+1/3 Testing: pb_smoke_compile_pass
+1/3 Test: pb_smoke_compile_pass
+Command: "/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/tests/pb_smoke_compile_pass"
+Directory: /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/tests
+"pb_smoke_compile_pass" start time: May 14 18:04 HST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"pb_smoke_compile_pass" end time: May 14 18:04 HST
+"pb_smoke_compile_pass" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/3 Testing: pb_runtime_smoke
+2/3 Test: pb_runtime_smoke
+Command: "/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/tests/pb_runtime_smoke"
+Directory: /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/tests
+"pb_runtime_smoke" start time: May 14 18:04 HST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"pb_runtime_smoke" end time: May 14 18:04 HST
+"pb_runtime_smoke" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/3 Testing: pb_compile_fail_edge_mismatch
+3/3 Test: pb_compile_fail_edge_mismatch
+Command: "/usr/bin/cmake" "-DTEST_SOURCE=/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/tests/compile_fail/edge_mismatch.cpp" "-DTEST_COMPILER=/usr/bin/c++" "-DTEST_INCLUDE_DIR=/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/include" "-DEXPECT_DIAGNOSTIC=Pipeline edge mismatch" "-P" "/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/tests/run_compile_fail.cmake"
+Directory: /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/tests
+"pb_compile_fail_edge_mismatch" start time: May 14 18:04 HST
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.71 sec
+----------------------------------------------------------
+Test Passed.
+"pb_compile_fail_edge_mismatch" end time: May 14 18:04 HST
+"pb_compile_fail_edge_mismatch" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: May 14 18:04 HST

@@ -1,0 +1,18 @@
+
+In file included from /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/include/pb/pipeline.hpp:7,
+                 from /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/tests/compile_fail/edge_mismatch.cpp:1:
+/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/include/pb/core/pipeline_state.hpp: In instantiation of ‘struct pb::core::detail::append_stage<pb::core::pipeline_state<Raw, Parsed, Parse>, Persist>’:
+/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/include/pb/core/pipeline_state.hpp:54:9:   required by substitution of ‘template<class Input, class Current, class ... Stages> template<class StageType> using pb::core::pipeline_state<Input, Current, Stages>::then = typename pb::core::detail::append_stage<pb::core::pipeline_state<Input, Current, Stages>, StageType>::type [with StageType = Persist; Input = Raw; Current = Parsed; Stages = {Parse}]’
+/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/tests/compile_fail/edge_mismatch.cpp:17:56:   required from here
+/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/include/pb/core/pipeline_state.hpp:30:17: error: static assertion failed: Pipeline edge mismatch: actual output type does not match expected input type
+   30 |   static_assert(Connectable<Current, StageType>,
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/include/pb/core/pipeline_state.hpp:30:17: note: constraints not satisfied
+In file included from /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/include/pb/adapt/fn.hpp:3,
+                 from /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/include/pb/pipeline.hpp:3:
+/usr/include/c++/13/concepts:57:15:   required for the satisfaction of ‘__same_as<_Tp, _Up>’ [with _Tp = Parsed; _Up = Receipt]
+/usr/include/c++/13/concepts:62:13:   required for the satisfaction of ‘same_as<From, typename pb::core::stage_traits<To, void>::input_type>’ [with From = Parsed; To = Persist]
+/usr/include/c++/13/concepts:57:32: note: the expression ‘is_same_v<_Tp, _Up> [with _Tp = Parsed; _Up = Receipt]’ evaluated to ‘false’
+   57 |       concept __same_as = std::is_same_v<_Tp, _Up>;
+      |                           ~~~~~^~~~~~~~~~~~~~~~~~~
+
