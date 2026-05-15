@@ -8,6 +8,7 @@ This repository is bootstrapping a typed C++20 pipeline builder. Start with:
 - [Examples](examples.md)
 - [Graph Export Roadmap / Status](graph-export-roadmap.md)
 - [Optional Backends Roadmap / Status](optional-backends-roadmap.md)
+- [Release Readiness Checklist](release-readiness-checklist.md)
 - [Observer Hooks Roadmap / Status](observer-hooks-roadmap.md)
 - [Runtime Descriptor Roadmap / Status](runtime-descriptor-roadmap.md)
 - [Coordinated Work Lanes](work-lanes.md)
