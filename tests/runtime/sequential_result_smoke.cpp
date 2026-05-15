@@ -62,7 +62,8 @@ int main() {
   auto throw_failed = throw_engine.run(Input{-1});
   assert(!throw_failed.has_value());
   assert(throw_failed.error().category == pb::runtime::error_category::exception);
-  assert(throw_failed.error().stage.name == "checked_may_throw");
+  assert(throw_failed.error().stage.name == "<unnamed>");
+  assert(throw_failed.error().stage.key == "1");
   assert(throw_failed.error().message == "checked maybe throw");
 
   return 0;
