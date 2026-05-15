@@ -23,6 +23,11 @@ pb_apply_project_options(pb_runtime_result_smoke PRIVATE)
 add_test(NAME pb_runtime_result_smoke COMMAND pb_runtime_result_smoke)
 set_tests_properties(pb_runtime_result_smoke PROPERTIES LABELS "runtime;result")
 
+add_executable(pb_runtime_error_diagnostic_smoke runtime/error_diagnostic_smoke.cpp)
+target_link_libraries(pb_runtime_error_diagnostic_smoke PRIVATE pb::runtime)
+pb_apply_project_options(pb_runtime_error_diagnostic_smoke PRIVATE)
+add_test(NAME pb_runtime_error_diagnostic_smoke COMMAND pb_runtime_error_diagnostic_smoke)
+
 add_executable(pb_runtime_sequential_result_smoke runtime/sequential_result_smoke.cpp)
 target_link_libraries(pb_runtime_sequential_result_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_sequential_result_smoke PRIVATE)
