@@ -104,3 +104,5 @@ This benchmark lane is still scaffolding:
 - Broader performance analysis, stable thresholds, and automated regression handling remain future work in the production-readiness roadmap.
 
 For the current supported benchmark contract, prefer this document plus `docs/build.md`; if those ever disagree, update both in the same change.
+
+For a copy-ready record format, use [Benchmark Evidence Template](benchmark-evidence-template.md).
