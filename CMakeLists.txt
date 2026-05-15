@@ -58,7 +58,7 @@ if(PB_ENABLE_UNITY)
 endif()
 pb_enable_ipo_if_requested(pb_runtime)
 
-if(PB_BUILD_TESTS OR PB_BUILD_EXAMPLES)
+if(PB_BUILD_TESTS OR PB_BUILD_EXAMPLES OR PB_BUILD_BENCHMARKS)
   enable_testing()
 endif()
 
