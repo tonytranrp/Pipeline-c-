@@ -170,43 +170,8 @@
       }
     },
     {
-      "name": "clang-time-trace",
-      "configurePreset": "clang-time-trace",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "release-clang-ninja",
-      "configurePreset": "release-clang-ninja",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "release-ninja",
-      "configurePreset": "release-ninja",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
       "name": "package-dev-ninja",
       "configurePreset": "package-dev-ninja",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "package-release-clang-ninja",
-      "configurePreset": "package-release-clang-ninja",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "bench-dev-ninja",
-      "configurePreset": "bench-dev-ninja",
       "output": {
         "outputOnFailure": true
       }
