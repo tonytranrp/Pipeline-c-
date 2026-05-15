@@ -3,6 +3,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 struct Input {
   int value{};
@@ -59,12 +60,44 @@ struct CheckedDouble {
   }
 };
 
+template <class T, class E>
+struct external_expected {
+  using value_type = T;
+  using error_type = E;
+
+  bool ok{};
+  T value_{};
+  E error_{};
+
+  [[nodiscard]] bool has_value() const { return ok; }
+  [[nodiscard]] const T& value() const& { return value_; }
+  [[nodiscard]] T&& value() && { return std::move(value_); }
+  [[nodiscard]] const E& error() const& { return error_; }
+  [[nodiscard]] E&& error() && { return std::move(error_); }
+};
+
+struct ExternallyCheckedDouble {
+  using input_type = Middle;
+  using output_type = Output;
+
+  static constexpr auto stage_name() noexcept { return "externally_checked_double"; }
+
+  external_expected<Output, std::string> operator()(Middle input) const {
+    if (input.value == 0) {
+      return {.ok = false, .error_ = "external zero middle"};
+    }
+    return {.ok = true, .value_ = {input.value * 2}};
+  }
+};
+
 using ThrowingPipeline = pb::from<Input>::then<AddOne>::then<MaybeThrowingDouble>::to<Output>;
 using UnknownThrowingPipeline = pb::from<Input>::then<AddOne>::then<UnknownThrowingDouble>::to<Output>;
 using ResultPipeline = pb::from<Input>::then<AddOne>::then<CheckedDouble>::to<Output>;
+using ExternalExpectedPipeline = pb::from<Input>::then<AddOne>::then<ExternallyCheckedDouble>::to<Output>;
 static_assert(pb::valid<ThrowingPipeline>);
 static_assert(pb::valid<UnknownThrowingPipeline>);
 static_assert(pb::valid<ResultPipeline>);
+static_assert(pb::valid<ExternalExpectedPipeline>);
 
 int main() {
   auto throwing_engine = pb::compile<ThrowingPipeline>(pb::runtime::sequential{});
@@ -90,7 +123,15 @@ int main() {
   auto failed = result_engine.try_run(Input{-1});
   assert(!failed.has_value());
   assert(failed.error().category == pb::runtime::error_category::stage_failure);
+  assert(failed.error().stage.name == "checked_double");
   assert(failed.error().message == "zero middle");
+
+  auto external_expected_engine = pb::compile<ExternalExpectedPipeline>(pb::runtime::sequential{});
+  auto external_failed = external_expected_engine.try_run(Input{-1});
+  assert(!external_failed.has_value());
+  assert(external_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(external_failed.error().stage.name == "externally_checked_double");
+  assert(external_failed.error().message == "external zero middle");
 
   return 0;
 }
