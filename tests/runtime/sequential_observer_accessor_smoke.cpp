@@ -40,7 +40,9 @@ int main() {
   assert(engine.get_observer() == nullptr);
 
   auto output = engine.run(Input{20});
-  assert(output.value == 21);
+  if (output.value != 21) {
+    return 1;
+  }
 
   return 0;
 }

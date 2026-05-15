@@ -84,11 +84,15 @@ int main() {
   static_assert(descriptor_view.stage_records()[1].name == std::string_view{"double"});
 
   auto output = engine.run(Input{20});
-  assert(output.value == 42);
+  if (output.value != 42) {
+    return 1;
+  }
 
   auto move_engine = pb::compile<MoveOnlyPipeline>(pb::runtime::sequential{});
   auto move_output = move_engine.run(MoveInput{std::make_unique<int>(20)});
-  assert(*move_output.value == 42);
+  if (*move_output.value != 42) {
+    return 1;
+  }
 
   auto safe_move_output = move_engine.try_run(MoveInput{std::make_unique<int>(21)});
   assert(safe_move_output.has_value());

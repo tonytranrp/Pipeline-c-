@@ -114,14 +114,14 @@ int main() {
     recording_observer observer{};
     engine.set_observer(&observer);
 
-    bool threw = false;
     try {
       (void)engine.run(Input{1});
+      return 1;
     } catch (const std::runtime_error& error) {
-      threw = true;
-      assert(std::string_view{error.what()} == "boom");
+      if (std::string_view{error.what()} != "boom") {
+        return 1;
+      }
     }
-    assert(threw);
     assert((observer.events == std::vector<std::string>{
                 "start:add_one/add_one",
                 "success:add_one/add_one",
