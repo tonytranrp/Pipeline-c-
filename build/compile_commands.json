@@ -1,8 +1,0 @@
-[
-{
-  "directory": "/mnt/c/Users/Tonyt/Documents/GitHub/Pipeline-c++/.omx/team/read-research-pipelin-2dd1ae75/worktrees/worker-3/build/tests",
-  "command": "/usr/bin/c++  -I/mnt/c/Users/Tonyt/Documents/GitHub/Pipeline-c++/.omx/team/read-research-pipelin-2dd1ae75/worktrees/worker-3/include -std=gnu++20 -o CMakeFiles/pb_smoke.dir/smoke.cpp.o -c /mnt/c/Users/Tonyt/Documents/GitHub/Pipeline-c++/.omx/team/read-research-pipelin-2dd1ae75/worktrees/worker-3/tests/smoke.cpp",
-  "file": "/mnt/c/Users/Tonyt/Documents/GitHub/Pipeline-c++/.omx/team/read-research-pipelin-2dd1ae75/worktrees/worker-3/tests/smoke.cpp",
-  "output": "tests/CMakeFiles/pb_smoke.dir/smoke.cpp.o"
-}
-]
