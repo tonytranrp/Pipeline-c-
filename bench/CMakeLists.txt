@@ -1,2 +1,2 @@
-add_executable(pb_bench_placeholder bench_placeholder.cpp)
-target_compile_features(pb_bench_placeholder PRIVATE cxx_std_20)
+add_executable(pb_bench_compile_time compile_time/include_pipeline.cpp)
+add_executable(pb_bench_runtime runtime/sequential_5_stage.cpp)
