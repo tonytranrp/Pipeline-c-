@@ -22,6 +22,20 @@ cmake --build --preset clang-dev-ninja --target pb_basic_order_pipeline
 
 A zero exit code means the sequential executor preserved the order id through the adapted parse stage, adapted validate stage, and explicit persist stage.
 
+## Inspecting pipeline metadata
+
+The public API now exposes lightweight compile-time introspection helpers for validated pipeline aliases:
+
+```cpp
+static_assert(pb::pipeline_size_v<OrderPipeline> == 3);
+static_assert(std::same_as<pb::pipeline_input_t<OrderPipeline>, domain::RawText>);
+static_assert(std::same_as<pb::pipeline_output_t<OrderPipeline>, domain::Receipt>);
+static_assert(std::same_as<pb::pipeline_stage_t<OrderPipeline, 0>, ParseOrder>);
+static_assert(pb::describe<OrderPipeline>().stage_name<0>() == "parse_order");
+```
+
+Use `pb::describe<Pipeline>().stage_names()` or `stage_records()` when tooling needs a stable stage order without depending on template internals. `stage_record` currently carries the stage index and name.
+
 ## Diagnostic failure example
 
 `examples/error_diagnostic.cpp` keeps the invalid pipeline behind `PB_EXAMPLE_ENABLE_COMPILE_FAILURE` so normal example builds stay green. Enable that definition only when you want to inspect the compile-time edge-mismatch diagnostic.

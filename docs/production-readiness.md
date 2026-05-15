@@ -8,6 +8,7 @@ This project is still an MVP foundation for the roadmap in `research/pipeline_bu
 - Standard-library-only public core/runtime surfaces unless an optional backend is explicitly enabled in a future slice.
 - Linear typed pipeline validation with `pb::from<T>::then<S>::to<U>`.
 - Stage metadata through explicit `input_type`, `output_type`, `error_type`, and `stage_name()` or adapter-provided traits.
+- Public pipeline introspection helpers: `pipeline_size_v`, `pipeline_input_t`, `pipeline_output_t`, `pipeline_stage_t`, `pipeline_stage_descriptor_t`, `describe()`, and stage records.
 - Free-function and function-object adapters for legacy code integration.
 - Sequential runtime execution for validated linear pipelines.
 - Compile-pass, compile-fail, runtime, example, package, and benchmark smoke scaffolding.
