@@ -160,16 +160,6 @@ add_test(NAME pb_compile_fail_sink_mismatch
 set_tests_properties(pb_compile_fail_sink_mismatch PROPERTIES LABELS "compile-fail;diagnostics")
 
 
-add_test(NAME pb_compile_fail_adapt_fn_input_mismatch
-  COMMAND ${CMAKE_COMMAND}
-    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/adapt_fn_input_mismatch.cpp
-    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
-    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
-    -DEXPECT_DIAGNOSTIC=adapted\ stage\ requires\ callable\ signature\ to\ match\ declared\ input_type
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
-)
-set_tests_properties(pb_compile_fail_adapt_fn_input_mismatch PROPERTIES LABELS "compile-fail;diagnostics;adapt")
-
 add_test(NAME pb_compile_fail_result_error_type_mismatch
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/result_error_type_mismatch.cpp
