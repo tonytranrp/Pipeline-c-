@@ -227,48 +227,43 @@ template <class FinalOutput, class Input>
 
 template <class FinalOutput, class Input, class Stage, class... Rest>
 [[nodiscard]] auto run_stages(std::size_t stage_index, observer* sink, Input&& input) {
-  bool stage_invocation_completed = false;
-  try {
-    notify_stage_start<Stage>(sink, stage_index);
-    auto stage_result = Stage{}(std::forward<Input>(input));
-    stage_invocation_completed = true;
-    if constexpr (expected_like<decltype(stage_result)>) {
-      auto normalized_result = to_result(std::move(stage_result));
-      using StageResult = std::remove_cvref_t<decltype(normalized_result)>;
-      using Error = typename StageResult::error_type;
-      if (!normalized_result.has_value()) {
-        auto stage_error =
-            annotate_stage_error<Stage>(stage_index, std::move(normalized_result).error());
-        notify_stage_failure<Stage>(sink, stage_index, stage_error);
-        return result<FinalOutput, Error>{std::move(stage_error)};
-      }
-      notify_stage_success<Stage>(sink, stage_index);
-      if constexpr (sizeof...(Rest) == 0) {
-        return result<FinalOutput, Error>{std::move(normalized_result).value()};
-      } else {
-        return run_after_result<FinalOutput, Error, decltype(std::move(normalized_result).value()), Rest...>(
-            stage_index + 1, sink, std::move(normalized_result).value());
-      }
-    } else if constexpr (sizeof...(Rest) == 0) {
-      notify_stage_success<Stage>(sink, stage_index);
-      return stage_result;
-    } else {
-      notify_stage_success<Stage>(sink, stage_index);
-      return run_stages<FinalOutput, decltype(stage_result), Rest...>(
-          stage_index + 1, sink, std::move(stage_result));
-    }
-  } catch (const std::exception& exception) {
-    if (!stage_invocation_completed) {
+  auto stage_result = [&] {
+    try {
+      notify_stage_start<Stage>(sink, stage_index);
+      return Stage{}(std::forward<Input>(input));
+    } catch (const std::exception& exception) {
       auto stage_error = exception_error<Stage>(stage_index, exception);
       notify_stage_exception<Stage>(sink, stage_index, stage_error);
-    }
-    throw;
-  } catch (...) {
-    if (!stage_invocation_completed) {
+      throw;
+    } catch (...) {
       auto stage_error = unknown_exception_error<Stage>(stage_index);
       notify_stage_exception<Stage>(sink, stage_index, stage_error);
+      throw;
     }
-    throw;
+  }();
+
+  if constexpr (expected_like<decltype(stage_result)>) {
+    auto normalized_result = to_result(std::move(stage_result));
+    using StageResult = std::remove_cvref_t<decltype(normalized_result)>;
+    using Error = typename StageResult::error_type;
+    if (!normalized_result.has_value()) {
+      auto stage_error = annotate_stage_error<Stage>(stage_index, std::move(normalized_result).error());
+      notify_stage_failure<Stage>(sink, stage_index, stage_error);
+      return result<FinalOutput, Error>{std::move(stage_error)};
+    }
+    notify_stage_success<Stage>(sink, stage_index);
+    if constexpr (sizeof...(Rest) == 0) {
+      return result<FinalOutput, Error>{std::move(normalized_result).value()};
+    } else {
+      return run_after_result<FinalOutput, Error, decltype(std::move(normalized_result).value()), Rest...>(
+          stage_index + 1, sink, std::move(normalized_result).value());
+    }
+  } else if constexpr (sizeof...(Rest) == 0) {
+    notify_stage_success<Stage>(sink, stage_index);
+    return stage_result;
+  } else {
+    notify_stage_success<Stage>(sink, stage_index);
+    return run_stages<FinalOutput, decltype(stage_result), Rest...>(stage_index + 1, sink, std::move(stage_result));
   }
 }
 
@@ -300,8 +295,7 @@ public:
       return input;
     } else if constexpr (
         [] {
-          using RunStagesResult =
-              decltype(detail::run_stages<Output, Input, Stages...>(std::declval<observer*>(), std::declval<Input>()));
+          using RunStagesResult = decltype(detail::run_stages<Output, Input, Stages...>(nullptr, std::declval<Input>()));
           return detail::is_result_type<RunStagesResult>::value;
         }()) {
       using RunStagesResult =
