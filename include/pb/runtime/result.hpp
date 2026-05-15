@@ -7,25 +7,9 @@
 #include <utility>
 #include <variant>
 
+#include "pb/runtime/error.hpp"
+
 namespace pb::runtime {
-
-enum class error_category {
-  stage_failure,
-  expected_error,
-  exception,
-  contract_violation,
-};
-
-struct stage_id {
-  std::string key{};
-  std::string name{};
-};
-
-struct error {
-  stage_id stage{};
-  error_category category{error_category::stage_failure};
-  std::string message{};
-};
 
 template <class T, class E = error>
 class result {
