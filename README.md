@@ -12,6 +12,14 @@ This first base follows `research/pipeline_builder_cpp_research_plan.md`:
 - MVP `pb::from<T>::then<S>::to<U>` typed linear pipeline validation
 - sequential runtime executor and free/function-object adapters
 
+## Docs and release readiness
+
+- [Build and Verification](docs/build.md) lists the supported configure/build/test presets, benchmark smoke targets, and benchmark result recording template.
+- [Examples](docs/examples.md) walks through the successful order pipeline, the intentional diagnostic example, and the public introspection helpers.
+- [Production Readiness Status](docs/production-readiness.md) tracks supported capabilities, known release gaps, and the package-consumer release gate.
+
+For package consumers, the release-readiness path is the `package-release-clang-ninja` configure, build, CTest, and package target sequence below. That CTest run includes `pb_package_config_smoke`, which installs the package into a temporary prefix and verifies a downstream `find_package(pipebuilder CONFIG REQUIRED)` consumer links against `pb::pipeline`.
+
 ## Configure, build, test
 
 ```sh
@@ -42,7 +50,6 @@ ctest --preset release-ninja
 cmake --preset package-dev-ninja
 cmake --build --preset package-dev-ninja
 ctest --preset package-dev-ninja
-
 
 cmake --preset package-release-clang-ninja
 cmake --build --preset package-release-clang-ninja
