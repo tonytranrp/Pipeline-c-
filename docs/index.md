@@ -11,5 +11,6 @@ This repository is bootstrapping a typed C++20 pipeline builder. Start with:
 - [Release Readiness Checklist](release-readiness-checklist.md)
 - [Observer Hooks Roadmap / Status](observer-hooks-roadmap.md)
 - [Runtime Descriptor Roadmap / Status](runtime-descriptor-roadmap.md)
+- [Roadmap Gap Map](roadmap-gap-map.md)
 - [Coordinated Work Lanes](work-lanes.md)
 - `research/pipeline_builder_cpp_research_plan.md` for the full roadmap
