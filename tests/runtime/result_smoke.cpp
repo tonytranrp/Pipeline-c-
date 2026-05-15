@@ -74,10 +74,33 @@ int main()
     assert(!moved_error.has_value());
     assert(moved_error.error().message == "move-only bad");
 
+    struct void_expected {
+        using value_type = void;
+        using error_type = std::string;
+        bool ok{};
+        std::string error_{};
+
+        bool has_value() const { return ok; }
+        void value() const {}
+        std::string const& error() const { return error_; }
+    };
+
+    auto converted_void_ok = to_result(void_expected{.ok = true});
+    assert(converted_void_ok.has_value());
+    assert(!converted_void_ok.has_error());
+
+    auto converted_void_error = to_result(void_expected{.ok = false, .error_ = "void expected bad"});
+    assert(!converted_void_error.has_value());
+    assert(converted_void_error.error().category == error_category::expected_error);
+    assert(converted_void_error.error().message == "void expected bad");
+
     auto built = make_result(13);
     assert(built.has_value());
     assert(built.value() == 13);
 
+    auto built_void = make_result();
+    assert(built_void.has_value());
+    assert(!built_void.has_error());
+
     return 0;
 }
-
