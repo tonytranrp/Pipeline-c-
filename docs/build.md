@@ -46,3 +46,5 @@ find build/clang-time-trace -name '*.json' -path '*CMakeFiles*' -print
 ```
 
 Treat the generated trace files as local diagnostics. They are useful for spotting expensive headers and template instantiations, but they should not be committed unless a future release process explicitly asks for captured benchmark artifacts.
+
+- `bench-dev-ninja`: benchmarks-only build (`PB_BUILD_BENCHMARKS=ON`, tests/examples off); no tests are registered in this lane.
