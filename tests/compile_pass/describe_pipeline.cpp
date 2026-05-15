@@ -42,8 +42,14 @@ static_assert(pb::describe<Pipeline>().stage_name<1>() == std::string_view{"fini
 int main() {
   constexpr auto desc = pb::describe<Pipeline>();
   constexpr auto names = desc.stage_names();
+  constexpr auto records = desc.stage_records();
   static_assert(names.size() == 2);
   static_assert(names[0] == std::string_view{"parse"});
   static_assert(names[1] == std::string_view{"finish"});
+  static_assert(records.size() == 2);
+  static_assert(records[0].index == 0);
+  static_assert(records[0].name == std::string_view{"parse"});
+  static_assert(records[1].index == 1);
+  static_assert(records[1].name == std::string_view{"finish"});
   return names == std::array<std::string_view, 2>{"parse", "finish"} ? 0 : 1;
 }

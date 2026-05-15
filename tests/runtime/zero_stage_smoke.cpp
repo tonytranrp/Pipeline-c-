@@ -15,6 +15,8 @@ static_assert(std::same_as<Traits::input_type, Input>);
 static_assert(std::same_as<Traits::output_type, Input>);
 static_assert(std::same_as<pb::pipeline_input_t<Pipeline>, Input>);
 static_assert(std::same_as<pb::pipeline_output_t<Pipeline>, Input>);
+static_assert(pb::describe<Pipeline>().stage_names().empty());
+static_assert(pb::describe<Pipeline>().stage_records().empty());
 
 int main() {
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});

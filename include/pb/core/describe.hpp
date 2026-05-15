@@ -11,6 +11,11 @@
 
 namespace pb::core {
 
+struct stage_record {
+  std::size_t index{};
+  std::string_view name{};
+};
+
 template <std::size_t Index, class StageType>
 struct stage_descriptor {
   using stage_type = StageType;
@@ -50,6 +55,12 @@ template <class... Stages, std::size_t... Indexes>
     -> std::array<std::string_view, sizeof...(Stages)> {
   return {stage_descriptor<Indexes, Stages>::name()...};
 }
+
+template <class... Stages, std::size_t... Indexes>
+[[nodiscard]] constexpr auto stage_records(meta::type_list<Stages...>, std::index_sequence<Indexes...>) noexcept
+    -> std::array<stage_record, sizeof...(Stages)> {
+  return {stage_record{Indexes, stage_descriptor<Indexes, Stages>::name()}...};
+}
 } // namespace detail
 
 template <ValidPipeline Pipeline>
@@ -76,6 +87,10 @@ struct pipeline_descriptor {
 
   [[nodiscard]] static constexpr auto stage_names() noexcept -> std::array<std::string_view, stage_count> {
     return detail::stage_names(stages{}, std::make_index_sequence<stage_count>{});
+  }
+
+  [[nodiscard]] static constexpr auto stage_records() noexcept -> std::array<stage_record, stage_count> {
+    return detail::stage_records(stages{}, std::make_index_sequence<stage_count>{});
   }
 };
 
