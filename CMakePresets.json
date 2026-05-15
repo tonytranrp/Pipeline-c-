@@ -48,17 +48,12 @@
       }
     },
     {
-      "name": "package-dev-ninja",
-      "displayName": "Package Debug (Ninja)",
-      "inherits": "dev-ninja",
-      "binaryDir": "${sourceDir}/build/package-dev-ninja",
+      "name": "release-clang-ninja",
+      "displayName": "Release Clang (Ninja)",
+      "inherits": "clang-dev-ninja",
+      "binaryDir": "${sourceDir}/build/release-clang-ninja",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "PB_BUILD_TESTS": "ON",
-        "PB_BUILD_EXAMPLES": "ON",
-        "PB_BUILD_BENCHMARKS": "OFF",
-        "CPACK_GENERATOR": "TGZ"
+        "CMAKE_BUILD_TYPE": "Release"
       }
     },
     {
@@ -72,6 +67,20 @@
         "PB_BUILD_TESTS": "ON",
         "PB_BUILD_EXAMPLES": "ON",
         "PB_BUILD_BENCHMARKS": "OFF"
+      }
+    },
+    {
+      "name": "package-dev-ninja",
+      "displayName": "Package Debug (Ninja)",
+      "inherits": "dev-ninja",
+      "binaryDir": "${sourceDir}/build/package-dev-ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "PB_BUILD_TESTS": "ON",
+        "PB_BUILD_EXAMPLES": "ON",
+        "PB_BUILD_BENCHMARKS": "OFF",
+        "CPACK_GENERATOR": "TGZ"
       }
     },
     {
@@ -104,12 +113,16 @@
       "configurePreset": "clang-tidy-ninja"
     },
     {
-      "name": "package-dev-ninja",
-      "configurePreset": "package-dev-ninja"
+      "name": "release-clang-ninja",
+      "configurePreset": "release-clang-ninja"
     },
     {
       "name": "release-ninja",
       "configurePreset": "release-ninja"
+    },
+    {
+      "name": "package-dev-ninja",
+      "configurePreset": "package-dev-ninja"
     },
     {
       "name": "bench-dev-ninja",
@@ -139,15 +152,8 @@
       }
     },
     {
-      "name": "package-dev-ninja",
-      "configurePreset": "package-dev-ninja",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "bench-dev-ninja",
-      "configurePreset": "bench-dev-ninja",
+      "name": "clang-time-trace",
+      "configurePreset": "clang-time-trace",
       "output": {
         "outputOnFailure": true
       }
@@ -160,8 +166,22 @@
       }
     },
     {
-      "name": "clang-time-trace",
-      "configurePreset": "clang-time-trace",
+      "name": "release-clang-ninja",
+      "configurePreset": "release-clang-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "package-dev-ninja",
+      "configurePreset": "package-dev-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "bench-dev-ninja",
+      "configurePreset": "bench-dev-ninja",
       "output": {
         "outputOnFailure": true
       }

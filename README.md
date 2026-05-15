@@ -31,6 +31,10 @@ cmake --preset clang-tidy-ninja
 cmake --build --preset clang-tidy-ninja
 ctest --preset clang-tidy-ninja
 
+cmake --preset release-clang-ninja
+cmake --build --preset release-clang-ninja
+ctest --preset release-clang-ninja
+
 cmake --preset release-ninja
 cmake --build --preset release-ninja
 ctest --preset release-ninja
