@@ -52,6 +52,8 @@ foreach(required_target IN ITEMS pb::core pb::runtime pb::pipeline)
   endif()
 endforeach()
 
+# Keep these as independent executables so each installed target and compatibility
+# alias must provide its own usage requirements to a clean consumer.
 add_executable(pipebuilder_core_target_smoke core_target.cpp)
 target_compile_features(pipebuilder_core_target_smoke PRIVATE cxx_std_20)
 target_link_libraries(pipebuilder_core_target_smoke PRIVATE pb::core)
