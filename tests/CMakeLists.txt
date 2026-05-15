@@ -1,6 +1,7 @@
 add_executable(pb_smoke_compile_pass compile_pass/smoke_pipeline.cpp)
 target_link_libraries(pb_smoke_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_smoke_compile_pass PRIVATE)
+pb_enable_pch_if_requested(pb_smoke_compile_pass)
 add_test(NAME pb_smoke_compile_pass COMMAND pb_smoke_compile_pass)
 set_tests_properties(pb_smoke_compile_pass PROPERTIES LABELS "compile-pass;smoke")
 
@@ -8,6 +9,7 @@ set_tests_properties(pb_smoke_compile_pass PROPERTIES LABELS "compile-pass;smoke
 add_executable(pb_describe_compile_pass compile_pass/describe_pipeline.cpp)
 target_link_libraries(pb_describe_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_describe_compile_pass PRIVATE)
+pb_enable_pch_if_requested(pb_describe_compile_pass)
 add_test(NAME pb_describe_compile_pass COMMAND pb_describe_compile_pass)
 set_tests_properties(pb_describe_compile_pass PROPERTIES LABELS "compile-pass;metadata")
 
@@ -28,36 +30,42 @@ add_executable(pb_public_headers_compile_pass
 )
 target_link_libraries(pb_public_headers_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_public_headers_compile_pass PRIVATE)
+pb_enable_pch_if_requested(pb_public_headers_compile_pass)
 add_test(NAME pb_public_headers_compile_pass COMMAND pb_public_headers_compile_pass)
 set_tests_properties(pb_public_headers_compile_pass PROPERTIES LABELS "compile-pass;headers")
 
 add_executable(pb_runtime_smoke runtime/sequential_smoke.cpp)
 target_link_libraries(pb_runtime_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_smoke PRIVATE)
+pb_enable_pch_if_requested(pb_runtime_smoke)
 add_test(NAME pb_runtime_smoke COMMAND pb_runtime_smoke)
 set_tests_properties(pb_runtime_smoke PROPERTIES LABELS "runtime;smoke")
 
 add_executable(pb_runtime_result_smoke runtime/result_smoke.cpp)
 target_link_libraries(pb_runtime_result_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_result_smoke PRIVATE)
+pb_enable_pch_if_requested(pb_runtime_result_smoke)
 add_test(NAME pb_runtime_result_smoke COMMAND pb_runtime_result_smoke)
 set_tests_properties(pb_runtime_result_smoke PROPERTIES LABELS "runtime;result")
 
 add_executable(pb_runtime_sequential_result_smoke runtime/sequential_result_smoke.cpp)
 target_link_libraries(pb_runtime_sequential_result_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_sequential_result_smoke PRIVATE)
+pb_enable_pch_if_requested(pb_runtime_sequential_result_smoke)
 add_test(NAME pb_runtime_sequential_result_smoke COMMAND pb_runtime_sequential_result_smoke)
 set_tests_properties(pb_runtime_sequential_result_smoke PROPERTIES LABELS "runtime;result")
 
 add_executable(pb_runtime_zero_stage_smoke runtime/zero_stage_smoke.cpp)
 target_link_libraries(pb_runtime_zero_stage_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_zero_stage_smoke PRIVATE)
+pb_enable_pch_if_requested(pb_runtime_zero_stage_smoke)
 add_test(NAME pb_runtime_zero_stage_smoke COMMAND pb_runtime_zero_stage_smoke)
 set_tests_properties(pb_runtime_zero_stage_smoke PROPERTIES LABELS "runtime;smoke")
 
 add_executable(pb_runtime_sequential_expected_like_smoke runtime/sequential_expected_like_smoke.cpp)
 target_link_libraries(pb_runtime_sequential_expected_like_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_sequential_expected_like_smoke PRIVATE)
+pb_enable_pch_if_requested(pb_runtime_sequential_expected_like_smoke)
 add_test(NAME pb_runtime_sequential_expected_like_smoke COMMAND pb_runtime_sequential_expected_like_smoke)
 set_tests_properties(pb_runtime_sequential_expected_like_smoke PROPERTIES LABELS "runtime;result")
 

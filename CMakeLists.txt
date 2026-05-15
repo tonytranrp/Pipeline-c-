@@ -29,7 +29,7 @@ option(PB_BACKEND_STDEXEC "Enable experimental stdexec backend integration" OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Export compile_commands.json for tooling" FORCE)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Export compile_commands.json for tooling")
 
 add_library(pb_core INTERFACE)
 add_library(pb::core ALIAS pb_core)

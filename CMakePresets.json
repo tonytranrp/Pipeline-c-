@@ -114,7 +114,17 @@
       "binaryDir": "${sourceDir}/build/benchmark-ninja",
       "cacheVariables": {
         "PB_BUILD_EXAMPLES": "OFF",
+        "PB_BUILD_TESTS": "OFF",
         "PB_BUILD_BENCHMARKS": "ON"
+      }
+    },
+    {
+      "name": "warnings-as-errors-ninja",
+      "displayName": "Warnings as Errors (Ninja)",
+      "inherits": "dev-ninja",
+      "binaryDir": "${sourceDir}/build/warnings-as-errors-ninja",
+      "cacheVariables": {
+        "PB_WARNINGS_AS_ERRORS": "ON"
       }
     }
   ],
@@ -162,6 +172,10 @@
     {
       "name": "benchmark-ninja",
       "configurePreset": "benchmark-ninja"
+    },
+    {
+      "name": "warnings-as-errors-ninja",
+      "configurePreset": "warnings-as-errors-ninja"
     }
   ],
   "testPresets": [
@@ -238,6 +252,13 @@
     {
       "name": "benchmark-ninja",
       "configurePreset": "benchmark-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "warnings-as-errors-ninja",
+      "configurePreset": "warnings-as-errors-ninja",
       "output": {
         "outputOnFailure": true
       }

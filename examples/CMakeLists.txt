@@ -1,10 +1,12 @@
 add_executable(pb_basic_order_pipeline basic_order_pipeline.cpp)
 target_link_libraries(pb_basic_order_pipeline PRIVATE pb::pipeline)
 pb_apply_project_options(pb_basic_order_pipeline PRIVATE)
+pb_enable_pch_if_requested(pb_basic_order_pipeline)
 
 add_executable(pb_error_diagnostic_example error_diagnostic.cpp)
 target_link_libraries(pb_error_diagnostic_example PRIVATE pb::pipeline)
 pb_apply_project_options(pb_error_diagnostic_example PRIVATE)
+pb_enable_pch_if_requested(pb_error_diagnostic_example)
 
 add_test(NAME pb_example_basic_order_pipeline COMMAND pb_basic_order_pipeline)
 set_tests_properties(pb_example_basic_order_pipeline PROPERTIES LABELS "examples;smoke")
