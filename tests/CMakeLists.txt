@@ -117,6 +117,16 @@ add_test(NAME pb_compile_fail_edge_mismatch
 )
 set_tests_properties(pb_compile_fail_edge_mismatch PROPERTIES LABELS "compile-fail;diagnostics")
 
+add_test(NAME pb_compile_fail_adapt_fn_callable_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/adapt_fn_callable_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Adapted\ stage\ callable\ mismatch
+    -DEXPECTED_DIAGNOSTICS=adapted_stage
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_adapt_fn_callable_mismatch PROPERTIES LABELS "compile-fail;diagnostics;adapter")
 
 add_test(NAME pb_compile_fail_invalid_stage
   COMMAND ${CMAKE_COMMAND}
