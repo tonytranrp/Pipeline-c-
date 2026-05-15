@@ -32,6 +32,8 @@ static_assert(pb::pipeline_size_v<Pipeline> == 2);
 static_assert(!Traits::empty);
 static_assert(std::same_as<Traits::input_type, Raw>);
 static_assert(std::same_as<Traits::output_type, Done>);
+static_assert(std::same_as<pb::pipeline_input_t<Pipeline>, Raw>);
+static_assert(std::same_as<pb::pipeline_output_t<Pipeline>, Done>);
 static_assert(std::same_as<Traits::stage_type<0>, Parse>);
 static_assert(std::same_as<pb::pipeline_stage_t<Pipeline, 0>, Parse>);
 static_assert(std::same_as<pb::pipeline_stage_descriptor_t<Pipeline, 1>, Traits::stage<1>>);

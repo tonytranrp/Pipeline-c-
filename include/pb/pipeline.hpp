@@ -21,6 +21,8 @@ using core::fixed_string;
 using core::from;
 using core::is_pipeline_v;
 using core::pipeline_descriptor;
+using core::pipeline_input_t;
+using core::pipeline_output_t;
 using core::pipeline_size_v;
 using core::pipeline_stage_descriptor_t;
 using core::pipeline_stage_t;
