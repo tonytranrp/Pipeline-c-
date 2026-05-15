@@ -1,6 +1,7 @@
 #include <pb/runtime/error.hpp>
 
 #include <cassert>
+#include <sstream>
 #include <string>
 
 int main() {
@@ -27,6 +28,14 @@ int main() {
 
   auto message_less = describe(error{.category = error_category::contract_violation});
   assert(message_less == "contract_violation at <unknown stage>");
+
+  std::ostringstream stream;
+  stream << error_category::expected_error << " | "
+         << stage_id{.key = "persist", .name = "PersistOrder"} << " | "
+         << error{.stage = {.key = "save", .name = "SaveOrder"},
+                  .category = error_category::stage_failure,
+                  .message = "disk full"};
+  assert(stream.str() == "expected_error | PersistOrder (persist) | stage_failure at SaveOrder (save): disk full");
 
   return 0;
 }

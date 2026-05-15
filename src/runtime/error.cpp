@@ -1,5 +1,6 @@
 #include "pb/runtime/error.hpp"
 
+#include <ostream>
 #include <string>
 
 namespace pb::runtime {
@@ -37,6 +38,18 @@ auto describe(const error& value) -> std::string {
     text += value.message;
   }
   return text;
+}
+
+auto operator<<(std::ostream& stream, error_category category) -> std::ostream& {
+  return stream << category_name(category);
+}
+
+auto operator<<(std::ostream& stream, const stage_id& stage) -> std::ostream& {
+  return stream << describe(stage);
+}
+
+auto operator<<(std::ostream& stream, const error& value) -> std::ostream& {
+  return stream << describe(value);
 }
 
 } // namespace pb::runtime
