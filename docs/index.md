@@ -4,6 +4,5 @@ This repository is bootstrapping a typed C++20 pipeline builder. Start with:
 
 - [Build and Verification](build.md)
 - [Examples](examples.md)
-- [Production Readiness Status](production-readiness.md)
 - [Coordinated Work Lanes](work-lanes.md)
 - `research/pipeline_builder_cpp_research_plan.md` for the full roadmap
