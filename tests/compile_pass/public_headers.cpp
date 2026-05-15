@@ -14,6 +14,7 @@ struct Parse {
   using input_type = Raw;
   using output_type = Parsed;
   using error_type = ParseError;
+  static constexpr auto stage_key() noexcept { return "order.parse"; }
   static constexpr auto name = pb::fixed_string{"parse"};
   Parsed operator()(Raw raw) const { return {raw.value + 1}; }
 };
@@ -46,7 +47,10 @@ static_assert(std::same_as<pb::stage_info_t<Parse>, pb::stage_info<Parse>>);
 static_assert(std::same_as<pb::stage_input_t<Parse>, Raw>);
 static_assert(std::same_as<pb::stage_output_t<Parse>, Parsed>);
 static_assert(std::same_as<pb::stage_error_t<Parse>, ParseError>);
+static_assert(pb::stage_key<Parse>() == std::string_view{"order.parse"});
+static_assert(pb::stage_name<Parse>() == std::string_view{"parse"});
 static_assert(pb::stage_traits<Parse>::name() == std::string_view{"parse"});
+static_assert(pb::stage_traits<Parse>::key() == std::string_view{"order.parse"});
 static_assert(Traits::stage_count == 2);
 static_assert(pb::pipeline_size_v<Pipeline> == 2);
 static_assert(!pb::pipeline_empty_v<Pipeline>);
@@ -58,7 +62,9 @@ static_assert(std::same_as<pb::pipeline_stages_t<Pipeline>, pb::meta::type_list<
 static_assert(std::same_as<pb::pipeline_stage_t<Pipeline, 0>, Parse>);
 static_assert(std::same_as<pb::pipeline_stage_descriptor_t<Pipeline, 1>, Traits::stage<1>>);
 static_assert(std::same_as<pb::stage_descriptor<0, Parse>::input_type, Raw>);
+static_assert(pb::stage_descriptor<0, Parse>::key() == std::string_view{"order.parse"});
 static_assert(pb::pipeline_descriptor<Pipeline>::stage_count == 2);
+static_assert(pb::describe<Pipeline>().stage_key<0>() == std::string_view{"order.parse"});
 static_assert(pb::describe<Pipeline>().stage_name<0>() == std::string_view{"parse"});
 static_assert(pb::describe<Pipeline>().stage_name<1>() == std::string_view{"finish"});
 static_assert(std::is_same_v<pb::error_category, pb::runtime::error_category>);
@@ -72,9 +78,12 @@ int main() {
   assert(pb::has_message(pb::error{.message = "parse failed"}));
 
   constexpr auto desc = pb::describe<Pipeline>();
+  constexpr auto keys = desc.stage_keys();
   constexpr auto names = desc.stage_names();
   constexpr auto records = desc.stage_records();
+  static_assert(keys[0] == std::string_view{"order.parse"});
   static_assert(records[0].index == 0);
+  static_assert(records[0].key == std::string_view{"order.parse"});
   static_assert(records[1].name == std::string_view{"finish"});
   return names == std::array<std::string_view, 2>{"parse", "finish"} ? 0 : 1;
 }

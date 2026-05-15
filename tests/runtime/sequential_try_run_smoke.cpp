@@ -28,6 +28,7 @@ struct MaybeThrowingDouble {
   using input_type = Middle;
   using output_type = Output;
 
+  static constexpr auto stage_key() noexcept { return "math.double"; }
   static constexpr auto stage_name() noexcept { return "maybe_throwing_double"; }
 
   Output operator()(Middle input) const {
@@ -109,14 +110,18 @@ int main() {
   auto exception = throwing_engine.try_run(Input{-2});
   assert(!exception.has_value());
   assert(exception.error().category == pb::runtime::error_category::exception);
+  assert(exception.error().stage.key == "math.double");
   assert(exception.error().stage.name == "maybe_throwing_double");
+  assert(pb::runtime::describe(exception.error().stage) == "maybe_throwing_double (math.double)");
   assert(exception.error().message == "negative middle");
 
   auto unknown_throwing_engine = pb::compile<UnknownThrowingPipeline>(pb::runtime::sequential{});
   auto unknown_exception = unknown_throwing_engine.try_run(Input{1});
   assert(!unknown_exception.has_value());
   assert(unknown_exception.error().category == pb::runtime::error_category::exception);
+  assert(unknown_exception.error().stage.key == "unknown_throwing_double");
   assert(unknown_exception.error().stage.name == "unknown_throwing_double");
+  assert(pb::runtime::describe(unknown_exception.error().stage) == "unknown_throwing_double");
   assert(unknown_exception.error().message == "stage threw an unknown exception");
 
   auto result_engine = pb::compile<ResultPipeline>(pb::runtime::sequential{});
