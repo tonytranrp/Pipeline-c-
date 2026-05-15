@@ -15,6 +15,16 @@ namespace pb::runtime {
 struct sequential {};
 
 namespace detail {
+template <class T>
+struct is_result_type : std::false_type {};
+
+template <class T, class E>
+struct is_result_type<result<T, E>> : std::true_type {
+  using error_type = E;
+};
+
+template <class PipelineInput, class FinalOutput, class Stage, class... Rest>
+using run_stages_return_t = decltype(run_stages<FinalOutput, PipelineInput, Stage, Rest...>(std::declval<PipelineInput>()));
 
 template <class Stage>
 [[nodiscard]] auto stage_id_for() -> stage_id {
@@ -104,23 +114,29 @@ template <class FinalOutput, class Input, class Stage, class... Rest>
 
 template <class FinalOutput, class Error, class Input, class Stage, class... Rest>
 [[nodiscard]] auto run_after_result(Input&& input) -> result<FinalOutput, Error> {
-  auto stage_result = Stage{}(std::forward<Input>(input));
-  if constexpr (expected_like<decltype(stage_result)>) {
-    auto normalized_result = to_result(std::move(stage_result));
-    if (!normalized_result.has_value()) {
-      return result<FinalOutput, Error>{
-          convert_error<Error>(annotate_stage_error<Stage>(std::move(normalized_result).error()))};
-    }
-    if constexpr (sizeof...(Rest) == 0) {
-      return result<FinalOutput, Error>{std::move(normalized_result).value()};
+  try {
+    auto stage_result = Stage{}(std::forward<Input>(input));
+    if constexpr (expected_like<decltype(stage_result)>) {
+      auto normalized_result = to_result(std::move(stage_result));
+      if (!normalized_result.has_value()) {
+        return result<FinalOutput, Error>{
+            convert_error<Error>(annotate_stage_error<Stage>(std::move(normalized_result).error()))};
+      }
+      if constexpr (sizeof...(Rest) == 0) {
+        return result<FinalOutput, Error>{std::move(normalized_result).value()};
+      } else {
+        return run_after_result<FinalOutput, Error, decltype(std::move(normalized_result).value()), Rest...>(
+            std::move(normalized_result).value());
+      }
+    } else if constexpr (sizeof...(Rest) == 0) {
+      return result<FinalOutput, Error>{std::move(stage_result)};
     } else {
-      return run_after_result<FinalOutput, Error, decltype(std::move(normalized_result).value()), Rest...>(
-          std::move(normalized_result).value());
+      return run_after_result<FinalOutput, Error, decltype(stage_result), Rest...>(std::move(stage_result));
     }
-  } else if constexpr (sizeof...(Rest) == 0) {
-    return result<FinalOutput, Error>{std::move(stage_result)};
-  } else {
-    return run_after_result<FinalOutput, Error, decltype(stage_result), Rest...>(std::move(stage_result));
+  } catch (const std::exception& exception) {
+    return result<FinalOutput, Error>{convert_error<Error>(exception_error<Stage>(exception))};
+  } catch (...) {
+    return result<FinalOutput, Error>{convert_error<Error>(unknown_exception_error<Stage>())};
   }
 }
 
@@ -169,6 +185,12 @@ public:
   [[nodiscard]] decltype(auto) run(Input input) const {
     if constexpr (sizeof...(Stages) == 0) {
       return input;
+    } else if constexpr (detail::is_result_type<
+                           decltype(detail::run_stages<Output, Input, Stages...>(std::declval<Input>()))>::value) {
+      return detail::run_after_result<Output,
+                                      detail::is_result_type<
+                                          decltype(detail::run_stages<Output, Input, Stages...>(std::declval<Input>()))>::error_type,
+                                      Input, Stages...>(std::move(input));
     } else {
       return run_stages<Output, Input, Stages...>(std::move(input));
     }

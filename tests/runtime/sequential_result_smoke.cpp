@@ -28,8 +28,23 @@ struct CheckedDouble {
   }
 };
 
+struct CheckedMayThrow {
+  using input_type = Middle;
+  using output_type = Output;
+  using error_type = pb::runtime::error;
+
+  pb::runtime::result<Output> operator()(Middle input) const {
+    if (input.value == 0) {
+      throw std::runtime_error{"checked maybe throw"};
+    }
+    return Output{input.value * 2};
+  }
+};
+
 using Pipeline = pb::from<Input>::then<AddOne>::then<CheckedDouble>::to<Output>;
+using ThrowingPipeline = pb::from<Input>::then<AddOne>::then<CheckedMayThrow>::to<Output>;
 static_assert(pb::valid<Pipeline>);
+static_assert(pb::valid<ThrowingPipeline>);
 
 int main() {
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
@@ -42,6 +57,13 @@ int main() {
   assert(!failed.has_value());
   assert(failed.error().stage.name == "checked_double");
   assert(failed.error().message == "negative input");
+
+  auto throw_engine = pb::compile<ThrowingPipeline>(pb::runtime::sequential{});
+  auto throw_failed = throw_engine.run(Input{-1});
+  assert(!throw_failed.has_value());
+  assert(throw_failed.error().category == pb::runtime::error_category::exception);
+  assert(throw_failed.error().stage.name == "checked_may_throw");
+  assert(throw_failed.error().message == "checked maybe throw");
 
   return 0;
 }
