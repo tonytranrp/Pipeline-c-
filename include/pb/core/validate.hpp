@@ -1,56 +1,22 @@
 #pragma once
 
-#include <concepts>
-
-#include "pb/core/concepts.hpp"
 #include "pb/core/pipeline_state.hpp"
 
 namespace pb::core {
 
-namespace detail {
+template <class T>
+struct is_pipeline : std::false_type {};
 
-template <typename ExpectedInput, typename... Stages>
-struct validate_chain;
+template <class Input, class Output, class Stages>
+struct is_pipeline<pipeline<Input, Output, Stages>> : std::true_type {};
 
-template <typename ExpectedInput>
-struct validate_chain<ExpectedInput> {
-    static constexpr bool value = true;
-};
+template <class T>
+inline constexpr bool is_pipeline_v = is_pipeline<T>::value;
 
-template <typename ExpectedInput, typename Stage>
-struct validate_chain<ExpectedInput, Stage> {
-    static constexpr bool value =
-        stage<Stage> && std::same_as<typename stage_traits<Stage>::input_type, ExpectedInput>;
-    static_assert(value,
-                  "pb::core::validate: pipeline terminal stage is invalid or has mismatched input type");
-};
+template <class T>
+concept ValidPipeline = is_pipeline_v<T> && T::valid;
 
-template <typename ExpectedInput, typename First, typename Second, typename... Rest>
-struct validate_chain<ExpectedInput, First, Second, Rest...> {
-    static constexpr bool first_ok =
-        stage<First> && std::same_as<typename stage_traits<First>::input_type, ExpectedInput>;
-    static constexpr bool adjacent_ok = connectable<First, Second>;
-    static constexpr bool value =
-        first_ok && adjacent_ok &&
-        validate_chain<typename stage_traits<Second>::input_type, Second, Rest...>::value;
+template <class T>
+inline constexpr bool valid = ValidPipeline<T>;
 
-    static_assert(first_ok,
-                  "pb::core::validate: pipeline initial stage input does not match from<T>");
-    static_assert(adjacent_ok,
-                  "pb::core::validate: adjacent pipeline stages are not connectable");
-};
-
-}  // namespace detail
-
-template <typename State>
-struct validate;
-
-template <typename From, typename... Stages>
-struct validate<detail::pipeline_state<From, Stages...>> {
-    static constexpr bool value = detail::validate_chain<From, Stages...>::value;
-};
-
-template <typename State>
-inline constexpr bool is_valid_chain_v = validate<State>::value;
-
-}  // namespace pb::core
+} // namespace pb::core

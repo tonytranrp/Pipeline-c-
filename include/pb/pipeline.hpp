@@ -1,17 +1,26 @@
 #pragma once
 
+#include "pb/adapt/fn.hpp"
 #include "pb/core/concepts.hpp"
 #include "pb/core/fixed_string.hpp"
 #include "pb/core/meta.hpp"
 #include "pb/core/pipeline_state.hpp"
 #include "pb/core/stage_traits.hpp"
 #include "pb/core/validate.hpp"
+#include "pb/runtime/error.hpp"
+#include "pb/runtime/result.hpp"
+#include "pb/runtime/sequential.hpp"
 
 namespace pb {
+using core::Connectable;
+using core::Stage;
+using core::ValidPipeline;
 using core::fixed_string;
 using core::from;
-using core::meta::type_list;
+using core::is_pipeline_v;
+using core::stage_error_t;
+using core::stage_input_t;
+using core::stage_output_t;
 using core::stage_traits;
-using core::validate_chain;
-using core::validate_chain_v;
-}  // namespace pb
+using core::valid;
+} // namespace pb

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <array>
+#include <algorithm>
 #include <cstddef>
 #include <string_view>
 
@@ -8,40 +8,22 @@ namespace pb::core {
 
 template <std::size_t N>
 struct fixed_string {
-    std::array<char, N + 1> value{};
+  char value[N]{};
 
-    constexpr fixed_string() = default;
+  constexpr fixed_string() = default;
 
-    constexpr explicit fixed_string(const char (&str)[N + 1]) {
-        for (std::size_t i = 0; i < N + 1; ++i) {
-            value[i] = str[i];
-        }
-    }
+  constexpr fixed_string(const char (&text)[N]) {
+    std::copy_n(text, N, value);
+  }
 
-    constexpr std::size_t size() const noexcept { return N; }
+  [[nodiscard]] constexpr const char* c_str() const noexcept { return value; }
+  [[nodiscard]] constexpr std::size_t size() const noexcept { return N == 0 ? 0 : N - 1; }
+  [[nodiscard]] constexpr std::string_view view() const noexcept { return {value, size()}; }
 
-    constexpr const char* c_str() const noexcept { return value.data(); }
-
-    constexpr std::string_view view() const noexcept {
-        return {value.data(), N};
-    }
-
-    constexpr auto operator<=>(const fixed_string&) const = default;
-};
-
-template <fixed_string Str>
-struct named {
-    static constexpr fixed_string<Str.size()> value{Str};
+  constexpr auto operator<=>(const fixed_string&) const = default;
 };
 
 template <std::size_t N>
-constexpr fixed_string<N - 1> make_fixed_string(const char (&str)[N]) {
-    return fixed_string<N - 1>(str);
-}
+fixed_string(const char (&)[N]) -> fixed_string<N>;
 
-template <std::size_t N>
-fixed_string(const char (&str)[N]) -> fixed_string<N - 1>;
-
-inline constexpr fixed_string<0> empty_name{};
-
-}  // namespace pb::core
+} // namespace pb::core

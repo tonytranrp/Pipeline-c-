@@ -1,33 +1,27 @@
 #pragma once
 
 #include <concepts>
+#include <type_traits>
 
 #include "pb/core/stage_traits.hpp"
 
 namespace pb::core {
 
-template <typename T>
-concept stage = stage_traits<T>::is_valid_stage;
+template <class T>
+concept Stage = stage_traits<T>::is_valid_stage;
 
-template <typename T>
-concept pipeline_source = stage<T> && std::same_as<typename stage_traits<T>::input_type, void>;
+template <class T>
+concept stage = Stage<T>;
 
-template <typename T>
-concept pipeline_sink = stage<T> && std::same_as<typename stage_traits<T>::output_type, void>;
+template <class From, class To>
+concept Connectable = Stage<To> && std::same_as<From, stage_input_t<To>>;
 
-template <typename From, typename To>
-concept connectable =
-    stage<From> && stage<To> &&
-    std::same_as<typename stage_traits<From>::output_type, typename stage_traits<To>::input_type>;
+template <class A, class B>
+concept AdjacentStages = Stage<A> && Stage<B> && std::same_as<stage_output_t<A>, stage_input_t<B>>;
 
-template <typename From, typename To>
-concept source_to_stage =
-    stage<From> && stage<To> &&
-    std::same_as<typename stage_traits<From>::output_type, typename stage_traits<To>::input_type>;
+template <class StageType, class Input>
+concept RunnableStage = Stage<StageType> && requires(StageType stage_value, Input input) {
+  stage_value(input);
+};
 
-template <typename From, typename To>
-concept stage_to_sink =
-    stage<From> && stage<To> && pipeline_sink<To> &&
-    std::same_as<typename stage_traits<From>::output_type, typename stage_traits<To>::input_type>;
-
-}  // namespace pb::core
+} // namespace pb::core

@@ -1,42 +1,63 @@
 #pragma once
 
+#include <concepts>
+#include <type_traits>
+
+#include "pb/core/concepts.hpp"
 #include "pb/core/meta.hpp"
-#include "pb/core/validate.hpp"
 
 namespace pb::core {
 
+template <class Input, class Output, class StageList>
+struct pipeline {
+  using input_type = Input;
+  using output_type = Output;
+  using stages = StageList;
+  static constexpr bool valid = true;
+};
+
+template <class Input, class Current, class... Stages>
+struct pipeline_state;
+
 namespace detail {
 
-template <typename From, typename... Stages>
+template <class State, class Stage>
+struct append_stage;
+
+template <class Input, class Current, class... Stages, class StageType>
+struct append_stage<pipeline_state<Input, Current, Stages...>, StageType> {
+  static_assert(Stage<StageType>, "Pipeline stage is invalid: define input_type and output_type");
+  static_assert(Connectable<Current, StageType>,
+                "Pipeline edge mismatch: actual output type does not match expected input type");
+  using type = pipeline_state<Input, stage_output_t<StageType>, Stages..., StageType>;
+};
+
+template <class State, class Output>
+struct finalize_pipeline;
+
+template <class Input, class Current, class... Stages, class Output>
+struct finalize_pipeline<pipeline_state<Input, Current, Stages...>, Output> {
+  static_assert(std::same_as<Current, Output>,
+                "Pipeline sink mismatch: actual final output type does not match requested sink type");
+  using type = pipeline<Input, Output, meta::type_list<Stages...>>;
+};
+
+} // namespace detail
+
+template <class Input, class Current, class... Stages>
 struct pipeline_state {
-    using input_type = From;
-    using stages = meta::type_list<Stages...>;
+  using input_type = Input;
+  using current_type = Current;
+  using stages = meta::type_list<Stages...>;
 
-    template <typename Stage>
-    struct then_builder {
-        static_assert(validate_chain<From, Stages..., Stage>::value,
-                      "pb::core::from<T>::then<S> rejected: stage edge is not connectable");
-        using chain = pipeline_state<From, Stages..., Stage>;
+  template <class StageType>
+  using then = typename detail::append_stage<pipeline_state, StageType>::type;
 
-        template <typename Next>
-        using to = std::conditional_t<
-            validate_chain<From, Stages..., Stage, Next>::value,
-            pipeline_state<From, Stages..., Stage, Next>,
-            validate_chain<From, Stages..., Stage, Next>>;
-    };
-
-    template <typename Stage>
-    using then = then_builder<Stage>;
+  template <class Output>
+  using to = typename detail::finalize_pipeline<pipeline_state, Output>::type;
 };
 
-}  // namespace detail
+template <class Input>
+using from = pipeline_state<Input, Input>;
 
-template <typename From>
-struct from {
-    using source = From;
-
-    template <typename Stage>
-    using then = detail::pipeline_state<From>::template then_builder<Stage>;
-};
-
-}  // namespace pb::core
+} // namespace pb::core

@@ -1,1 +1,9 @@
-add_executable(pb_basic basic_pipeline.cpp)
+add_executable(pb_basic_order_pipeline basic_order_pipeline.cpp)
+target_link_libraries(pb_basic_order_pipeline PRIVATE pb::pipeline)
+pb_apply_project_options(pb_basic_order_pipeline PRIVATE)
+
+add_executable(pb_error_diagnostic_example error_diagnostic.cpp)
+target_link_libraries(pb_error_diagnostic_example PRIVATE pb::pipeline)
+pb_apply_project_options(pb_error_diagnostic_example PRIVATE)
+
+add_test(NAME pb_example_basic_order_pipeline COMMAND pb_basic_order_pipeline)
