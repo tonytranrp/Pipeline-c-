@@ -9,6 +9,8 @@ int main() {
   using pb::runtime::describe;
   using pb::runtime::error;
   using pb::runtime::error_category;
+  using pb::runtime::has_message;
+  using pb::runtime::has_stage;
   using pb::runtime::stage_id;
 
   assert(category_name(error_category::stage_failure) == "stage_failure");
@@ -16,17 +18,23 @@ int main() {
   assert(category_name(error_category::exception) == "exception");
   assert(category_name(error_category::contract_violation) == "contract_violation");
 
+  assert(!has_stage(stage_id{}));
   assert(describe(stage_id{}) == "<unknown stage>");
+  assert(has_stage(stage_id{.key = "parse"}));
   assert(describe(stage_id{.key = "parse"}) == "parse");
   assert(describe(stage_id{.name = "ParseOrder"}) == "ParseOrder");
   assert(describe(stage_id{.key = "parse", .name = "ParseOrder"}) == "ParseOrder (parse)");
 
-  auto diagnostic = describe(error{.stage = {.key = "validate", .name = "ValidateOrder"},
-                                   .category = error_category::exception,
-                                   .message = "bad order"});
+  auto diagnostic_error = error{.stage = {.key = "validate", .name = "ValidateOrder"},
+                                .category = error_category::exception,
+                                .message = "bad order"};
+  assert(has_message(diagnostic_error));
+  auto diagnostic = describe(diagnostic_error);
   assert(diagnostic == "exception at ValidateOrder (validate): bad order");
 
-  auto message_less = describe(error{.category = error_category::contract_violation});
+  auto no_message_error = error{.category = error_category::contract_violation};
+  assert(!has_message(no_message_error));
+  auto message_less = describe(no_message_error);
   assert(message_less == "contract_violation at <unknown stage>");
 
   std::ostringstream stream;

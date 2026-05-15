@@ -19,9 +19,17 @@ auto category_name(error_category category) noexcept -> std::string_view {
   return "unknown";
 }
 
+auto has_stage(const stage_id& stage) noexcept -> bool {
+  return !stage.key.empty() || !stage.name.empty();
+}
+
+auto has_message(const error& value) noexcept -> bool {
+  return !value.message.empty();
+}
+
 auto describe(const stage_id& stage) -> std::string {
   if (stage.name.empty()) {
-    return stage.key.empty() ? std::string{"<unknown stage>"} : stage.key;
+    return has_stage(stage) ? stage.key : std::string{"<unknown stage>"};
   }
   if (stage.key.empty()) {
     return stage.name;
@@ -33,7 +41,7 @@ auto describe(const error& value) -> std::string {
   auto text = std::string{category_name(value.category)};
   text += " at ";
   text += describe(value.stage);
-  if (!value.message.empty()) {
+  if (has_message(value)) {
     text += ": ";
     text += value.message;
   }
