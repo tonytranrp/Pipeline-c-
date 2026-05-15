@@ -44,13 +44,25 @@
         "PB_BUILD_EXAMPLES": "ON",
         "PB_BUILD_BENCHMARKS": "OFF"
       }
+    },
+    {
+      "name": "bench-dev-ninja",
+      "displayName": "Benchmark Smoke (Ninja)",
+      "inherits": "dev-ninja",
+      "binaryDir": "${sourceDir}/build/bench-dev-ninja",
+      "cacheVariables": {
+        "PB_BUILD_TESTS": "OFF",
+        "PB_BUILD_EXAMPLES": "OFF",
+        "PB_BUILD_BENCHMARKS": "ON"
+      }
     }
   ],
   "buildPresets": [
     { "name": "dev-ninja", "configurePreset": "dev-ninja" },
     { "name": "clang-dev-ninja", "configurePreset": "clang-dev-ninja" },
     { "name": "clang-time-trace", "configurePreset": "clang-time-trace" },
-    { "name": "release-ninja", "configurePreset": "release-ninja" }
+    { "name": "release-ninja", "configurePreset": "release-ninja" },
+    { "name": "bench-dev-ninja", "configurePreset": "bench-dev-ninja" }
   ],
   "testPresets": [
     { "name": "dev-ninja", "configurePreset": "dev-ninja", "output": { "outputOnFailure": true } },
