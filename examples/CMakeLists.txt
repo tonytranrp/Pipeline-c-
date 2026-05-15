@@ -7,3 +7,12 @@ target_link_libraries(pb_error_diagnostic_example PRIVATE pb::pipeline)
 pb_apply_project_options(pb_error_diagnostic_example PRIVATE)
 
 add_test(NAME pb_example_basic_order_pipeline COMMAND pb_basic_order_pipeline)
+add_test(NAME pb_example_error_diagnostic_compile_fail
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/error_diagnostic.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DTEST_DEFINITIONS=PB_EXAMPLE_ENABLE_COMPILE_FAILURE
+    -DEXPECT_DIAGNOSTIC=Pipeline\ edge\ mismatch
+    -P ${PROJECT_SOURCE_DIR}/tests/run_compile_fail.cmake
+)
