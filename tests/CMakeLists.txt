@@ -29,6 +29,7 @@ set_tests_properties(pb_stage_info_compile_pass PROPERTIES LABELS "compile-pass;
 add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers.cpp
   compile_pass/public_headers/adapt_fn.cpp
+  compile_pass/public_headers/adapt_member.cpp
   compile_pass/public_headers/core_concepts.cpp
   compile_pass/public_headers/core_describe.cpp
   compile_pass/public_headers/core_fixed_string.cpp

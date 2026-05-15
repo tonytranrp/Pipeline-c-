@@ -28,6 +28,57 @@ constexpr std::string_view tag_value() noexcept {
     return std::string_view{"unnamed"};
   }
 }
+
+template <class T>
+struct member_object;
+
+template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...)> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) const> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) const&> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) const&&> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) &> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) &&> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) volatile> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) volatile&> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) volatile&&> {
+  using type = C;
+};
+
+template <class T>
+using member_object_t = typename member_object<T>::type;
 } // namespace adapt_detail
 
 template <class Tag>
@@ -37,6 +88,11 @@ struct name {
 
 template <auto Function>
 struct fn {
+  static constexpr auto value = Function;
+};
+
+template <auto Function>
+struct member {
   static constexpr auto value = Function;
 };
 
@@ -108,6 +164,27 @@ template <class NameTag, auto Function, class Input, class Output, class Error>
 struct adapt<name<NameTag>, fn<Function>, in<Input>, out<Output>, err<Error>>
     : function_stage<NameTag, Function, Input, Output, Error> {};
 
+template <class NameTag, auto Function, class Input, class Output, class Error>
+struct adapt<name<NameTag>, member<Function>, in<Input>, out<Output>, err<Error>> {
+  using name_tag = NameTag;
+  using input_type = Input;
+  using output_type = Output;
+  using error_type = Error;
+  using function_type = decltype(Function);
+  using member_type = adapt_detail::member_object_t<function_type>;
+
+  static constexpr std::string_view name = adapt_detail::tag_value<name_tag>();
+
+  static constexpr std::string_view stage_name() noexcept { return name; }
+
+  constexpr decltype(auto) operator()(input_type input) const
+      noexcept(noexcept(std::invoke(Function, member_type{}, std::move(input))))
+      requires std::default_initializable<member_type> && std::invocable<function_type, member_type, input_type>
+  {
+    return std::invoke(Function, member_type{}, std::move(input));
+  }
+};
+
 template <class NameTag, auto Function, class Input, class Output>
 struct adapt<name<NameTag>, fn<Function>, in<Input>, out<Output>>
     : function_stage<NameTag, Function, Input, Output> {};
@@ -115,6 +192,10 @@ struct adapt<name<NameTag>, fn<Function>, in<Input>, out<Output>>
 template <auto Function, class Input, class Output, class Error>
 struct adapt<fn<Function>, in<Input>, out<Output>, err<Error>>
     : function_stage<adapt_detail::unnamed_stage, Function, Input, Output, Error> {};
+
+template <auto Function, class Input, class Output, class Error>
+struct adapt<member<Function>, in<Input>, out<Output>, err<Error>>
+    : adapt<name<adapt_detail::unnamed_stage>, member<Function>, in<Input>, out<Output>, err<Error>> {};
 
 template <auto Function, class Input, class Output>
 struct adapt<fn<Function>, in<Input>, out<Output>>
@@ -139,6 +220,10 @@ struct adapt<functor<Functor>, in<Input>, out<Output>>
 template <auto Function, class Input, class Output, class Error = no_error,
           class NameTag = adapt_detail::unnamed_stage>
 using adapt_fn = adapt<name<NameTag>, fn<Function>, in<Input>, out<Output>, err<Error>>;
+
+template <auto Function, class Input, class Output, class Error = no_error,
+          class NameTag = adapt_detail::unnamed_stage>
+using adapt_member = adapt<name<NameTag>, member<Function>, in<Input>, out<Output>, err<Error>>;
 
 template <class Functor, class Input, class Output, class Error = no_error,
           class NameTag = adapt_detail::unnamed_stage>
