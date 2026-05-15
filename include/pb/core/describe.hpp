@@ -141,4 +141,7 @@ using pipeline_stage_t = typename pipeline_traits<Pipeline>::template stage_type
 template <ValidPipeline Pipeline, std::size_t Index>
 using pipeline_stage_descriptor_t = typename pipeline_traits<Pipeline>::template stage<Index>;
 
+template <ValidPipeline Pipeline, std::size_t Index>
+using pipeline_stage_error_t = typename pipeline_stage_descriptor_t<Pipeline, Index>::error_type;
+
 } // namespace pb::core

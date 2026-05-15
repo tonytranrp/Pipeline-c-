@@ -11,6 +11,7 @@ struct Done { int value{}; };
 struct Parse {
   using input_type = Raw;
   using output_type = Parsed;
+  struct error_type {};
   static constexpr auto key = pb::fixed_string{"order.parse"};
   static constexpr auto name = pb::fixed_string{"parse"};
   Parsed operator()(Raw raw) const { return {raw.value + 1}; }
@@ -42,6 +43,9 @@ static_assert(std::same_as<pb::pipeline_stage_t<Pipeline, 0>, Parse>);
 static_assert(std::same_as<pb::pipeline_stage_descriptor_t<Pipeline, 1>, Traits::stage<1>>);
 static_assert(std::same_as<Traits::stage<1>::input_type, Parsed>);
 static_assert(ParseDescriptor::index == 0);
+static_assert(std::same_as<ParseDescriptor::error_type, Parse::error_type>);
+static_assert(std::same_as<pb::pipeline_stage_error_t<Pipeline, 0>, Parse::error_type>);
+static_assert(std::same_as<pb::pipeline_stage_error_t<Pipeline, 1>, pb::no_error>);
 static_assert(ParseDescriptor::key() == std::string_view{"order.parse"});
 static_assert(ParseDescriptor::name() == std::string_view{"parse"});
 static_assert(pb::describe<Pipeline>().stage_count == 2);

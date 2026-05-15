@@ -32,6 +32,7 @@ using core::pipeline_size_v;
 using core::pipeline;
 using core::pipeline_state;
 using core::pipeline_stage_descriptor_t;
+using core::pipeline_stage_error_t;
 using core::pipeline_stages_t;
 using core::pipeline_stage_t;
 using core::pipeline_traits;
