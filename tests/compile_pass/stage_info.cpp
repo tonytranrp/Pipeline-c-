@@ -6,6 +6,7 @@
 struct Raw { int value{}; };
 struct Parsed { int value{}; };
 struct ParseError {};
+struct NotAStage {};
 
 struct Parse {
   using input_type = Raw;
@@ -18,6 +19,8 @@ struct Parse {
 using Info = pb::stage_info<Parse>;
 
 static_assert(Info::valid);
+static_assert(!pb::stage_info<NotAStage>::valid);
+static_assert(pb::stage_info<NotAStage>::name() == std::string_view{"<invalid>"});
 static_assert(std::same_as<Info::stage_type, Parse>);
 static_assert(std::same_as<Info::input_type, Raw>);
 static_assert(std::same_as<Info::output_type, Parsed>);
