@@ -7,6 +7,10 @@ project(
   LANGUAGES CXX
 )
 
+if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
+  message(FATAL_ERROR "In-source builds are not supported. Use a separate build directory, such as a CMake preset or `cmake -S . -B build/dev`.")
+endif()
+
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(cmake/PBCompilerOptions.cmake)
