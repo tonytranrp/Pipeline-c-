@@ -25,6 +25,30 @@ ctest --preset clang-dev-ninja --output-on-failure
 
 When touching examples or benchmark guidance, also run the relevant smoke targets from [Build and Verification](build.md). Record the preset, compiler, and build type with any benchmark timing because the benchmark targets are not release performance gates yet.
 
+## Package consumer smoke
+
+The installed package is expected to support downstream CMake consumers that use:
+
+```cmake
+find_package(pipebuilder CONFIG REQUIRED)
+target_link_libraries(your_target PRIVATE pb::pipeline)
+```
+
+`pb::pipeline` is the documented compatibility target for consumers. It forwards to the installed runtime target so users do not need to know whether the implementation is split between `pb::core` and `pb::runtime`.
+
+The package release preset in [Build and Verification](build.md) is the release-readiness gate for this contract. The `pb_package_config_smoke` test installs the current build into a temporary prefix, configures a separate consumer with `find_package(pipebuilder CONFIG REQUIRED)`, links that consumer to `pb::pipeline`, and builds it. Treat that test as the minimum package-consumer contract.
+
+## Release checklist
+
+Before cutting a release candidate, collect evidence for:
+
+- `cmake --list-presets=all` succeeds and the preset names are unique.
+- Debug and release Clang package presets configure, build, and pass CTest.
+- `pb_package_config_smoke` passes in the release package preset.
+- Benchmark smoke targets run, and any recorded numbers include the context listed in [Build and Verification](build.md).
+- Public examples still build/run, including the intentional compile-fail diagnostic example.
+- Known gaps below are either documented for the release or converted into blocking issues.
+
 ## Known gaps before a stable release
 
 - Branch, join, graph export, observer hooks, and optional backend execution are roadmap items, not current guarantees.
