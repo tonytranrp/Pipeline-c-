@@ -79,6 +79,28 @@ struct member_object<R (C::*)(Args...) volatile&&> {
 
 template <class T>
 using member_object_t = typename member_object<T>::type;
+
+template <class T>
+concept expected_like_result = requires(T value) {
+  typename std::remove_cvref_t<T>::value_type;
+  typename std::remove_cvref_t<T>::error_type;
+  { value.has_value() } -> std::convertible_to<bool>;
+  value.value();
+  value.error();
+};
+
+template <class Result, class Output>
+concept returns_declared_output = std::same_as<std::remove_cvref_t<Result>, Output> ||
+                                  (expected_like_result<Result> &&
+                                   std::same_as<typename std::remove_cvref_t<Result>::value_type, Output>);
+
+template <class Callable, class Input, class Output>
+concept invocable_as_output = std::invocable<Callable, Input> &&
+                              returns_declared_output<std::invoke_result_t<Callable, Input>, Output>;
+
+template <class Callable, class Object, class Input, class Output>
+concept member_invocable_as_output = std::invocable<Callable, Object, Input> &&
+                                     returns_declared_output<std::invoke_result_t<Callable, Object, Input>, Output>;
 } // namespace adapt_detail
 
 template <class Tag>
@@ -130,7 +152,8 @@ struct callable_stage {
 
   constexpr decltype(auto) operator()(input_type input) const
       noexcept(noexcept(std::invoke(callable_type{}, std::move(input))))
-      requires std::default_initializable<callable_type> && std::invocable<callable_type, input_type>
+      requires std::default_initializable<callable_type> &&
+               adapt_detail::invocable_as_output<callable_type, input_type, output_type>
   {
     return std::invoke(callable_type{}, std::move(input));
   }
@@ -151,7 +174,7 @@ struct function_stage {
 
   constexpr decltype(auto) operator()(input_type input) const
       noexcept(noexcept(std::invoke(function, std::move(input))))
-      requires std::invocable<function_type, input_type>
+      requires adapt_detail::invocable_as_output<function_type, input_type, output_type>
   {
     return std::invoke(function, std::move(input));
   }
@@ -179,7 +202,8 @@ struct adapt<name<NameTag>, member<Function>, in<Input>, out<Output>, err<Error>
 
   constexpr decltype(auto) operator()(input_type input) const
       noexcept(noexcept(std::invoke(Function, member_type{}, std::move(input))))
-      requires std::default_initializable<member_type> && std::invocable<function_type, member_type, input_type>
+      requires std::default_initializable<member_type> &&
+               adapt_detail::member_invocable_as_output<function_type, member_type, input_type, output_type>
   {
     return std::invoke(Function, member_type{}, std::move(input));
   }
