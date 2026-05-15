@@ -1,0 +1,14 @@
+
+/mnt/c/Users/Tonyt/Documents/GitHub/Pipeline-c++/.omx/team/pipeline-c-long-horiz-40b07f91/worktrees/worker-4/tests/compile_fail/adapt_fn_input_mismatch.cpp:9:19: error: static assertion failed: adapted stage requires callable signature to match declared input_type
+    9 | static_assert(pb::adapted_stage<BadAdaptedParse>,
+      |               ~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/mnt/c/Users/Tonyt/Documents/GitHub/Pipeline-c++/.omx/team/pipeline-c-long-horiz-40b07f91/worktrees/worker-4/tests/compile_fail/adapt_fn_input_mismatch.cpp:9:19: note: constraints not satisfied
+In file included from /mnt/c/Users/Tonyt/Documents/GitHub/Pipeline-c++/.omx/team/pipeline-c-long-horiz-40b07f91/worktrees/worker-4/include/pb/pipeline.hpp:3,
+                 from /mnt/c/Users/Tonyt/Documents/GitHub/Pipeline-c++/.omx/team/pipeline-c-long-horiz-40b07f91/worktrees/worker-4/tests/compile_fail/adapt_fn_input_mismatch.cpp:1:
+/mnt/c/Users/Tonyt/Documents/GitHub/Pipeline-c++/.omx/team/pipeline-c-long-horiz-40b07f91/worktrees/worker-4/include/pb/adapt/fn.hpp:148:9:   required by the constraints of ‘template<class Stage> concept pb::adapted_stage’
+/mnt/c/Users/Tonyt/Documents/GitHub/Pipeline-c++/.omx/team/pipeline-c-long-horiz-40b07f91/worktrees/worker-4/include/pb/adapt/fn.hpp:148:51:   in requirements with ‘Stage stage’, ‘typename Stage::input_type input’ [with Stage = pb::adapt<pb::name<pb::adapt_detail::unnamed_stage>, pb::fn<&parse_raw(Raw)>, pb::in<Parsed>, pb::out<Parsed>, pb::err<pb::no_error> >]
+/mnt/c/Users/Tonyt/Documents/GitHub/Pipeline-c++/.omx/team/pipeline-c-long-horiz-40b07f91/worktrees/worker-4/include/pb/adapt/fn.hpp:150:8: note: the required expression ‘stage(std::move(input))’ is invalid
+  150 |   stage(std::move(input));
+      |   ~~~~~^~~~~~~~~~~~~~~~~~
+cc1plus: note: set ‘-fconcepts-diagnostics-depth=’ to at least 2 for more detail
+
