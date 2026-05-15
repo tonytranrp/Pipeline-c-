@@ -21,6 +21,7 @@ option(PB_ENABLE_PCH "Enable precompiled headers for examples/tests that opt in"
 option(PB_ENABLE_IPO "Enable interprocedural optimization when supported" OFF)
 option(PB_ENABLE_CLANG_TIME_TRACE "Enable Clang -ftime-trace compile-time profiling" OFF)
 option(PB_ENABLE_CLANG_TIDY "Enable clang-tidy for compiled project targets when available" OFF)
+option(PB_ENABLE_PACKAGE_SMOKE "Enable CTest smoke coverage for the installed CMake package" ON)
 option(PB_BACKEND_TASKFLOW "Enable optional Taskflow backend integration" OFF)
 option(PB_BACKEND_TBB "Enable optional oneTBB backend integration" OFF)
 option(PB_BACKEND_STDEXEC "Enable experimental stdexec backend integration" OFF)
@@ -67,6 +68,20 @@ endif()
 
 if(PB_BUILD_TESTS)
   add_subdirectory(tests)
+endif()
+
+if(PB_BUILD_TESTS AND PB_ENABLE_PACKAGE_SMOKE)
+  configure_file(
+    "${PROJECT_SOURCE_DIR}/cmake/PBPackageSmoke.cmake.in"
+    "${PROJECT_BINARY_DIR}/PBPackageSmoke.cmake"
+    @ONLY
+  )
+  add_test(
+    NAME pb_package_config_smoke
+    COMMAND ${CMAKE_COMMAND}
+      -DPB_PACKAGE_SMOKE_CONFIG=$<CONFIG>
+      -P "${PROJECT_BINARY_DIR}/PBPackageSmoke.cmake"
+  )
 endif()
 
 if(PB_BUILD_BENCHMARKS)
