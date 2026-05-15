@@ -123,6 +123,15 @@ int main() {
 }
 ]=])
 
+# Must match the generated consumer executable targets above. Keeping the
+# contract explicit prevents the smoke from looking for a stale umbrella target
+# instead of the independent pb::core, pb::runtime, and pb::pipeline consumers.
+set(PB_PACKAGE_SMOKE_CONSUMER_EXECUTABLES
+  pipebuilder_core_target_smoke
+  pipebuilder_runtime_target_smoke
+  pipebuilder_pipeline_alias_smoke
+)
+
 set(PB_PACKAGE_SMOKE_CONFIGURE_ARGS
   -S "${PB_PACKAGE_SMOKE_CONSUMER_SOURCE_DIR}"
   -B "${PB_PACKAGE_SMOKE_CONSUMER_BINARY_DIR}"
@@ -167,12 +176,7 @@ if(NOT PB_PACKAGE_SMOKE_BUILD_RESULT EQUAL 0)
   )
 endif()
 
-set(PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATES)
-foreach(PB_PACKAGE_SMOKE_EXECUTABLE_NAME IN ITEMS
-  pipebuilder_core_target_smoke
-  pipebuilder_runtime_target_smoke
-  pipebuilder_pipeline_alias_smoke
-)
+foreach(PB_PACKAGE_SMOKE_EXECUTABLE_NAME IN LISTS PB_PACKAGE_SMOKE_CONSUMER_EXECUTABLES)
   set(PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATES)
   if(DEFINED PB_PACKAGE_SMOKE_BUILD_CONFIG AND NOT PB_PACKAGE_SMOKE_BUILD_CONFIG STREQUAL "")
     list(APPEND PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATES
