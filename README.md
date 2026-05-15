@@ -15,15 +15,35 @@ This first base follows `research/pipeline_builder_cpp_research_plan.md`:
 ## Configure, build, test
 
 ```sh
-cmake --preset clang-dev-ninja
-cmake --build --preset clang-dev-ninja
-ctest --preset clang-dev-ninja
-```
-
-If `clang++` is not on `PATH`, use the generic preset:
-
-```sh
 cmake --preset dev-ninja
 cmake --build --preset dev-ninja
 ctest --preset dev-ninja
+
+cmake --preset clang-dev-ninja
+cmake --build --preset clang-dev-ninja
+ctest --preset clang-dev-ninja
+
+cmake --preset clang-time-trace
+cmake --build --preset clang-time-trace
+ctest --preset clang-time-trace
+
+cmake --preset clang-tidy-ninja
+cmake --build --preset clang-tidy-ninja
+ctest --preset clang-tidy-ninja
+
+cmake --preset release-ninja
+cmake --build --preset release-ninja
+ctest --preset release-ninja
+
+cmake --preset package-dev-ninja
+cmake --build --preset package-dev-ninja
+ctest --preset package-dev-ninja
+```
+
+Benchmarks and package smoke:
+
+```sh
+cmake --preset bench-dev-ninja
+cmake --build --preset bench-dev-ninja
+cmake --build --preset package-dev-ninja --target package
 ```
