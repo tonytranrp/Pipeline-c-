@@ -7,7 +7,7 @@
 
 #include "pb/core/meta.hpp"
 #include "pb/core/validate.hpp"
-#include "pb/runtime/result.hpp"
+#include "pb/runtime/error.hpp"
 
 namespace pb::runtime {
 
@@ -20,16 +20,12 @@ template <class Stage>
   return stage_id{.name = std::string{pb::core::stage_traits<Stage>::name()}};
 }
 
-[[nodiscard]] inline auto has_stage_id(const stage_id& stage) noexcept -> bool {
-  return !stage.key.empty() || !stage.name.empty();
-}
-
 template <class Stage, class Error>
 [[nodiscard]] auto annotate_stage_error(Error&& source) {
   using ErrorType = std::remove_cvref_t<Error>;
   if constexpr (std::same_as<ErrorType, error>) {
     auto annotated = std::forward<Error>(source);
-    if (!has_stage_id(annotated.stage)) {
+    if (!has_stage(annotated.stage)) {
       annotated.stage = stage_id_for<Stage>();
     }
     return annotated;
