@@ -34,9 +34,9 @@ find_package(pipebuilder CONFIG REQUIRED)
 target_link_libraries(your_target PRIVATE pb::pipeline)
 ```
 
-`pb::pipeline` is the documented compatibility target for consumers. It forwards to the installed runtime target so users do not need to know whether the implementation is split between `pb::core` and `pb::runtime`.
+`pb::pipeline` remains the documented compatibility target for consumers that want the combined surface. The installed package also exports `pb::core` and `pb::runtime` for consumers that need the split targets directly, and `pb::pipeline` forwards to `pb::runtime`.
 
-The package release preset in [Build and Verification](build.md) is the release-readiness gate for this contract. The `pb_package_config_smoke` test installs the current build into a temporary prefix, configures a separate consumer with `find_package(pipebuilder CONFIG REQUIRED)`, links that consumer to `pb::pipeline`, and builds it. Treat that test as the minimum package-consumer contract.
+The package release preset in [Build and Verification](build.md) is the release-readiness gate for this contract. The `pb_package_config_smoke` test installs the current build into a temporary prefix, verifies that `find_package(pipebuilder CONFIG REQUIRED)` defines `pb::core`, `pb::runtime`, and `pb::pipeline`, then builds separate consumers against each imported target. Treat that test as the minimum package-consumer contract.
 
 ## Release checklist
 

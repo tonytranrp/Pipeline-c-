@@ -41,6 +41,8 @@ ctest --preset package-release-clang-ninja --output-on-failure
 cmake --build --preset package-release-clang-ninja --target package
 ```
 
+In that release package lane, `pb_package_config_smoke` installs the build into a temporary prefix, checks that `find_package(pipebuilder CONFIG REQUIRED)` defines `pb::core`, `pb::runtime`, and `pb::pipeline`, and builds separate consumers against each imported target.
+
 `PB_ENABLE_CLANG_TIME_TRACE=ON` is available through the `clang-time-trace` preset for compile-time profiling. Optional backend flags are present but intentionally off in the base scaffold.
 
 ## Benchmark smoke targets
