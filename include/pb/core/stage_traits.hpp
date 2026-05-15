@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <string_view>
 #include <type_traits>
 
@@ -10,6 +11,19 @@ struct no_error {};
 namespace pb::core {
 
 namespace detail {
+template <class Name>
+[[nodiscard]] constexpr std::string_view name_to_string_view(const Name& name) noexcept {
+  if constexpr (std::convertible_to<Name, std::string_view>) {
+    return std::string_view{name};
+  } else if constexpr (requires { name.view(); }) {
+    return name.view();
+  } else if constexpr (requires { name.c_str(); name.size(); }) {
+    return std::string_view{name.c_str(), name.size()};
+  } else {
+    return std::string_view{"<unnamed>"};
+  }
+}
+
 template <class T, class = void>
 struct error_type_or {
   using type = pb::no_error;
@@ -36,7 +50,7 @@ struct stage_traits<T, std::void_t<typename T::input_type, typename T::output_ty
 
   [[nodiscard]] static constexpr std::string_view name() noexcept {
     if constexpr (requires { T::name; }) {
-      return std::string_view{T::name};
+      return detail::name_to_string_view(T::name);
     } else if constexpr (requires { T::stage_name(); }) {
       return std::string_view{T::stage_name()};
     } else {

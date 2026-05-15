@@ -3,6 +3,12 @@ target_link_libraries(pb_smoke_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_smoke_compile_pass PRIVATE)
 add_test(NAME pb_smoke_compile_pass COMMAND pb_smoke_compile_pass)
 
+
+add_executable(pb_describe_compile_pass compile_pass/describe_pipeline.cpp)
+target_link_libraries(pb_describe_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_describe_compile_pass PRIVATE)
+add_test(NAME pb_describe_compile_pass COMMAND pb_describe_compile_pass)
+
 add_executable(pb_runtime_smoke runtime/sequential_smoke.cpp)
 target_link_libraries(pb_runtime_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_smoke PRIVATE)
