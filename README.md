@@ -20,7 +20,7 @@ This first base follows `research/pipeline_builder_cpp_research_plan.md`:
 - [Production Readiness Status](docs/production-readiness.md) tracks supported capabilities, known release gaps, and the package-consumer release gate.
 - [Graph Export Roadmap / Status](docs/graph-export-roadmap.md) explains why graph export is still roadmap-only and what must land before docs can present it as supported.
 
-For package consumers, the release-readiness path is the `package-release-clang-ninja` configure, build, CTest, and package target sequence below. That CTest run includes `pb_package_config_smoke`, which installs the package into a temporary prefix, verifies that `find_package(pipebuilder CONFIG REQUIRED)` exposes `pb::core`, `pb::runtime`, and the `pb::pipeline` compatibility target, and builds separate downstream consumers against each target.
+For package consumers, the release-readiness path is the `package-release-clang-ninja` configure, build, CTest, and package target sequence below. That CTest run includes `pb_package_config_smoke`, which is intended to install the package into a temporary prefix, verify that `find_package(pipebuilder CONFIG REQUIRED)` exposes `pb::core`, `pb::runtime`, and the `pb::pipeline` compatibility target, and build separate downstream consumers against each target. The current package-consumer walkthrough records a known smoke-script blocker around the generated executable name; do not treat the package lane as release-green until that blocker is fixed and the preset passes freshly.
 
 ## Configure, build, test
 
@@ -59,10 +59,12 @@ ctest --preset package-release-clang-ninja
 cmake --build --preset package-release-clang-ninja --target package
 ```
 
-Benchmarks and package smoke:
+Benchmarks and package smoke scaffolding:
 
 ```sh
 cmake --preset bench-dev-ninja
 cmake --build --preset bench-dev-ninja
+ctest --preset bench-dev-ninja -R '^pb_bench_' --output-on-failure
+
 cmake --build --preset package-dev-ninja --target package
 ```

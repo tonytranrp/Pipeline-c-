@@ -15,6 +15,7 @@ The project uses CMake 3.23+ and C++20. Prefer Ninja and Clang for local develop
 | `package-release-clang-ninja` | Release Clang package/install smoke. |
 | `bench-dev-ninja` | Debug benchmark smoke targets. |
 | `benchmark-ninja` | Release benchmark smoke targets. |
+| `warnings-as-errors-ninja` | Warning-policy smoke build with project warnings promoted to errors. |
 
 Use the Clang debug preset for the normal local loop:
 
@@ -41,7 +42,7 @@ ctest --preset package-release-clang-ninja --output-on-failure
 cmake --build --preset package-release-clang-ninja --target package
 ```
 
-In that release package lane, `pb_package_config_smoke` installs the build into a temporary prefix, checks that `find_package(pipebuilder CONFIG REQUIRED)` defines `pb::core`, `pb::runtime`, and `pb::pipeline`, and builds separate consumers against each imported target.
+In that release package lane, `pb_package_config_smoke` is intended to install the build into a temporary prefix, check that `find_package(pipebuilder CONFIG REQUIRED)` defines `pb::core`, `pb::runtime`, and `pb::pipeline`, and build separate consumers against each imported target. The current package-consumer walkthrough records the known release blocker: the generated consumer builds target-specific executables, while the smoke script still searches for `pipebuilder_package_smoke`. Treat a failing `pb_package_config_smoke` result as a packaging verification blocker, not as passing package evidence.
 
 `PB_ENABLE_CLANG_TIME_TRACE=ON` is available through the `clang-time-trace` preset for compile-time profiling. Optional backend flags are present but intentionally off in the base scaffold.
 
