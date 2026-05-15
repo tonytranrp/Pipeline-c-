@@ -41,6 +41,34 @@ template <class Stage>
   return stage_id_for<Stage>(stage_index);
 }
 
+template <class Stage, class Error>
+[[nodiscard]] auto observer_error_for(std::size_t stage_index, const Error& value, error_category fallback_category)
+    -> error {
+  using ErrorType = std::remove_cvref_t<Error>;
+  if constexpr (std::same_as<ErrorType, error>) {
+    auto annotated = value;
+    if (!has_stage(annotated.stage)) {
+      annotated.stage = stage_id_for<Stage>(stage_index);
+    }
+    return annotated;
+  } else if constexpr (requires(const ErrorType& source) {
+                         { source.diagnostic } -> std::convertible_to<error>;
+                       }) {
+    auto annotated = error{value.diagnostic};
+    if (!has_stage(annotated.stage)) {
+      annotated.stage = stage_id_for<Stage>(stage_index);
+    }
+    if (!has_message(annotated)) {
+      annotated.message = detail::error_message_from(value);
+    }
+    return annotated;
+  } else {
+    return error{.stage = stage_id_for<Stage>(stage_index),
+                 .category = fallback_category,
+                 .message = detail::error_message_from(value)};
+  }
+}
+
 template <class Stage>
 void notify_stage_start(observer* sink, std::size_t stage_index) {
   if (sink != nullptr) {
@@ -58,14 +86,16 @@ void notify_stage_success(observer* sink, std::size_t stage_index) {
 template <class Stage, class Error>
 void notify_stage_failure(observer* sink, std::size_t stage_index, const Error& value) {
   if (sink != nullptr) {
-    sink->on_stage_failure(stage_identity<Stage>(stage_index), value);
+    sink->on_stage_failure(stage_identity<Stage>(stage_index),
+                           observer_error_for<Stage>(stage_index, value, error_category::stage_failure));
   }
 }
 
 template <class Stage, class Error>
 void notify_stage_exception(observer* sink, std::size_t stage_index, const Error& value) {
   if (sink != nullptr) {
-    sink->on_stage_exception(stage_identity<Stage>(stage_index), value);
+    sink->on_stage_exception(stage_identity<Stage>(stage_index),
+                             observer_error_for<Stage>(stage_index, value, error_category::exception));
   }
 }
 
