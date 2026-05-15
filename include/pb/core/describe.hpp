@@ -17,6 +17,19 @@ struct stage_record {
   std::string_view name{};
 };
 
+template <std::size_t StageCount>
+struct pipeline_descriptor_view {
+  static constexpr std::size_t stage_count = StageCount;
+  static constexpr bool empty = StageCount == 0;
+
+  std::array<stage_record, StageCount> stages{};
+
+  [[nodiscard]] constexpr auto stage_records() const noexcept
+      -> const std::array<stage_record, StageCount>& {
+    return stages;
+  }
+};
+
 template <std::size_t Index, class StageType>
 struct stage_descriptor {
   using stage_type = StageType;
@@ -86,6 +99,8 @@ struct pipeline_descriptor {
   static constexpr std::size_t stage_count = traits::stage_count;
   static constexpr bool empty = traits::empty;
 
+  using view_type = pipeline_descriptor_view<stage_count>;
+
   template <std::size_t Index>
   using stage = typename traits::template stage<Index>;
 
@@ -113,11 +128,20 @@ struct pipeline_descriptor {
   [[nodiscard]] static constexpr auto stage_records() noexcept -> std::array<stage_record, stage_count> {
     return detail::stage_records(stages{}, std::make_index_sequence<stage_count>{});
   }
+
+  [[nodiscard]] static constexpr auto view() noexcept -> view_type {
+    return view_type{stage_records()};
+  }
 };
 
 template <ValidPipeline Pipeline>
 [[nodiscard]] constexpr auto describe() noexcept -> pipeline_descriptor<Pipeline> {
   return {};
+}
+
+template <ValidPipeline Pipeline>
+[[nodiscard]] constexpr auto descriptor_view() noexcept -> typename pipeline_descriptor<Pipeline>::view_type {
+  return pipeline_descriptor<Pipeline>::view();
 }
 
 template <ValidPipeline Pipeline>
