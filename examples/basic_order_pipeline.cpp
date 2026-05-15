@@ -1,5 +1,12 @@
 #include <pb/pipeline.hpp>
 
+#if PB_EXAMPLE_HAS_PIPELINE_CORE && __has_include(<pb/runtime/sequential.hpp>)
+#include <pb/runtime/sequential.hpp>
+#define PB_EXAMPLE_HAS_SEQUENTIAL_RUNTIME 1
+#else
+#define PB_EXAMPLE_HAS_SEQUENTIAL_RUNTIME 0
+#endif
+
 #include <string>
 #include <utility>
 
