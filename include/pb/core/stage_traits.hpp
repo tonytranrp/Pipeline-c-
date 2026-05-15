@@ -88,6 +88,9 @@ struct stage_info<T, std::enable_if_t<stage_traits<T>::is_valid_stage>> {
 };
 
 template <class T>
+using stage_info_t = stage_info<T>;
+
+template <class T>
 using stage_input_t = typename stage_info<T>::input_type;
 
 template <class T>

@@ -34,6 +34,7 @@ static_assert(pb::ValidPipeline<Pipeline>);
 static_assert(pb::valid<Pipeline>);
 static_assert(pb::is_pipeline_v<Pipeline>);
 static_assert(std::same_as<pb::stage_info<Parse>::input_type, Raw>);
+static_assert(std::same_as<pb::stage_info_t<Parse>, pb::stage_info<Parse>>);
 static_assert(std::same_as<pb::stage_input_t<Parse>, Raw>);
 static_assert(std::same_as<pb::stage_output_t<Parse>, Parsed>);
 static_assert(std::same_as<pb::stage_error_t<Parse>, ParseError>);
