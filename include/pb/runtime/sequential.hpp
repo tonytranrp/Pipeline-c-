@@ -31,15 +31,16 @@ template <class FinalOutput, class Error, class Input>
 template <class FinalOutput, class Error, class Input, class Stage, class... Rest>
 [[nodiscard]] auto run_after_result(Input&& input) -> result<FinalOutput, Error> {
   auto stage_result = Stage{}(std::forward<Input>(input));
-  if constexpr (is_result_v<decltype(stage_result)>) {
-    if (!stage_result.has_value()) {
-      return result<FinalOutput, Error>{convert_error<Error>(std::move(stage_result).error())};
+  if constexpr (expected_like<decltype(stage_result)>) {
+    auto normalized_result = to_result(std::move(stage_result));
+    if (!normalized_result.has_value()) {
+      return result<FinalOutput, Error>{convert_error<Error>(std::move(normalized_result).error())};
     }
     if constexpr (sizeof...(Rest) == 0) {
-      return result<FinalOutput, Error>{std::move(stage_result).value()};
+      return result<FinalOutput, Error>{std::move(normalized_result).value()};
     } else {
-      return run_after_result<FinalOutput, Error, decltype(std::move(stage_result).value()), Rest...>(
-          std::move(stage_result).value());
+      return run_after_result<FinalOutput, Error, decltype(std::move(normalized_result).value()), Rest...>(
+          std::move(normalized_result).value());
     }
   } else if constexpr (sizeof...(Rest) == 0) {
     return result<FinalOutput, Error>{std::move(stage_result)};
@@ -56,17 +57,18 @@ template <class FinalOutput, class Input>
 template <class FinalOutput, class Input, class Stage, class... Rest>
 [[nodiscard]] decltype(auto) run_stages(Input&& input) {
   auto stage_result = Stage{}(std::forward<Input>(input));
-  if constexpr (is_result_v<decltype(stage_result)>) {
-    using StageResult = std::remove_cvref_t<decltype(stage_result)>;
+  if constexpr (expected_like<decltype(stage_result)>) {
+    auto normalized_result = to_result(std::move(stage_result));
+    using StageResult = std::remove_cvref_t<decltype(normalized_result)>;
     using Error = typename StageResult::error_type;
-    if (!stage_result.has_value()) {
-      return result<FinalOutput, Error>{std::move(stage_result).error()};
+    if (!normalized_result.has_value()) {
+      return result<FinalOutput, Error>{std::move(normalized_result).error()};
     }
     if constexpr (sizeof...(Rest) == 0) {
-      return result<FinalOutput, Error>{std::move(stage_result).value()};
+      return result<FinalOutput, Error>{std::move(normalized_result).value()};
     } else {
-      return run_after_result<FinalOutput, Error, decltype(std::move(stage_result).value()), Rest...>(
-          std::move(stage_result).value());
+      return run_after_result<FinalOutput, Error, decltype(std::move(normalized_result).value()), Rest...>(
+          std::move(normalized_result).value());
     }
   } else if constexpr (sizeof...(Rest) == 0) {
     return stage_result;
