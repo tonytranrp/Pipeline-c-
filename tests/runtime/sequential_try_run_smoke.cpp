@@ -27,6 +27,8 @@ struct MaybeThrowingDouble {
   using input_type = Middle;
   using output_type = Output;
 
+  static constexpr auto stage_name() noexcept { return "maybe_throwing_double"; }
+
   Output operator()(Middle input) const {
     if (input.value < 0) {
       throw std::runtime_error{"negative middle"};
@@ -63,6 +65,7 @@ int main() {
   auto exception = throwing_engine.try_run(Input{-2});
   assert(!exception.has_value());
   assert(exception.error().category == pb::runtime::error_category::exception);
+  assert(exception.error().stage.name == "maybe_throwing_double");
   assert(exception.error().message == "negative middle");
 
   auto result_engine = pb::compile<ResultPipeline>(pb::runtime::sequential{});

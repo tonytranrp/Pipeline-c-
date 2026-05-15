@@ -53,6 +53,58 @@ template <class FinalOutput, class Error, class Input>
   return result<FinalOutput, Error>{std::forward<Input>(input)};
 }
 
+template <class Stage>
+[[nodiscard]] auto exception_error(const std::exception& exception) -> error {
+  return error{.stage = stage_id_for<Stage>(),
+               .category = error_category::exception,
+               .message = exception.what()};
+}
+
+template <class Stage>
+[[nodiscard]] auto unknown_exception_error() -> error {
+  return error{.stage = stage_id_for<Stage>(),
+               .category = error_category::exception,
+               .message = "stage threw an unknown exception"};
+}
+
+template <class Stage, class StageResult>
+[[nodiscard]] auto normalize_stage_error(StageResult&& stage_result) -> error {
+  auto normalized_error = detail::normalize_expected_error(std::forward<StageResult>(stage_result).error());
+  return annotate_stage_error<Stage>(std::move(normalized_error));
+}
+
+template <class FinalOutput, class Input>
+[[nodiscard]] auto try_run_after_result(Input&& input) -> result<FinalOutput> {
+  return result<FinalOutput>{std::forward<Input>(input)};
+}
+
+template <class FinalOutput, class Input, class Stage, class... Rest>
+[[nodiscard]] auto try_run_after_result(Input&& input) -> result<FinalOutput> {
+  try {
+    auto stage_result = Stage{}(std::forward<Input>(input));
+    if constexpr (expected_like<decltype(stage_result)>) {
+      auto normalized_result = to_result(std::move(stage_result));
+      if (!normalized_result.has_value()) {
+        return result<FinalOutput>{normalize_stage_error<Stage>(std::move(normalized_result))};
+      }
+      if constexpr (sizeof...(Rest) == 0) {
+        return result<FinalOutput>{std::move(normalized_result).value()};
+      } else {
+        return try_run_after_result<FinalOutput, decltype(std::move(normalized_result).value()), Rest...>(
+            std::move(normalized_result).value());
+      }
+    } else if constexpr (sizeof...(Rest) == 0) {
+      return result<FinalOutput>{std::move(stage_result)};
+    } else {
+      return try_run_after_result<FinalOutput, decltype(stage_result), Rest...>(std::move(stage_result));
+    }
+  } catch (const std::exception& exception) {
+    return result<FinalOutput>{exception_error<Stage>(exception)};
+  } catch (...) {
+    return result<FinalOutput>{unknown_exception_error<Stage>()};
+  }
+}
+
 template <class FinalOutput, class Error, class Input, class Stage, class... Rest>
 [[nodiscard]] auto run_after_result(Input&& input) -> result<FinalOutput, Error> {
   auto stage_result = Stage{}(std::forward<Input>(input));
@@ -118,26 +170,10 @@ public:
   }
 
   [[nodiscard]] auto try_run(Input input) const -> result<Output> {
-    try {
-      if constexpr (sizeof...(Stages) == 0) {
-        return result<Output>{std::move(input)};
-      } else {
-        auto run_result = run(std::move(input));
-        if constexpr (expected_like<decltype(run_result)>) {
-          auto normalized_result = to_result(std::move(run_result));
-          if (normalized_result.has_value()) {
-            return result<Output>{std::move(normalized_result).value()};
-          }
-          return result<Output>{detail::normalize_expected_error(std::move(normalized_result).error())};
-        } else {
-          return result<Output>{std::move(run_result)};
-        }
-      }
-    } catch (const std::exception& exception) {
-      return result<Output>{error{.category = error_category::exception, .message = exception.what()}};
-    } catch (...) {
-      return result<Output>{error{.category = error_category::exception,
-                                  .message = "stage threw an unknown exception"}};
+    if constexpr (sizeof...(Stages) == 0) {
+      return result<Output>{std::move(input)};
+    } else {
+      return try_run_after_result<Output, Input, Stages...>(std::move(input));
     }
   }
 };
