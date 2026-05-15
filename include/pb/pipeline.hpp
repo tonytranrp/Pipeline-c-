@@ -40,6 +40,7 @@ using core::stage_descriptor;
 using core::stage_error_t;
 using core::stage_info;
 using core::stage_info_t;
+using core::stage_key;
 using core::stage_record;
 using core::stage_input_t;
 using core::stage_name;
