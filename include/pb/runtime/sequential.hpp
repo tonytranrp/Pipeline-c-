@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #include <type_traits>
 #include <utility>
 
@@ -88,6 +89,30 @@ public:
       return input;
     } else {
       return run_stages<Output, Input, Stages...>(std::move(input));
+    }
+  }
+
+  [[nodiscard]] auto try_run(Input input) const -> result<Output> {
+    try {
+      if constexpr (sizeof...(Stages) == 0) {
+        return result<Output>{std::move(input)};
+      } else {
+        auto run_result = run(std::move(input));
+        if constexpr (expected_like<decltype(run_result)>) {
+          auto normalized_result = to_result(std::move(run_result));
+          if (normalized_result.has_value()) {
+            return result<Output>{std::move(normalized_result).value()};
+          }
+          return result<Output>{detail::normalize_expected_error(std::move(normalized_result).error())};
+        } else {
+          return result<Output>{std::move(run_result)};
+        }
+      }
+    } catch (const std::exception& exception) {
+      return result<Output>{error{.category = error_category::exception, .message = exception.what()}};
+    } catch (...) {
+      return result<Output>{error{.category = error_category::exception,
+                                  .message = "stage threw an unknown exception"}};
     }
   }
 };

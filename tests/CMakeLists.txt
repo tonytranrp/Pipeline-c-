@@ -46,6 +46,11 @@ target_link_libraries(pb_runtime_sequential_expected_like_smoke PRIVATE pb::pipe
 pb_apply_project_options(pb_runtime_sequential_expected_like_smoke PRIVATE)
 add_test(NAME pb_runtime_sequential_expected_like_smoke COMMAND pb_runtime_sequential_expected_like_smoke)
 
+add_executable(pb_runtime_sequential_try_run_smoke runtime/sequential_try_run_smoke.cpp)
+target_link_libraries(pb_runtime_sequential_try_run_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_sequential_try_run_smoke PRIVATE)
+add_test(NAME pb_runtime_sequential_try_run_smoke COMMAND pb_runtime_sequential_try_run_smoke)
+
 add_test(NAME pb_compile_fail_edge_mismatch
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/edge_mismatch.cpp
