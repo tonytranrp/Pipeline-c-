@@ -14,14 +14,15 @@ namespace pb::core {
 template <std::size_t Index, class StageType>
 struct stage_descriptor {
   using stage_type = StageType;
-  using input_type = stage_input_t<StageType>;
-  using output_type = stage_output_t<StageType>;
-  using error_type = stage_error_t<StageType>;
+  using info = stage_info<StageType>;
+  using input_type = typename info::input_type;
+  using output_type = typename info::output_type;
+  using error_type = typename info::error_type;
 
   static constexpr std::size_t index = Index;
 
   [[nodiscard]] static constexpr std::string_view name() noexcept {
-    return stage_traits<StageType>::name();
+    return info::name();
   }
 };
 

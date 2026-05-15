@@ -34,6 +34,7 @@ static_assert(std::same_as<Traits::output_type, Done>);
 static_assert(std::same_as<Traits::stage_type<0>, Parse>);
 static_assert(std::same_as<Traits::stage<1>::input_type, Parsed>);
 static_assert(ParseDescriptor::index == 0);
+static_assert(std::same_as<ParseDescriptor::info, pb::stage_info<Parse>>);
 static_assert(ParseDescriptor::name() == std::string_view{"parse"});
 static_assert(pb::describe<Pipeline>().stage_count == 2);
 static_assert(pb::describe<Pipeline>().stage_name<0>() == std::string_view{"parse"});
