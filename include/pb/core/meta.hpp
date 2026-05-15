@@ -107,10 +107,10 @@ struct at {
 template <typename List, std::size_t N>
 using at_t = typename at<List, N>::type;
 
-template <typename List>
+template <typename T, typename List>
 struct index_of;
 
-template <typename List>
+template <typename T, typename List>
 struct index_of_impl;
 
 namespace detail {
@@ -128,7 +128,7 @@ struct find_index_impl<T, type_list<Head, Tail...>, I>
 }  // namespace detail
 
 template <typename T, typename List>
-struct index_of<T, List> : detail::find_index_impl<T, List, 0> {};
+struct index_of : detail::find_index_impl<T, List, 0> {};
 
 }  // namespace meta
 
