@@ -171,9 +171,9 @@ template <class T>
   } else if constexpr (expected_like<Value>) {
     using Output = typename Value::value_type;
     if (value.has_value()) {
-      return result<Output>{value.value()};
+      return result<Output>{std::forward<T>(value).value()};
     }
-    return result<Output>{detail::normalize_expected_error(value.error())};
+    return result<Output>{detail::normalize_expected_error(std::forward<T>(value).error())};
   } else {
     using Output = std::remove_cvref_t<T>;
     return result<Output>{std::forward<T>(value)};

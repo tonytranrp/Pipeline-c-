@@ -1,6 +1,7 @@
 #include "pb/runtime/result.hpp"
 
 #include <cassert>
+#include <memory>
 #include <string>
 
 int main()
@@ -50,6 +51,28 @@ int main()
     auto converted = to_result(fake_expected{.ok = false, .error_ = "bad"});
     assert(!converted.has_value());
     assert(converted.error().category == error_category::expected_error);
+
+    struct move_only_expected {
+        using value_type = std::unique_ptr<int>;
+        using error_type = std::string;
+        bool ok{};
+        std::unique_ptr<int> value_{};
+        std::string error_{};
+
+        bool has_value() const { return ok; }
+        std::unique_ptr<int>& value() & { return value_; }
+        std::unique_ptr<int>&& value() && { return std::move(value_); }
+        std::string& error() & { return error_; }
+        std::string&& error() && { return std::move(error_); }
+    };
+
+    auto moved_value = to_result(move_only_expected{.ok = true, .value_ = std::make_unique<int>(21)});
+    assert(moved_value.has_value());
+    assert(*moved_value.value() == 21);
+
+    auto moved_error = to_result(move_only_expected{.ok = false, .error_ = "move-only bad"});
+    assert(!moved_error.has_value());
+    assert(moved_error.error().message == "move-only bad");
 
     auto built = make_result(13);
     assert(built.has_value());
