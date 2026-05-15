@@ -109,7 +109,7 @@ add_test(NAME pb_runtime_sequential_run_exception_smoke COMMAND pb_runtime_seque
 set_tests_properties(pb_runtime_sequential_run_exception_smoke PROPERTIES LABELS "runtime;result")
 
 add_executable(pb_runtime_sequential_observer_smoke runtime/sequential_observer_smoke.cpp)
-target_link_libraries(pb_runtime_sequential_sequential_observer_smoke PRIVATE pb::pipeline)
+target_link_libraries(pb_runtime_sequential_observer_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_sequential_observer_smoke PRIVATE)
 add_test(NAME pb_runtime_sequential_observer_smoke COMMAND pb_runtime_sequential_observer_smoke)
 set_tests_properties(pb_runtime_sequential_observer_smoke PROPERTIES LABELS "runtime;observer")

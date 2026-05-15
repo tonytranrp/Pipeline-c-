@@ -83,12 +83,13 @@ int main() {
     engine.set_observer(&observer);
 
     auto output = engine.run(Input{20});
-    assert(output.value == 42);
+    assert(output.has_value());
+    assert(output.value().value == 42);
     assert((observer.events == std::vector<std::string>{
                 "start:add_one/add_one",
                 "success:add_one/add_one",
-                "start:checked_double:math.double",
-                "success:checked_double:math.double",
+                "start:checked_double/math.double",
+                "success:checked_double/math.double",
             }));
   }
 
@@ -103,8 +104,8 @@ int main() {
     assert((observer.events == std::vector<std::string>{
                 "start:add_one/add_one",
                 "success:add_one/add_one",
-                "start:checked_double:math.double",
-                "failure:checked_double:math.double:zero middle",
+                "start:checked_double/math.double",
+                "failure:checked_double/math.double:zero middle",
             }));
   }
 
@@ -124,8 +125,8 @@ int main() {
     assert((observer.events == std::vector<std::string>{
                 "start:add_one/add_one",
                 "success:add_one/add_one",
-                "start:throwing_stage:throwing_stage",
-                "exception:throwing_stage:throwing_stage:boom",
+                "start:throwing_stage/throwing_stage",
+                "exception:throwing_stage/throwing_stage:boom",
             }));
   }
 
