@@ -6,6 +6,18 @@ The project uses CMake 3.23+ and C++20. Prefer Ninja and Clang for local develop
 cmake --preset clang-dev-ninja
 cmake --build --preset clang-dev-ninja
 ctest --preset clang-dev-ninja
+
+cmake --preset clang-tidy-ninja
+cmake --build --preset clang-tidy-ninja
+ctest --preset clang-tidy-ninja
+
+cmake --preset bench-dev-ninja
+cmake --build --preset bench-dev-ninja
+
+cmake --preset package-dev-ninja
+cmake --build --preset package-dev-ninja
+ctest --preset package-dev-ninja
+cmake --build --preset package-dev-ninja --target package
 ```
 
 `PB_ENABLE_CLANG_TIME_TRACE=ON` is available through the `clang-time-trace` preset for compile-time profiling. Optional backend flags are present but intentionally off in the base scaffold.
