@@ -4,7 +4,7 @@ Compile-time validated C++20 pipeline builder foundation.
 
 This first base follows `research/pipeline_builder_cpp_research_plan.md`:
 
-- target-based CMake project (`pb::core`, `pb::runtime`, `pb::pipeline`)
+- target-based CMake project (`pb::core`, `pb::runtime`, plus `pb::pipeline` compatibility target)
 - LLVM/Clang-friendly presets and `compile_commands.json`
 - public `.hpp` headers under `include/pb/`
 - implementation files under `src/`
