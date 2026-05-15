@@ -36,11 +36,13 @@ struct parse_order { static constexpr auto value = "parse_order"; };
 struct validate_order { static constexpr auto value = "validate_order"; };
 } // namespace stage_names
 
-using ParseOrder = pb::adapt_fn<legacy::parse_order, domain::RawText, domain::OrderDraft,
-                                domain::ParseError, stage_names::parse_order>;
-using ValidateOrder = pb::adapt_functor<legacy::validate_order, domain::OrderDraft,
-                                        domain::ValidatedOrder, domain::ValidationError,
-                                        stage_names::validate_order>;
+using ParseOrder = pb::adapt<pb::name<stage_names::parse_order>, pb::fn<legacy::parse_order>,
+                             pb::in<domain::RawText>, pb::out<domain::OrderDraft>,
+                             pb::err<domain::ParseError>>;
+using ValidateOrder = pb::adapt<pb::name<stage_names::validate_order>,
+                                pb::functor<legacy::validate_order>, pb::in<domain::OrderDraft>,
+                                pb::out<domain::ValidatedOrder>,
+                                pb::err<domain::ValidationError>>;
 
 struct PersistOrder {
   using input_type = domain::ValidatedOrder;

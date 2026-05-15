@@ -20,8 +20,9 @@ namespace stage_names {
 struct parse_order { static constexpr auto value = "parse_order"; };
 } // namespace stage_names
 
-using ParseOrder = pb::adapt_fn<legacy::parse_order, domain::RawText, domain::OrderDraft,
-                                domain::ParseError, stage_names::parse_order>;
+using ParseOrder = pb::adapt<pb::name<stage_names::parse_order>, pb::fn<legacy::parse_order>,
+                             pb::in<domain::RawText>, pb::out<domain::OrderDraft>,
+                             pb::err<domain::ParseError>>;
 
 struct PersistOrder {
   using input_type = domain::Receipt; // Intentional mismatch: ParseOrder produces OrderDraft.

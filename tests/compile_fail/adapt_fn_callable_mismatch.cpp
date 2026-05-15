@@ -6,7 +6,10 @@ struct Receipt {};
 
 Parsed parse_receipt(Receipt) { return {}; }
 
-using BrokenAdaptedStage = pb::adapt_fn<&parse_receipt, Raw, Parsed>;
+struct parse_receipt_stage { static constexpr auto value = "parse_receipt"; };
+
+using BrokenAdaptedStage = pb::adapt<pb::name<parse_receipt_stage>, pb::fn<parse_receipt>,
+                                     pb::in<Raw>, pb::out<Parsed>>;
 
 static_assert(pb::Stage<BrokenAdaptedStage>);
 static_assert(pb::connectable_v<Raw, BrokenAdaptedStage>);

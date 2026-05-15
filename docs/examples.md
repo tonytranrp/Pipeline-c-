@@ -7,7 +7,7 @@ The examples are intentionally small and mirror the current supported API. Use t
 `examples/basic_order_pipeline.cpp` demonstrates the happy path:
 
 1. Define domain input/output types (`RawText`, `OrderDraft`, `ValidatedOrder`, `Receipt`).
-2. Adapt legacy callables with `pb::adapt_fn` or `pb::adapt_functor` when the callable already exists outside the pipeline library.
+2. Adapt legacy callables with the explicit `pb::adapt<pb::name<...>, pb::fn<...>, pb::in<...>, pb::out<...>, pb::err<...>>` shape (or `pb::functor<...>` for function objects) when the callable already exists outside the pipeline library.
 3. Define any new stage as a type with `input_type`, `output_type`, `error_type`, `stage_name()`, and `operator()`.
 4. Compose the chain with `pb::from<T>::then<S>::to<U>`.
 5. Guard the chain with `static_assert(pb::valid<Pipeline>)`.
