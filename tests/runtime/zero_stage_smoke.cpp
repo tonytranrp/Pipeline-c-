@@ -22,6 +22,16 @@ static_assert(pb::describe<Pipeline>().stage_records().empty());
 
 int main() {
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
+
   auto output = engine.run(Input{17});
-  return output.value == 17 ? 0 : 1;
+  if (output.value != 17) {
+    return 1;
+  }
+
+  auto safe_output = engine.try_run(Input{23});
+  if (!safe_output.has_value() || safe_output.value().value != 23) {
+    return 1;
+  }
+
+  return 0;
 }
