@@ -1,39 +1,56 @@
 #pragma once
 
-#include <type_traits>
+#include <concepts>
 
 #include "pb/core/concepts.hpp"
-#include "pb/core/meta.hpp"
+#include "pb/core/pipeline_state.hpp"
 
 namespace pb::core {
 
 namespace detail {
 
-template <typename...>
-struct always_false : std::false_type {};
+template <typename ExpectedInput, typename... Stages>
+struct validate_chain;
 
-template <typename From, typename To>
-struct edge_valid : std::bool_constant<connectable<From, To> || stage_to_sink<From, To> || source_to_stage<From, To>> {};
+template <typename ExpectedInput>
+struct validate_chain<ExpectedInput> {
+    static constexpr bool value = true;
+};
 
-template <typename From, typename... Stages>
-struct validate_chain_impl;
+template <typename ExpectedInput, typename Stage>
+struct validate_chain<ExpectedInput, Stage> {
+    static constexpr bool value =
+        stage<Stage> && std::same_as<typename stage_traits<Stage>::input_type, ExpectedInput>;
+    static_assert(value,
+                  "pb::core::validate: pipeline terminal stage is invalid or has mismatched input type");
+};
 
-template <typename From>
-struct validate_chain_impl<From> : std::true_type {};
+template <typename ExpectedInput, typename First, typename Second, typename... Rest>
+struct validate_chain<ExpectedInput, First, Second, Rest...> {
+    static constexpr bool first_ok =
+        stage<First> && std::same_as<typename stage_traits<First>::input_type, ExpectedInput>;
+    static constexpr bool adjacent_ok = connectable<First, Second>;
+    static constexpr bool value =
+        first_ok && adjacent_ok &&
+        validate_chain<typename stage_traits<Second>::input_type, Second, Rest...>::value;
 
-template <typename From, typename Next, typename... Rest>
-struct validate_chain_impl<From, Next, Rest...>
-    : std::bool_constant<edge_valid<From, Next>::value && validate_chain_impl<Next, Rest...>::value> {};
+    static_assert(first_ok,
+                  "pb::core::validate: pipeline initial stage input does not match from<T>");
+    static_assert(adjacent_ok,
+                  "pb::core::validate: adjacent pipeline stages are not connectable");
+};
 
 }  // namespace detail
 
-template <typename... Ts>
-struct validate_chain : detail::validate_chain_impl<Ts...> {};
+template <typename State>
+struct validate;
 
-template <typename... Ts>
-inline constexpr bool validate_chain_v = validate_chain<Ts...>::value;
+template <typename From, typename... Stages>
+struct validate<detail::pipeline_state<From, Stages...>> {
+    static constexpr bool value = detail::validate_chain<From, Stages...>::value;
+};
 
-template <typename... Ts>
-using validated_chain = std::bool_constant<validate_chain_v<Ts...>>;
+template <typename State>
+inline constexpr bool is_valid_chain_v = validate<State>::value;
 
 }  // namespace pb::core
