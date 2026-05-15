@@ -151,6 +151,20 @@
       "output": {
         "outputOnFailure": true
       }
+    },
+    {
+      "name": "release-ninja",
+      "configurePreset": "release-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-time-trace",
+      "configurePreset": "clang-time-trace",
+      "output": {
+        "outputOnFailure": true
+      }
     }
   ]
 }
