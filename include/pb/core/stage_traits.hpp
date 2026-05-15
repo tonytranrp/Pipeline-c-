@@ -62,22 +62,16 @@ struct stage_traits<T, std::void_t<typename T::input_type, typename T::output_ty
 template <class T>
 inline constexpr bool is_stage_v = stage_traits<T>::is_valid_stage;
 
-template <class T>
+template <class T, class = void>
 struct stage_info {
   using stage_type = T;
-  using input_type = typename stage_traits<T>::input_type;
-  using output_type = typename stage_traits<T>::output_type;
-  using error_type = typename stage_traits<T>::error_type;
 
-  static constexpr bool valid = stage_traits<T>::is_valid_stage;
+  static constexpr bool valid = false;
 
   [[nodiscard]] static constexpr std::string_view name() noexcept {
-    return stage_traits<T>::name();
+    return std::string_view{"<invalid>"};
   }
 };
-
-template <class T>
-using stage_input_t = typename stage_info<T>::input_type;
 
 template <class T>
 struct stage_info<T, std::enable_if_t<stage_traits<T>::is_valid_stage>> {
