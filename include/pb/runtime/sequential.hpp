@@ -1,6 +1,7 @@
 #pragma once
 
 #include <exception>
+#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -13,6 +14,29 @@ namespace pb::runtime {
 struct sequential {};
 
 namespace detail {
+
+template <class Stage>
+[[nodiscard]] auto stage_id_for() -> stage_id {
+  return stage_id{.name = std::string{pb::core::stage_traits<Stage>::name()}};
+}
+
+[[nodiscard]] inline auto has_stage_id(const stage_id& stage) noexcept -> bool {
+  return !stage.key.empty() || !stage.name.empty();
+}
+
+template <class Stage, class Error>
+[[nodiscard]] auto annotate_stage_error(Error&& source) {
+  using ErrorType = std::remove_cvref_t<Error>;
+  if constexpr (std::same_as<ErrorType, error>) {
+    auto annotated = std::forward<Error>(source);
+    if (!has_stage_id(annotated.stage)) {
+      annotated.stage = stage_id_for<Stage>();
+    }
+    return annotated;
+  } else {
+    return std::forward<Error>(source);
+  }
+}
 
 template <class TargetError, class SourceError>
 [[nodiscard]] auto convert_error(SourceError&& source) -> TargetError {
@@ -35,7 +59,8 @@ template <class FinalOutput, class Error, class Input, class Stage, class... Res
   if constexpr (expected_like<decltype(stage_result)>) {
     auto normalized_result = to_result(std::move(stage_result));
     if (!normalized_result.has_value()) {
-      return result<FinalOutput, Error>{convert_error<Error>(std::move(normalized_result).error())};
+      return result<FinalOutput, Error>{
+          convert_error<Error>(annotate_stage_error<Stage>(std::move(normalized_result).error()))};
     }
     if constexpr (sizeof...(Rest) == 0) {
       return result<FinalOutput, Error>{std::move(normalized_result).value()};
@@ -63,7 +88,7 @@ template <class FinalOutput, class Input, class Stage, class... Rest>
     using StageResult = std::remove_cvref_t<decltype(normalized_result)>;
     using Error = typename StageResult::error_type;
     if (!normalized_result.has_value()) {
-      return result<FinalOutput, Error>{std::move(normalized_result).error()};
+      return result<FinalOutput, Error>{annotate_stage_error<Stage>(std::move(normalized_result).error())};
     }
     if constexpr (sizeof...(Rest) == 0) {
       return result<FinalOutput, Error>{std::move(normalized_result).value()};

@@ -34,6 +34,7 @@ struct external_expected {
 
 struct CheckedAddOne {
   using input_type = Input;
+  static constexpr auto stage_name() noexcept { return "checked_add_one"; }
   using output_type = Middle;
   using error_type = std::string;
 
@@ -65,6 +66,7 @@ int main() {
   auto failed = engine.run(Input{-1});
   assert(!failed.has_value());
   assert(failed.error().category == pb::runtime::error_category::expected_error);
+  assert(failed.error().stage.name == "checked_add_one");
   assert(failed.error().message == "negative input");
 
   return 0;
