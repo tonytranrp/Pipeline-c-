@@ -26,6 +26,10 @@ struct is_result_type<result<T, E>> : std::true_type {
 
 template <class Stage>
 [[nodiscard]] auto stage_id_for(std::size_t stage_index = 0) -> stage_id {
+  const auto stage_key = pb::core::stage_traits<Stage>::key();
+  if (stage_key != "<unnamed>") {
+    return stage_id{.key = std::string{stage_key}, .name = std::string{pb::core::stage_traits<Stage>::name()}};
+  }
   std::ostringstream stream;
   stream << stage_index;
   return stage_id{.key = stream.str(), .name = std::string{pb::core::stage_traits<Stage>::name()}};
