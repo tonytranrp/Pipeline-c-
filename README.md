@@ -42,6 +42,12 @@ ctest --preset release-ninja
 cmake --preset package-dev-ninja
 cmake --build --preset package-dev-ninja
 ctest --preset package-dev-ninja
+
+
+cmake --preset package-release-clang-ninja
+cmake --build --preset package-release-clang-ninja
+ctest --preset package-release-clang-ninja
+cmake --build --preset package-release-clang-ninja --target package
 ```
 
 Benchmarks and package smoke:
