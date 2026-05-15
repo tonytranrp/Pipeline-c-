@@ -94,6 +94,12 @@ pb_apply_project_options(pb_runtime_sequential_try_run_smoke PRIVATE)
 add_test(NAME pb_runtime_sequential_try_run_smoke COMMAND pb_runtime_sequential_try_run_smoke)
 set_tests_properties(pb_runtime_sequential_try_run_smoke PROPERTIES LABELS "runtime;result")
 
+add_executable(pb_runtime_sequential_result_stage_annotation_smoke runtime/sequential_result_stage_annotation_smoke.cpp)
+target_link_libraries(pb_runtime_sequential_result_stage_annotation_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_sequential_result_stage_annotation_smoke PRIVATE)
+add_test(NAME pb_runtime_sequential_result_stage_annotation_smoke COMMAND pb_runtime_sequential_result_stage_annotation_smoke)
+set_tests_properties(pb_runtime_sequential_result_stage_annotation_smoke PROPERTIES LABELS "runtime;result;diagnostics")
+
 add_executable(pb_runtime_sequential_run_exception_smoke runtime/sequential_run_exception_smoke.cpp)
 target_link_libraries(pb_runtime_sequential_run_exception_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_sequential_run_exception_smoke PRIVATE)
@@ -111,6 +117,16 @@ add_test(NAME pb_compile_fail_edge_mismatch
 )
 set_tests_properties(pb_compile_fail_edge_mismatch PROPERTIES LABELS "compile-fail;diagnostics")
 
+add_test(NAME pb_compile_fail_adapt_fn_callable_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/adapt_fn_callable_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Adapted\ stage\ callable\ mismatch
+    -DEXPECTED_DIAGNOSTICS=adapted_stage
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_adapt_fn_callable_mismatch PROPERTIES LABELS "compile-fail;diagnostics;adapter")
 
 add_test(NAME pb_compile_fail_invalid_stage
   COMMAND ${CMAKE_COMMAND}
@@ -142,6 +158,7 @@ add_test(NAME pb_compile_fail_sink_mismatch
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
   )
 set_tests_properties(pb_compile_fail_sink_mismatch PROPERTIES LABELS "compile-fail;diagnostics")
+
 
 add_test(NAME pb_compile_fail_result_error_type_mismatch
   COMMAND ${CMAKE_COMMAND}
