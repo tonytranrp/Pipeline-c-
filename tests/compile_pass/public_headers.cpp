@@ -30,6 +30,14 @@ using Traits = pb::pipeline_traits<Pipeline>;
 
 static_assert(pb::Stage<Parse>);
 static_assert(pb::Connectable<Raw, Parse>);
+static_assert(pb::connectable_v<Raw, Parse>);
+static_assert(!pb::connectable_v<Parsed, Parse>);
+static_assert(pb::AdjacentStages<Parse, Finish>);
+static_assert(pb::adjacent_stages_v<Parse, Finish>);
+static_assert(!pb::adjacent_stages_v<Finish, Parse>);
+static_assert(pb::RunnableStage<Parse, Raw>);
+static_assert(pb::runnable_stage_v<Parse, Raw>);
+static_assert(!pb::runnable_stage_v<Finish, Raw>);
 static_assert(pb::ValidPipeline<Pipeline>);
 static_assert(pb::valid<Pipeline>);
 static_assert(pb::is_pipeline_v<Pipeline>);

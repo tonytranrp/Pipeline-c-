@@ -13,9 +13,13 @@
 #include "pb/runtime/sequential.hpp"
 
 namespace pb {
+using core::AdjacentStages;
 using core::Connectable;
+using core::RunnableStage;
 using core::Stage;
 using core::ValidPipeline;
+using core::adjacent_stages_v;
+using core::connectable_v;
 using core::describe;
 using core::fixed_string;
 using core::from;
@@ -31,6 +35,7 @@ using core::pipeline_stage_descriptor_t;
 using core::pipeline_stages_t;
 using core::pipeline_stage_t;
 using core::pipeline_traits;
+using core::runnable_stage_v;
 using core::stage_descriptor;
 using core::stage_error_t;
 using core::stage_info;

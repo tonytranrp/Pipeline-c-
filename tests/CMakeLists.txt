@@ -106,6 +106,7 @@ add_test(NAME pb_compile_fail_edge_mismatch
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
     -DEXPECT_DIAGNOSTIC=Pipeline\ edge\ mismatch
+    -DEXPECTED_DIAGNOSTICS=pb::connectable_v
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_edge_mismatch PROPERTIES LABELS "compile-fail;diagnostics")
