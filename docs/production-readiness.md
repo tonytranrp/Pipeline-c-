@@ -43,8 +43,9 @@ The package release preset in [Build and Verification](build.md) is the release-
 Before cutting a release candidate, collect evidence for:
 
 - `cmake --list-presets=all` succeeds and the preset names are unique.
-- Debug and release Clang package presets configure, build, and pass CTest.
+- The debug package preset and release Clang package preset both configure, build, and pass CTest.
 - `pb_package_config_smoke` passes in the release package preset.
+- The release package target produces a local archive for inspection before any external publication.
 - Benchmark smoke targets run, and any recorded numbers include the context listed in [Build and Verification](build.md).
 - Public examples still build/run, including the intentional compile-fail diagnostic example.
 - Known gaps below are either documented for the release or converted into blocking issues.
