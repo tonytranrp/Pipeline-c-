@@ -5,8 +5,8 @@ function(pb_apply_project_options target visibility)
     target_compile_options(
       ${target}
       ${visibility}
-        $<$<AND:$<BUILD_INTERFACE:1>,$<CXX_COMPILER_ID:MSVC>>:/W4>
-        $<$<AND:$<BUILD_INTERFACE:1>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:-Wall;-Wextra;-Wpedantic>
+        $<BUILD_INTERFACE:$<$<CXX_COMPILER_ID:MSVC>:/W4>>
+        $<BUILD_INTERFACE:$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra;-Wpedantic>>
     )
   endif()
 
@@ -14,8 +14,8 @@ function(pb_apply_project_options target visibility)
     target_compile_options(
       ${target}
       ${visibility}
-        $<$<AND:$<BUILD_INTERFACE:1>,$<CXX_COMPILER_ID:MSVC>>:/WX>
-        $<$<AND:$<BUILD_INTERFACE:1>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:-Werror>
+        $<BUILD_INTERFACE:$<$<CXX_COMPILER_ID:MSVC>:/WX>>
+        $<BUILD_INTERFACE:$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Werror>>
     )
   endif()
 
@@ -23,7 +23,7 @@ function(pb_apply_project_options target visibility)
     target_compile_options(
       ${target}
       ${visibility}
-        $<$<AND:$<BUILD_INTERFACE:1>,$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>>:-ftime-trace>
+        $<BUILD_INTERFACE:$<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>:-ftime-trace>>
     )
   endif()
 endfunction()
