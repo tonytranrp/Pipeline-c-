@@ -3,6 +3,7 @@
 This repository is bootstrapping a typed C++20 pipeline builder. Start with:
 
 - [Build and Verification](build.md)
+- [Diagnostics Roadmap / Status](diagnostics-roadmap.md)
 - [Branch / Join Roadmap / Status](branch-join-roadmap.md)
 - [Examples](examples.md)
 - [Graph Export Roadmap / Status](graph-export-roadmap.md)
