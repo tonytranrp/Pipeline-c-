@@ -22,6 +22,20 @@ cmake --build --preset clang-dev-ninja --target pb_basic_order_pipeline
 
 A zero exit code means the sequential executor preserved the order id through the adapted parse stage, adapted validate stage, and explicit persist stage.
 
+## Runtime result and diagnostics quick check
+
+For a stage that can fail and return `pb::runtime::result<T>`:
+
+1. Use `try_run()` when you want a typed error-path return.
+2. Keep stage-local failures as `pb::runtime::error` when you need explicit category and stage metadata.
+3. Keep other failures as expected-like types (for example `std::string`) and let the runtime normalize them to `expected_error` with diagnostics.
+
+Use `error` fields to drive logs and retry policies:
+
+- `category`: `stage_failure`, `expected_error`, `exception`, or `contract_violation`.
+- `stage.key` / `stage.name`: where the failure originated.
+- `message`: the stage-level reason.
+
 ## Inspecting pipeline metadata
 
 The public API now exposes lightweight compile-time introspection helpers for validated pipeline aliases:
@@ -46,6 +60,12 @@ Use CTest for the stable failure check instead of hand-running a compiler comman
 
 ```bash
 ctest --preset clang-dev-ninja --output-on-failure -R pb_example_error_diagnostic_compile_fail
+```
+
+You can also inspect the compile command path by building only that example target:
+
+```bash
+cmake --build --preset clang-dev-ninja --target pb_error_diagnostic_example
 ```
 
 ## Copying an example into user code

@@ -55,8 +55,20 @@ Before cutting a release candidate, collect evidence for:
 - Branch, join, graph export, observer hooks, and optional backend execution are roadmap items, not current guarantees.
 - Public diagnostics are covered by compile-fail smoke tests, but the exact diagnostic wording is still being hardened.
 - Runtime error propagation exists for the current sequential path; richer exception policies, `std::expected` integration, and observer/error-category APIs are future slices.
+- Sequential `run()` and `try_run()` are currently split in error-handling behavior: `try_run()` captures stage exceptions, while `run()` does not. Harmonizing this path is a queued runtime hardening item.
 - Benchmark scaffolding can prove the targets build and run, but release thresholds and CI regression budgets are not established.
 - Cross-compiler validation beyond the local configured toolchain remains a release gate.
+
+## Small production-readiness slice (safe, immediate)
+
+For the next minimal safe release-hardening step, execute and archive:
+
+1. `cmake --preset package-release-clang-ninja`
+2. `cmake --build --preset package-release-clang-ninja`
+3. `ctest --preset package-release-clang-ninja --output-on-failure -R pb_package_config_smoke`
+4. Record the package smoke pass in project notes with the preset, compiler, and commit SHA.
+
+This keeps the slice narrow, deterministic, and low-risk: it validates install-time consumer compatibility without changing runtime behavior.
 
 ## Documentation contract
 
