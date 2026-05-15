@@ -43,6 +43,8 @@ static_assert(pb::pipeline_size_v<Pipeline> == 2);
 static_assert(!pb::pipeline_empty_v<Pipeline>);
 static_assert(std::same_as<pb::pipeline_input_t<Pipeline>, Raw>);
 static_assert(std::same_as<pb::pipeline_output_t<Pipeline>, Done>);
+static_assert(std::same_as<pb::pipeline<Raw, Done, pb::meta::type_list<Parse, Finish>>, Pipeline>);
+static_assert(std::same_as<pb::pipeline_state<Raw, Raw>, pb::from<Raw>>);
 static_assert(std::same_as<pb::pipeline_stages_t<Pipeline>, pb::meta::type_list<Parse, Finish>>);
 static_assert(std::same_as<pb::pipeline_stage_t<Pipeline, 0>, Parse>);
 static_assert(std::same_as<pb::pipeline_stage_descriptor_t<Pipeline, 1>, Traits::stage<1>>);
