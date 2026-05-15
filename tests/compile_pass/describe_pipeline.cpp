@@ -27,6 +27,7 @@ struct Finish {
 using Pipeline = pb::from<Raw>::then<Parse>::then<Finish>::to<Done>;
 using Traits = pb::pipeline_traits<Pipeline>;
 using ParseDescriptor = pb::stage_descriptor<0, Parse>;
+using PipelineDescriptorView = pb::pipeline_descriptor_view<2>;
 
 static_assert(pb::valid<Pipeline>);
 static_assert(Traits::stage_count == 2);
@@ -48,6 +49,13 @@ static_assert(std::same_as<pb::pipeline_stage_error_t<Pipeline, 0>, Parse::error
 static_assert(std::same_as<pb::pipeline_stage_error_t<Pipeline, 1>, pb::no_error>);
 static_assert(ParseDescriptor::key() == std::string_view{"order.parse"});
 static_assert(ParseDescriptor::name() == std::string_view{"parse"});
+static_assert(std::same_as<decltype(pb::descriptor_view<Pipeline>()), PipelineDescriptorView>);
+static_assert(pb::descriptor_view<Pipeline>().stage_records()[0].index == pb::describe<Pipeline>().stage_records()[0].index);
+static_assert(pb::descriptor_view<Pipeline>().stage_records()[0].key == pb::describe<Pipeline>().stage_records()[0].key);
+static_assert(pb::descriptor_view<Pipeline>().stage_records()[0].name == pb::describe<Pipeline>().stage_records()[0].name);
+static_assert(pb::descriptor_view<Pipeline>().stage_records()[1].index == pb::describe<Pipeline>().stage_records()[1].index);
+static_assert(pb::descriptor_view<Pipeline>().stage_records()[1].key == pb::describe<Pipeline>().stage_records()[1].key);
+static_assert(pb::descriptor_view<Pipeline>().stage_records()[1].name == pb::describe<Pipeline>().stage_records()[1].name);
 static_assert(pb::describe<Pipeline>().stage_count == 2);
 static_assert(pb::describe<Pipeline>().stage_key<0>() == std::string_view{"order.parse"});
 static_assert(pb::describe<Pipeline>().stage_key<1>() == std::string_view{"finish"});
