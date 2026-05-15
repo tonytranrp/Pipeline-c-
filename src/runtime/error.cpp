@@ -19,6 +19,10 @@ auto category_name(error_category category) noexcept -> std::string_view {
   return "unknown";
 }
 
+auto has_category(const error& value, error_category category) noexcept -> bool {
+  return value.category == category;
+}
+
 auto has_stage(const stage_id& stage) noexcept -> bool {
   return !stage.key.empty() || !stage.name.empty();
 }

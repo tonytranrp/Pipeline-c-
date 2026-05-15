@@ -9,6 +9,7 @@ int main() {
   using pb::runtime::describe;
   using pb::runtime::error;
   using pb::runtime::error_category;
+  using pb::runtime::has_category;
   using pb::runtime::has_message;
   using pb::runtime::has_stage;
   using pb::runtime::stage_id;
@@ -28,12 +29,15 @@ int main() {
   auto diagnostic_error = error{.stage = {.key = "validate", .name = "ValidateOrder"},
                                 .category = error_category::exception,
                                 .message = "bad order"};
+  assert(has_category(diagnostic_error, error_category::exception));
+  assert(!has_category(diagnostic_error, error_category::stage_failure));
   assert(has_stage(diagnostic_error));
   assert(has_message(diagnostic_error));
   auto diagnostic = describe(diagnostic_error);
   assert(diagnostic == "exception at ValidateOrder (validate): bad order");
 
   auto no_message_error = error{.category = error_category::contract_violation};
+  assert(has_category(no_message_error, error_category::contract_violation));
   assert(!has_stage(no_message_error));
   assert(!has_message(no_message_error));
   auto message_less = describe(no_message_error);
