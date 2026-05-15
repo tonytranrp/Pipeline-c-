@@ -1,5 +1,7 @@
 #include <pb/pipeline.hpp>
 
+#include <cassert>
+#include <memory>
 #include <type_traits>
 
 struct Input { int value{}; };
@@ -20,6 +22,43 @@ struct DoubleValue {
 
 using Pipeline = pb::from<Input>::then<AddOne>::then<DoubleValue>::to<Output>;
 
+struct MoveInput {
+  std::unique_ptr<int> value{};
+};
+
+struct MoveMiddle {
+  std::unique_ptr<int> value{};
+};
+
+struct MoveOutput {
+  std::unique_ptr<int> value{};
+};
+
+static_assert(!std::copy_constructible<MoveInput>);
+static_assert(!std::copy_constructible<MoveMiddle>);
+static_assert(!std::copy_constructible<MoveOutput>);
+
+struct MoveAddOne {
+  using input_type = MoveInput;
+  using output_type = MoveMiddle;
+
+  MoveMiddle operator()(MoveInput input) const {
+    return {std::make_unique<int>(*input.value + 1)};
+  }
+};
+
+struct MoveDoubleValue {
+  using input_type = MoveMiddle;
+  using output_type = MoveOutput;
+
+  MoveOutput operator()(MoveMiddle input) const {
+    return {std::make_unique<int>(*input.value * 2)};
+  }
+};
+
+using MoveOnlyPipeline = pb::from<MoveInput>::then<MoveAddOne>::then<MoveDoubleValue>::to<MoveOutput>;
+static_assert(pb::valid<MoveOnlyPipeline>);
+
 int main() {
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
   using Engine = decltype(engine);
@@ -30,5 +69,15 @@ int main() {
   static_assert(Engine::stage_count == 2);
 
   auto output = engine.run(Input{20});
-  return output.value == 42 ? 0 : 1;
+  assert(output.value == 42);
+
+  auto move_engine = pb::compile<MoveOnlyPipeline>(pb::runtime::sequential{});
+  auto move_output = move_engine.run(MoveInput{std::make_unique<int>(20)});
+  assert(*move_output.value == 42);
+
+  auto safe_move_output = move_engine.try_run(MoveInput{std::make_unique<int>(21)});
+  assert(safe_move_output.has_value());
+  assert(*safe_move_output.value().value == 44);
+
+  return 0;
 }
