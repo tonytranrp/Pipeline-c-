@@ -39,6 +39,7 @@ public:
   result(E&& error_value) : storage_(std::move(error_value)) {}
 
   [[nodiscard]] bool has_value() const noexcept { return std::holds_alternative<T>(storage_); }
+  [[nodiscard]] bool has_error() const noexcept { return !has_value(); }
   explicit operator bool() const noexcept { return has_value(); }
 
   [[nodiscard]] T& value() & { return std::get<T>(storage_); }
@@ -89,6 +90,7 @@ public:
   result(E&& error_value) : error_(std::move(error_value)), has_value_(false) {}
 
   [[nodiscard]] bool has_value() const noexcept { return has_value_; }
+  [[nodiscard]] bool has_error() const noexcept { return !has_value(); }
   explicit operator bool() const noexcept { return has_value(); }
   [[nodiscard]] E& error() & { return error_; }
   [[nodiscard]] const E& error() const& { return error_; }
