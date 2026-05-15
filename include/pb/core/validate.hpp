@@ -3,11 +3,13 @@
 #include <concepts>
 
 #include "pb/core/concepts.hpp"
-#include "pb/core/pipeline_state.hpp"
 
 namespace pb::core {
 
 namespace detail {
+
+template <typename From, typename... Stages>
+struct pipeline_state;
 
 template <typename ExpectedInput, typename... Stages>
 struct validate_chain;
@@ -49,6 +51,12 @@ template <typename From, typename... Stages>
 struct validate<detail::pipeline_state<From, Stages...>> {
     static constexpr bool value = detail::validate_chain<From, Stages...>::value;
 };
+
+template <typename ExpectedInput, typename... Stages>
+struct validate_chain : detail::validate_chain<ExpectedInput, Stages...> {};
+
+template <typename ExpectedInput, typename... Stages>
+inline constexpr bool validate_chain_v = validate_chain<ExpectedInput, Stages...>::value;
 
 template <typename State>
 inline constexpr bool is_valid_chain_v = validate<State>::value;

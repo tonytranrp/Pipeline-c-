@@ -1,10 +1,18 @@
-#include <array>
+#include <pb/pipeline.hpp>
+
+template <int>
+struct stage {
+  using input_type = int;
+  using output_type = int;
+};
+
+using pipeline_5 = pb::from<int>
+    ::then<stage<0>>::to<stage<1>>
+    ::then<stage<2>>::to<stage<3>>
+    ::then<stage<4>>::chain;
+
+static_assert(pb::core::validate<pipeline_5>::value);
 
 int main() {
-  std::array<int, 5> stages{1, 2, 3, 4, 5};
-  int sum = 0;
-  for (int value : stages) {
-    sum += value;
-  }
-  return sum == 15 ? 0 : 1;
+  return 0;
 }

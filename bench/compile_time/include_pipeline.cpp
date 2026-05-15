@@ -1,7 +1,5 @@
-#include <vector>
-#include <string>
+#include <pb/pipeline.hpp>
 
 int main() {
-  std::vector<std::string> pipeline = {"include", "compile", "time"};
-  return static_cast<int>(pipeline.size());
+  return 0;
 }

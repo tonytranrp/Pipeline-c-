@@ -10,10 +10,18 @@ if(NOT DEFINED TEST_COMPILER)
   message(FATAL_ERROR "TEST_COMPILER is required")
 endif()
 
+if(NOT DEFINED TEST_INCLUDE_DIR)
+  message(FATAL_ERROR "TEST_INCLUDE_DIR is required")
+endif()
+
+if(NOT DEFINED TEST_EXPECTED_DIAGNOSTIC)
+  set(TEST_EXPECTED_DIAGNOSTIC "Pipeline edge mismatch")
+endif()
+
 if(WIN32 AND TEST_COMPILER MATCHES "cl(\\.exe)?$")
-  set(compile_cmd "${TEST_COMPILER}" /std:c++20 /nologo /c "${TEST_SOURCE}")
+  set(compile_cmd "${TEST_COMPILER}" /std:c++20 /nologo /I "${TEST_INCLUDE_DIR}" /c "${TEST_SOURCE}")
 else()
-  set(compile_cmd "${TEST_COMPILER}" -std=c++20 -c "${TEST_SOURCE}")
+  set(compile_cmd "${TEST_COMPILER}" -std=c++20 -I "${TEST_INCLUDE_DIR}" -fsyntax-only "${TEST_SOURCE}")
 endif()
 
 execute_process(
@@ -29,7 +37,7 @@ if(result EQUAL 0)
   message(FATAL_ERROR "Expected compile failure for ${test_name}")
 endif()
 
-string(FIND "${stdout}\n${stderr}" "Pipeline edge mismatch" diagnostic_found)
+string(FIND "${stdout}\n${stderr}" "${TEST_EXPECTED_DIAGNOSTIC}" diagnostic_found)
 if(diagnostic_found EQUAL -1)
-  message(FATAL_ERROR "Missing expected diagnostic text for ${test_name}")
+  message(FATAL_ERROR "Missing expected diagnostic text for ${test_name}: ${TEST_EXPECTED_DIAGNOSTIC}")
 endif()
