@@ -161,6 +161,13 @@ class sequential_engine;
 template <class Input, class Output, class... Stages>
 class sequential_engine<pb::core::pipeline<Input, Output, pb::meta::type_list<Stages...>>> {
 public:
+  using pipeline_type = pb::core::pipeline<Input, Output, pb::meta::type_list<Stages...>>;
+  using input_type = Input;
+  using output_type = Output;
+  using stages = pb::meta::type_list<Stages...>;
+
+  static constexpr auto stage_count = sizeof...(Stages);
+
   [[nodiscard]] decltype(auto) run(Input input) const {
     if constexpr (sizeof...(Stages) == 0) {
       return input;
