@@ -10,12 +10,27 @@ ctest --preset clang-dev-ninja
 
 `PB_ENABLE_CLANG_TIME_TRACE=ON` is available through the `clang-time-trace` preset for compile-time profiling. Optional backend flags are present but intentionally off in the base scaffold.
 
-Preset quick map:
+## Benchmark smoke targets
 
-- `dev-ninja`: GNU Debug baseline with tests/examples.
-- `clang-dev-ninja`: Clang Debug baseline.
-- `clang-tidy-ninja`: enables `PB_ENABLE_CLANG_TIDY`.
-- `clang-time-trace`: enables compile-time trace (`PB_ENABLE_CLANG_TIME_TRACE`).
-- `release-ninja`: release build defaults.
-- `bench-dev-ninja`: benchmarks-only build (`PB_BUILD_BENCHMARKS=ON`, tests/examples off).
-- `package-dev-ninja`: package-oriented debug lane with `CPACK_GENERATOR=TGZ`.
+Benchmark targets are intentionally opt-in so the default developer presets stay fast. Enable them on an existing preset when you want a local smoke check for header inclusion cost or basic sequential runtime overhead:
+
+```bash
+cmake --preset clang-dev-ninja -DPB_BUILD_BENCHMARKS=ON
+cmake --build --preset clang-dev-ninja --target pb_bench_include_pipeline
+cmake --build --preset clang-dev-ninja --target pb_bench_sequential_5_stage
+./build/clang-dev-ninja/bench/pb_bench_include_pipeline
+./build/clang-dev-ninja/bench/pb_bench_sequential_5_stage
+```
+
+Use `pb_bench_include_pipeline` as a guard for the public-header include surface. Use `pb_bench_sequential_5_stage` as a smoke check that the runtime benchmark scaffold still exercises the sequential executor. These targets are not pass/fail performance gates yet; record timings alongside compiler, build type, and preset before comparing results across machines.
+
+For compile-time profiling, build the same translation units with the Clang time-trace preset:
+
+```bash
+cmake --preset clang-time-trace -DPB_BUILD_BENCHMARKS=ON
+cmake --build --preset clang-time-trace --target pb_bench_include_pipeline
+cmake --build --preset clang-time-trace --target pb_bench_sequential_5_stage
+find build/clang-time-trace -name '*.json' -path '*CMakeFiles*' -print
+```
+
+Treat the generated trace files as local diagnostics. They are useful for spotting expensive headers and template instantiations, but they should not be committed unless a future release process explicitly asks for captured benchmark artifacts.
