@@ -2,6 +2,10 @@
 
 #include <type_traits>
 
+struct EmptyInput {};
+using EmptyOutput = EmptyInput;
+using DescriptorPipeline = pb::from<EmptyInput>::to<EmptyOutput>;
+
 struct Input {
   int value{};
 };
@@ -33,5 +37,21 @@ int main() {
     return 1;
   }
 
+  constexpr auto stage_names = pb::describe<Pipeline>().stage_names();
+  constexpr auto stage_records = pb::describe<Pipeline>().stage_records();
+  constexpr auto view = pb::descriptor_view<Pipeline>();
+  if (!stage_names.empty() || !stage_records.empty() || !view.stage_records().empty()) {
+    return 1;
+  }
+
+  constexpr auto empty_names = pb::describe<DescriptorPipeline>().stage_names();
+  constexpr auto empty_records = pb::describe<DescriptorPipeline>().stage_records();
+  constexpr auto empty_view = pb::descriptor_view<DescriptorPipeline>();
+  if (!empty_names.empty() || !empty_records.empty() || !empty_view.stage_records().empty()) {
+    return 1;
+  }
+  if (empty_view.stage_records().size() != pb::pipeline_size_v<DescriptorPipeline>) {
+    return 1;
+  }
   return 0;
 }
