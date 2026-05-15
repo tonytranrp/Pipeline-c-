@@ -8,6 +8,7 @@
 #include "pb/core/meta.hpp"
 #include "pb/core/validate.hpp"
 #include "pb/runtime/error.hpp"
+#include "pb/runtime/result.hpp"
 
 namespace pb::runtime {
 
