@@ -52,6 +52,8 @@ struct CheckedDouble {
   using input_type = Middle;
   using output_type = Output;
 
+  static constexpr auto stage_name() noexcept { return "checked_double"; }
+
   pb::runtime::result<Output> operator()(Middle input) const {
     if (input.value == 0) {
       return pb::runtime::error{.category = pb::runtime::error_category::stage_failure,
