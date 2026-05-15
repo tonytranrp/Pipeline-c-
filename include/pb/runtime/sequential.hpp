@@ -165,6 +165,7 @@ public:
   using input_type = Input;
   using output_type = Output;
   using stages = pb::meta::type_list<Stages...>;
+  using try_result_type = result<Output>;
 
   static constexpr auto stage_count = sizeof...(Stages);
 

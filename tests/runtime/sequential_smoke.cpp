@@ -26,6 +26,7 @@ int main() {
   static_assert(std::is_same_v<typename Engine::pipeline_type, Pipeline>);
   static_assert(std::is_same_v<typename Engine::input_type, Input>);
   static_assert(std::is_same_v<typename Engine::output_type, Output>);
+  static_assert(std::is_same_v<typename Engine::try_result_type, pb::runtime::result<Output>>);
   static_assert(Engine::stage_count == 2);
 
   auto output = engine.run(Input{20});
