@@ -24,6 +24,7 @@ using core::pipeline_descriptor;
 using core::pipeline_traits;
 using core::stage_descriptor;
 using core::stage_error_t;
+using core::stage_info;
 using core::stage_input_t;
 using core::stage_output_t;
 using core::stage_traits;

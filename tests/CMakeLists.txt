@@ -4,6 +4,12 @@ pb_apply_project_options(pb_smoke_compile_pass PRIVATE)
 add_test(NAME pb_smoke_compile_pass COMMAND pb_smoke_compile_pass)
 
 
+
+add_executable(pb_stage_info_compile_pass compile_pass/stage_info.cpp)
+target_link_libraries(pb_stage_info_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_stage_info_compile_pass PRIVATE)
+add_test(NAME pb_stage_info_compile_pass COMMAND pb_stage_info_compile_pass)
+
 add_executable(pb_describe_compile_pass compile_pass/describe_pipeline.cpp)
 target_link_libraries(pb_describe_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_describe_compile_pass PRIVATE)
