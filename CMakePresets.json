@@ -40,7 +40,7 @@
     },
     {
       "name": "clang-tidy-ninja",
-      "displayName": "Clang-Tidy (Ninja)",
+      "displayName": "Clang-Tidy Tooling (Ninja)",
       "inherits": "clang-dev-ninja",
       "binaryDir": "${sourceDir}/build/clang-tidy-ninja",
       "cacheVariables": {
@@ -48,17 +48,12 @@
       }
     },
     {
-      "name": "package-dev-ninja",
-      "displayName": "Package Debug (Ninja)",
+      "name": "pch-ninja",
+      "displayName": "Precompiled Header Smoke (Ninja)",
       "inherits": "dev-ninja",
-      "binaryDir": "${sourceDir}/build/package-dev-ninja",
+      "binaryDir": "${sourceDir}/build/pch-ninja",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "PB_BUILD_TESTS": "ON",
-        "PB_BUILD_EXAMPLES": "ON",
-        "PB_BUILD_BENCHMARKS": "OFF",
-        "CPACK_GENERATOR": "TGZ"
+        "PB_ENABLE_PCH": "ON"
       }
     },
     {
@@ -75,16 +70,20 @@
       }
     },
     {
+      "name": "release-clang-ninja",
+      "displayName": "Release Clang (Ninja)",
+      "inherits": "release-ninja",
+      "binaryDir": "${sourceDir}/build/release-clang-ninja",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
       "name": "package-dev-ninja",
       "displayName": "Package Debug (Ninja)",
       "inherits": "dev-ninja",
       "binaryDir": "${sourceDir}/build/package-dev-ninja",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "PB_BUILD_TESTS": "ON",
-        "PB_BUILD_EXAMPLES": "ON",
-        "PB_BUILD_BENCHMARKS": "OFF",
         "CPACK_GENERATOR": "TGZ"
       }
     },
@@ -99,11 +98,21 @@
     },
     {
       "name": "bench-dev-ninja",
-      "displayName": "Benchmark Smoke (Ninja)",
+      "displayName": "Benchmark Smoke Debug (Ninja)",
       "inherits": "dev-ninja",
       "binaryDir": "${sourceDir}/build/bench-dev-ninja",
       "cacheVariables": {
         "PB_BUILD_TESTS": "OFF",
+        "PB_BUILD_EXAMPLES": "OFF",
+        "PB_BUILD_BENCHMARKS": "ON"
+      }
+    },
+    {
+      "name": "benchmark-ninja",
+      "displayName": "Benchmark Smoke Release (Ninja)",
+      "inherits": "release-ninja",
+      "binaryDir": "${sourceDir}/build/benchmark-ninja",
+      "cacheVariables": {
         "PB_BUILD_EXAMPLES": "OFF",
         "PB_BUILD_BENCHMARKS": "ON"
       }
@@ -127,12 +136,16 @@
       "configurePreset": "clang-tidy-ninja"
     },
     {
-      "name": "package-dev-ninja",
-      "configurePreset": "package-dev-ninja"
+      "name": "pch-ninja",
+      "configurePreset": "pch-ninja"
     },
     {
       "name": "release-ninja",
       "configurePreset": "release-ninja"
+    },
+    {
+      "name": "release-clang-ninja",
+      "configurePreset": "release-clang-ninja"
     },
     {
       "name": "package-dev-ninja",
@@ -145,6 +158,10 @@
     {
       "name": "bench-dev-ninja",
       "configurePreset": "bench-dev-ninja"
+    },
+    {
+      "name": "benchmark-ninja",
+      "configurePreset": "benchmark-ninja"
     }
   ],
   "testPresets": [
@@ -163,6 +180,13 @@
       }
     },
     {
+      "name": "clang-time-trace",
+      "configurePreset": "clang-time-trace",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
       "name": "clang-tidy-ninja",
       "configurePreset": "clang-tidy-ninja",
       "output": {
@@ -170,8 +194,50 @@
       }
     },
     {
+      "name": "pch-ninja",
+      "configurePreset": "pch-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "release-ninja",
+      "configurePreset": "release-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "release-clang-ninja",
+      "configurePreset": "release-clang-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
       "name": "package-dev-ninja",
       "configurePreset": "package-dev-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "package-release-clang-ninja",
+      "configurePreset": "package-release-clang-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "bench-dev-ninja",
+      "configurePreset": "bench-dev-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "benchmark-ninja",
+      "configurePreset": "benchmark-ninja",
       "output": {
         "outputOnFailure": true
       }

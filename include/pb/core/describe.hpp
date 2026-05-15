@@ -99,4 +99,19 @@ template <ValidPipeline Pipeline>
   return {};
 }
 
+template <ValidPipeline Pipeline>
+inline constexpr std::size_t pipeline_size_v = pipeline_traits<Pipeline>::stage_count;
+
+template <ValidPipeline Pipeline>
+using pipeline_input_t = typename pipeline_traits<Pipeline>::input_type;
+
+template <ValidPipeline Pipeline>
+using pipeline_output_t = typename pipeline_traits<Pipeline>::output_type;
+
+template <ValidPipeline Pipeline, std::size_t Index>
+using pipeline_stage_t = typename pipeline_traits<Pipeline>::template stage_type<Index>;
+
+template <ValidPipeline Pipeline, std::size_t Index>
+using pipeline_stage_descriptor_t = typename pipeline_traits<Pipeline>::template stage<Index>;
+
 } // namespace pb::core
