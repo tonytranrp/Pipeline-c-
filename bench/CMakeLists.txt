@@ -1,0 +1,2 @@
+add_executable(pb_bench_placeholder bench_placeholder.cpp)
+target_compile_features(pb_bench_placeholder PRIVATE cxx_std_20)
