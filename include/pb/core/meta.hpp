@@ -25,7 +25,6 @@ using npos = size_constant<static_cast<std::size_t>(-1)>;
 
 template <typename... Ts>
 struct type_list_size;
-
 template <typename... Ts>
 struct type_list_size<type_list<Ts...>> : size_constant<sizeof...(Ts)> {};
 
@@ -108,8 +107,11 @@ struct at {
 template <typename List, std::size_t N>
 using at_t = typename at<List, N>::type;
 
-template <typename T, typename List>
+template <typename List>
 struct index_of;
+
+template <typename List>
+struct index_of_impl;
 
 namespace detail {
 
@@ -125,8 +127,8 @@ struct find_index_impl<T, type_list<Head, Tail...>, I>
 
 }  // namespace detail
 
-template <typename T, typename... Ts>
-struct index_of<T, type_list<Ts...>> : detail::find_index_impl<T, type_list<Ts...>, 0> {};
+template <typename T, typename List>
+struct index_of<T, List> : detail::find_index_impl<T, List, 0> {};
 
 }  // namespace meta
 
