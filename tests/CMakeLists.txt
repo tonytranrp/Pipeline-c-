@@ -13,6 +13,12 @@ pb_enable_pch_if_requested(pb_describe_compile_pass)
 add_test(NAME pb_describe_compile_pass COMMAND pb_describe_compile_pass)
 set_tests_properties(pb_describe_compile_pass PROPERTIES LABELS "compile-pass;metadata")
 
+add_executable(pb_stage_info_compile_pass compile_pass/stage_info.cpp)
+target_link_libraries(pb_stage_info_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_stage_info_compile_pass PRIVATE)
+add_test(NAME pb_stage_info_compile_pass COMMAND pb_stage_info_compile_pass)
+set_tests_properties(pb_stage_info_compile_pass PROPERTIES LABELS "compile-pass;metadata")
+
 add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers.cpp
   compile_pass/public_headers/adapt_fn.cpp
@@ -68,6 +74,18 @@ pb_apply_project_options(pb_runtime_sequential_expected_like_smoke PRIVATE)
 pb_enable_pch_if_requested(pb_runtime_sequential_expected_like_smoke)
 add_test(NAME pb_runtime_sequential_expected_like_smoke COMMAND pb_runtime_sequential_expected_like_smoke)
 set_tests_properties(pb_runtime_sequential_expected_like_smoke PROPERTIES LABELS "runtime;result")
+
+add_executable(pb_runtime_error_diagnostic_smoke runtime/error_diagnostic_smoke.cpp)
+target_link_libraries(pb_runtime_error_diagnostic_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_error_diagnostic_smoke PRIVATE)
+add_test(NAME pb_runtime_error_diagnostic_smoke COMMAND pb_runtime_error_diagnostic_smoke)
+set_tests_properties(pb_runtime_error_diagnostic_smoke PROPERTIES LABELS "runtime;diagnostics")
+
+add_executable(pb_runtime_sequential_try_run_smoke runtime/sequential_try_run_smoke.cpp)
+target_link_libraries(pb_runtime_sequential_try_run_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_sequential_try_run_smoke PRIVATE)
+add_test(NAME pb_runtime_sequential_try_run_smoke COMMAND pb_runtime_sequential_try_run_smoke)
+set_tests_properties(pb_runtime_sequential_try_run_smoke PROPERTIES LABELS "runtime;result")
 
 add_test(NAME pb_compile_fail_edge_mismatch
   COMMAND ${CMAKE_COMMAND}

@@ -10,6 +10,8 @@ pb_enable_pch_if_requested(pb_error_diagnostic_example)
 
 add_test(NAME pb_example_basic_order_pipeline COMMAND pb_basic_order_pipeline)
 set_tests_properties(pb_example_basic_order_pipeline PROPERTIES LABELS "examples;smoke")
+add_test(NAME pb_example_error_diagnostic COMMAND pb_error_diagnostic_example)
+set_tests_properties(pb_example_error_diagnostic PROPERTIES LABELS "examples;smoke")
 add_test(NAME pb_example_error_diagnostic_compile_fail
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/error_diagnostic.cpp
