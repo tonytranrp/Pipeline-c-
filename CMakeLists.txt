@@ -82,6 +82,7 @@ if(PB_BUILD_TESTS AND PB_ENABLE_PACKAGE_SMOKE)
       -DPB_PACKAGE_SMOKE_CONFIG=$<CONFIG>
       -P "${PROJECT_BINARY_DIR}/PBPackageSmoke.cmake"
   )
+  set_tests_properties(pb_package_config_smoke PROPERTIES LABELS "package;smoke")
 endif()
 
 if(PB_BUILD_BENCHMARKS)
