@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/pb_error_diagnostic_example.dir/error_diagnostic.cpp.o -o pb_error_diagnostic_example  ../libpb_runtime.a 

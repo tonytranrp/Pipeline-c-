@@ -1,0 +1,38 @@
+[
+{
+  "directory": "/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4",
+  "command": "/usr/bin/c++  -I/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/include -std=c++20 -Wall -Wextra -Wpedantic -o CMakeFiles/pb_runtime.dir/src/runtime/error.cpp.o -c /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/src/runtime/error.cpp",
+  "file": "/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/src/runtime/error.cpp",
+  "output": "CMakeFiles/pb_runtime.dir/src/runtime/error.cpp.o"
+},
+{
+  "directory": "/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4",
+  "command": "/usr/bin/c++  -I/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/include -std=c++20 -Wall -Wextra -Wpedantic -o CMakeFiles/pb_runtime.dir/src/runtime/sequential.cpp.o -c /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/src/runtime/sequential.cpp",
+  "file": "/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/src/runtime/sequential.cpp",
+  "output": "CMakeFiles/pb_runtime.dir/src/runtime/sequential.cpp.o"
+},
+{
+  "directory": "/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/examples",
+  "command": "/usr/bin/c++  -I/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/include -std=c++20 -Wall -Wextra -Wpedantic -o CMakeFiles/pb_basic_order_pipeline.dir/basic_order_pipeline.cpp.o -c /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/examples/basic_order_pipeline.cpp",
+  "file": "/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/examples/basic_order_pipeline.cpp",
+  "output": "examples/CMakeFiles/pb_basic_order_pipeline.dir/basic_order_pipeline.cpp.o"
+},
+{
+  "directory": "/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/examples",
+  "command": "/usr/bin/c++  -I/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/include -std=c++20 -Wall -Wextra -Wpedantic -o CMakeFiles/pb_error_diagnostic_example.dir/error_diagnostic.cpp.o -c /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/examples/error_diagnostic.cpp",
+  "file": "/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/examples/error_diagnostic.cpp",
+  "output": "examples/CMakeFiles/pb_error_diagnostic_example.dir/error_diagnostic.cpp.o"
+},
+{
+  "directory": "/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/tests",
+  "command": "/usr/bin/c++  -I/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/include -std=c++20 -Wall -Wextra -Wpedantic -o CMakeFiles/pb_smoke_compile_pass.dir/compile_pass/smoke_pipeline.cpp.o -c /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/tests/compile_pass/smoke_pipeline.cpp",
+  "file": "/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/tests/compile_pass/smoke_pipeline.cpp",
+  "output": "tests/CMakeFiles/pb_smoke_compile_pass.dir/compile_pass/smoke_pipeline.cpp.o"
+},
+{
+  "directory": "/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/tests",
+  "command": "/usr/bin/c++  -I/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/include -std=c++20 -Wall -Wextra -Wpedantic -o CMakeFiles/pb_runtime_smoke.dir/runtime/sequential_smoke.cpp.o -c /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/tests/runtime/sequential_smoke.cpp",
+  "file": "/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/tests/runtime/sequential_smoke.cpp",
+  "output": "tests/CMakeFiles/pb_runtime_smoke.dir/runtime/sequential_smoke.cpp.o"
+}
+]
