@@ -48,6 +48,20 @@
       }
     },
     {
+      "name": "package-dev-ninja",
+      "displayName": "Package Debug (Ninja)",
+      "inherits": "dev-ninja",
+      "binaryDir": "${sourceDir}/build/package-dev-ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "PB_BUILD_TESTS": "ON",
+        "PB_BUILD_EXAMPLES": "ON",
+        "PB_BUILD_BENCHMARKS": "OFF",
+        "CPACK_GENERATOR": "TGZ"
+      }
+    },
+    {
       "name": "release-ninja",
       "displayName": "Release (Ninja)",
       "generator": "Ninja",
@@ -88,6 +102,10 @@
     {
       "name": "clang-tidy-ninja",
       "configurePreset": "clang-tidy-ninja"
+    },
+    {
+      "name": "package-dev-ninja",
+      "configurePreset": "package-dev-ninja"
     },
     {
       "name": "release-ninja",
