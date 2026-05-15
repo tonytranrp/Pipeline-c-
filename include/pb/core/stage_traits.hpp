@@ -57,6 +57,16 @@ struct stage_traits<T, std::void_t<typename T::input_type, typename T::output_ty
       return std::string_view{"<unnamed>"};
     }
   }
+
+  [[nodiscard]] static constexpr std::string_view key() noexcept {
+    if constexpr (requires { T::key; }) {
+      return detail::name_to_string_view(T::key);
+    } else if constexpr (requires { T::stage_key(); }) {
+      return std::string_view{T::stage_key()};
+    } else {
+      return name();
+    }
+  }
 };
 
 template <class T>
@@ -69,6 +79,10 @@ struct stage_info {
   static constexpr bool valid = false;
 
   [[nodiscard]] static constexpr std::string_view name() noexcept {
+    return std::string_view{"<invalid>"};
+  }
+
+  [[nodiscard]] static constexpr std::string_view key() noexcept {
     return std::string_view{"<invalid>"};
   }
 };
@@ -85,6 +99,10 @@ struct stage_info<T, std::enable_if_t<stage_traits<T>::is_valid_stage>> {
   [[nodiscard]] static constexpr std::string_view name() noexcept {
     return stage_traits<T>::name();
   }
+
+  [[nodiscard]] static constexpr std::string_view key() noexcept {
+    return stage_traits<T>::key();
+  }
 };
 
 template <class T>
@@ -98,5 +116,15 @@ using stage_output_t = typename stage_info<T>::output_type;
 
 template <class T>
 using stage_error_t = typename stage_info<T>::error_type;
+
+template <class T>
+[[nodiscard]] constexpr std::string_view stage_name() noexcept {
+  return stage_info<T>::name();
+}
+
+template <class T>
+[[nodiscard]] constexpr std::string_view stage_key() noexcept {
+  return stage_info<T>::key();
+}
 
 } // namespace pb::core

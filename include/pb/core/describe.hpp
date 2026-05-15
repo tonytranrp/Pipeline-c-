@@ -13,6 +13,7 @@ namespace pb::core {
 
 struct stage_record {
   std::size_t index{};
+  std::string_view key{};
   std::string_view name{};
 };
 
@@ -27,6 +28,10 @@ struct stage_descriptor {
 
   [[nodiscard]] static constexpr std::string_view name() noexcept {
     return stage_traits<StageType>::name();
+  }
+
+  [[nodiscard]] static constexpr std::string_view key() noexcept {
+    return stage_traits<StageType>::key();
   }
 };
 
@@ -57,9 +62,16 @@ template <class... Stages, std::size_t... Indexes>
 }
 
 template <class... Stages, std::size_t... Indexes>
+[[nodiscard]] constexpr auto stage_keys(meta::type_list<Stages...>, std::index_sequence<Indexes...>) noexcept
+    -> std::array<std::string_view, sizeof...(Stages)> {
+  return {stage_descriptor<Indexes, Stages>::key()...};
+}
+
+template <class... Stages, std::size_t... Indexes>
 [[nodiscard]] constexpr auto stage_records(meta::type_list<Stages...>, std::index_sequence<Indexes...>) noexcept
     -> std::array<stage_record, sizeof...(Stages)> {
-  return {stage_record{Indexes, stage_descriptor<Indexes, Stages>::name()}...};
+  return {stage_record{Indexes, stage_descriptor<Indexes, Stages>::key(),
+                       stage_descriptor<Indexes, Stages>::name()}...};
 }
 } // namespace detail
 
@@ -85,8 +97,17 @@ struct pipeline_descriptor {
     return stage<Index>::name();
   }
 
+  template <std::size_t Index>
+  [[nodiscard]] static constexpr std::string_view stage_key() noexcept {
+    return stage<Index>::key();
+  }
+
   [[nodiscard]] static constexpr auto stage_names() noexcept -> std::array<std::string_view, stage_count> {
     return detail::stage_names(stages{}, std::make_index_sequence<stage_count>{});
+  }
+
+  [[nodiscard]] static constexpr auto stage_keys() noexcept -> std::array<std::string_view, stage_count> {
+    return detail::stage_keys(stages{}, std::make_index_sequence<stage_count>{});
   }
 
   [[nodiscard]] static constexpr auto stage_records() noexcept -> std::array<stage_record, stage_count> {

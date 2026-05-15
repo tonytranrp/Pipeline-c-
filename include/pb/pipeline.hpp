@@ -42,6 +42,7 @@ using core::stage_info;
 using core::stage_info_t;
 using core::stage_record;
 using core::stage_input_t;
+using core::stage_name;
 using core::stage_output_t;
 using core::stage_traits;
 using core::valid;
