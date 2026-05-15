@@ -29,20 +29,41 @@ struct stage_descriptor {
 template <class Pipeline>
 struct pipeline_traits;
 
-template <class Input, class Output, class... Stages>
-struct pipeline_traits<pipeline<Input, Output, meta::type_list<Stages...>>> {
+template <class Input, class Output>
+struct pipeline_traits<pipeline<Input, Output, meta::type_list<>>> {
   using input_type = Input;
   using output_type = Output;
-  using stages = meta::type_list<Stages...>;
+  using stages = meta::type_list<>;
 
-  static constexpr std::size_t stage_count = sizeof...(Stages);
-  static constexpr bool empty = stage_count == 0;
+  static constexpr std::size_t stage_count = 0;
+  static constexpr bool empty = true;
 
   template <std::size_t Index>
   using stage_type = meta::at_t<stages, Index>;
 
   template <std::size_t Index>
   using stage = stage_descriptor<Index, stage_type<Index>>;
+};
+
+template <class Input, class Output, class FirstStage, class... RestStages>
+struct pipeline_traits<pipeline<Input, Output, meta::type_list<FirstStage, RestStages...>>> {
+  using input_type = Input;
+  using output_type = Output;
+  using stages = meta::type_list<FirstStage, RestStages...>;
+  using first_stage_type = FirstStage;
+  using last_stage_type = meta::back_t<stages>;
+
+  static constexpr std::size_t stage_count = 1 + sizeof...(RestStages);
+  static constexpr bool empty = false;
+
+  template <std::size_t Index>
+  using stage_type = meta::at_t<stages, Index>;
+
+  template <std::size_t Index>
+  using stage = stage_descriptor<Index, stage_type<Index>>;
+
+  using first_stage = stage<0>;
+  using last_stage = stage<stage_count - 1>;
 };
 
 namespace detail {
@@ -52,6 +73,15 @@ template <class... Stages, std::size_t... Indexes>
   return {stage_descriptor<Indexes, Stages>::name()...};
 }
 } // namespace detail
+
+template <ValidPipeline Pipeline>
+inline constexpr std::size_t pipeline_size_v = pipeline_traits<Pipeline>::stage_count;
+
+template <ValidPipeline Pipeline, std::size_t Index>
+using pipeline_stage_t = typename pipeline_traits<Pipeline>::template stage_type<Index>;
+
+template <ValidPipeline Pipeline, std::size_t Index>
+using pipeline_stage_descriptor_t = typename pipeline_traits<Pipeline>::template stage<Index>;
 
 template <ValidPipeline Pipeline>
 struct pipeline_descriptor {

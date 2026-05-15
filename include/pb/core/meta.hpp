@@ -64,13 +64,21 @@ struct at<type_list<Ts...>, Index> {
 template <class List, std::size_t Index>
 using at_t = typename at<List, Index>::type;
 
+template <class List>
+using front_t = at_t<List, 0>;
+
+template <class List>
+using back_t = at_t<List, size_v<List> - 1>;
+
 } // namespace pb::meta
 
 namespace pb::core::meta {
 using ::pb::meta::all_of;
 using ::pb::meta::at;
 using ::pb::meta::at_t;
+using ::pb::meta::back_t;
 using ::pb::meta::contains;
+using ::pb::meta::front_t;
 using ::pb::meta::push_back;
 using ::pb::meta::push_back_t;
 using ::pb::meta::size;

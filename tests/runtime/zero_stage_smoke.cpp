@@ -1,11 +1,18 @@
 #include <pb/pipeline.hpp>
 
+#include <type_traits>
+
 struct Input {
   int value{};
 };
 
 using Pipeline = pb::from<Input>::to<Input>;
+using Traits = pb::pipeline_traits<Pipeline>;
 static_assert(pb::valid<Pipeline>);
+static_assert(Traits::empty);
+static_assert(Traits::stage_count == 0);
+static_assert(std::same_as<Traits::input_type, Input>);
+static_assert(std::same_as<Traits::output_type, Input>);
 
 int main() {
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});

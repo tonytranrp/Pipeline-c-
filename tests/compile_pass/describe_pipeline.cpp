@@ -28,10 +28,17 @@ using ParseDescriptor = pb::stage_descriptor<0, Parse>;
 
 static_assert(pb::valid<Pipeline>);
 static_assert(Traits::stage_count == 2);
+static_assert(pb::pipeline_size_v<Pipeline> == 2);
 static_assert(!Traits::empty);
 static_assert(std::same_as<Traits::input_type, Raw>);
 static_assert(std::same_as<Traits::output_type, Done>);
 static_assert(std::same_as<Traits::stage_type<0>, Parse>);
+static_assert(std::same_as<pb::pipeline_stage_t<Pipeline, 0>, Parse>);
+static_assert(std::same_as<pb::pipeline_stage_descriptor_t<Pipeline, 1>, Traits::stage<1>>);
+static_assert(std::same_as<Traits::first_stage_type, Parse>);
+static_assert(std::same_as<Traits::last_stage_type, Finish>);
+static_assert(Traits::first_stage::name() == std::string_view{"parse"});
+static_assert(Traits::last_stage::name() == std::string_view{"finish"});
 static_assert(std::same_as<Traits::stage<1>::input_type, Parsed>);
 static_assert(ParseDescriptor::index == 0);
 static_assert(std::same_as<ParseDescriptor::info, pb::stage_info<Parse>>);
