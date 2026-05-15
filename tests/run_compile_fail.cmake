@@ -21,8 +21,8 @@ else()
 endif()
 
 execute_process(COMMAND ${compile_cmd} RESULT_VARIABLE result OUTPUT_VARIABLE stdout ERROR_VARIABLE stderr)
-set(diagnostics "${stdout}\n${stderr}")
-file(WRITE "${output_file}" "${diagnostics}\n")
+set(diagnostics "${stdout}\n${stderr}\n")
+file(WRITE "${output_file}" "${diagnostics}")
 
 if(result EQUAL 0)
   message(FATAL_ERROR "Expected compile failure for ${test_name}")
