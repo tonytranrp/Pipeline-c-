@@ -2,6 +2,8 @@
 
 Use this page as the release-facing companion to [Production Readiness Status](production-readiness.md) and [Build and Verification](build.md). It consolidates the exact checks that are supportable **today** and keeps the roadmap-only gaps visible so a release candidate does not overclaim the current MVP.
 
+For copyable evidence capture fields, use [Release Evidence Template](release-evidence-template.md) while running the commands below.
+
 ## What is supported today
 
 A release candidate can only claim the currently shipped MVP surface:

@@ -108,7 +108,7 @@ cmake --build --preset package-release-clang-ninja --target package
 
 If you want an isolated local rerun without reusing an existing build directory, configure a fresh package-release build directory and run the same test/build flow there.
 
-As of the current repository state, a fresh rerun is a release blocker: the generated consumer project builds `pipebuilder_core_target_smoke`, `pipebuilder_runtime_target_smoke`, and `pipebuilder_pipeline_alias_smoke`, but the smoke script later searches for a non-existent `pipebuilder_package_smoke` executable. Treat that mismatch as a packaging verification bug to fix before claiming the package-smoke lane is green again.
+A green rerun proves the current target-specific consumer executables were built and run from the installed package. If any of the configure, build, consumer execution, CPack, or archive-content checks fail, treat that failure as a package verification blocker until the release package preset passes freshly again.
 
 ## Expectations and current limitations
 
@@ -117,7 +117,7 @@ The current downstream package contract is intentionally narrow:
 - `pb::pipeline` is the primary documented consumer target.
 - The split targets are exported and smoke-tested, but they are still part of the MVP scaffold rather than a fully versioned long-term package surface.
 - The smoke lane proves successful consumption against the local toolchain used to build the package; wider cross-compiler/package-manager validation is still a release gate.
-- A fresh rerun at the current HEAD fails in the generated-consumer execution step because the smoke script looks for `pipebuilder_package_smoke` while the generated project builds target-specific executables instead.
+- The smoke lane proves the generated target-specific consumers build and run from the local install tree; it does not prove package-manager integration or cross-toolchain consumption.
 - The current archive check proves the runtime static library and key config/header entries exist, not that every future optional component or roadmap feature is packaged.
 - Optional backends, branch/join graphs, graph export, observer hooks, and richer runtime descriptor surfaces remain roadmap-only work, not installed-package guarantees.
 
