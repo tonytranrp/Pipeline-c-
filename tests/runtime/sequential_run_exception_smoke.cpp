@@ -65,7 +65,7 @@ int main() {
   assert(!unknown_exception.has_value());
   assert(unknown_exception.error().category == pb::runtime::error_category::exception);
   assert(unknown_exception.error().stage.name == "unknown_throwing_final");
-  assert(unknown_exception.error().stage.key == "1");
+  assert(unknown_exception.error().stage.key == "unknown_throwing_final");
   assert(unknown_exception.error().message == "stage threw an unknown exception");
   assert(unknown_exception.error().message != std::string_view{});
 
