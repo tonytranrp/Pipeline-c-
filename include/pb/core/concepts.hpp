@@ -22,12 +22,12 @@ concept connectable =
 
 template <typename From, typename To>
 concept source_to_stage =
-    pipeline_source<From> &&
+    stage<From> && stage<To> &&
     std::same_as<typename stage_traits<From>::output_type, typename stage_traits<To>::input_type>;
 
 template <typename From, typename To>
 concept stage_to_sink =
-    stage<From> && pipeline_sink<To> &&
+    stage<From> && stage<To> && pipeline_sink<To> &&
     std::same_as<typename stage_traits<From>::output_type, typename stage_traits<To>::input_type>;
 
 }  // namespace pb::core
