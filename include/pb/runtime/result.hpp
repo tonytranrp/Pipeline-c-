@@ -1,6 +1,7 @@
 #pragma once
 
 #include <concepts>
+#include <sstream>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -8,9 +9,22 @@
 
 namespace pb::runtime {
 
+enum class error_category {
+  stage_failure,
+  expected_error,
+  exception,
+  contract_violation,
+};
+
+struct stage_id {
+  std::string key{};
+  std::string name{};
+};
+
 struct error {
-  std::string stage;
-  std::string message;
+  stage_id stage{};
+  error_category category{error_category::stage_failure};
+  std::string message{};
 };
 
 template <class T, class E = error>
@@ -33,8 +47,10 @@ public:
 
   [[nodiscard]] E& error() & { return std::get<E>(storage_); }
   [[nodiscard]] const E& error() const& { return std::get<E>(storage_); }
+  [[nodiscard]] E&& error() && { return std::move(std::get<E>(storage_)); }
 
 private:
+  static_assert(!std::same_as<T, E>, "pb::runtime::result value_type and error_type must differ");
   std::variant<T, E> storage_;
 };
 
@@ -52,6 +68,7 @@ public:
   explicit operator bool() const noexcept { return has_value(); }
   [[nodiscard]] E& error() & { return error_; }
   [[nodiscard]] const E& error() const& { return error_; }
+  [[nodiscard]] E&& error() && { return std::move(error_); }
 
 private:
   E error_{};
@@ -59,15 +76,75 @@ private:
 };
 
 namespace detail {
-template <class T, class = void>
+template <class T>
 struct is_result : std::false_type {};
 
+template <class T, class E>
+struct is_result<result<T, E>> : std::true_type {};
+
 template <class T>
-struct is_result<T, std::void_t<typename T::value_type, typename T::error_type>>
-    : std::bool_constant<requires(T value) { { value.has_value() } -> std::convertible_to<bool>; }> {};
+concept streamable_error = requires(std::ostringstream stream, const T& value) {
+  { stream << value } -> std::same_as<std::ostringstream&>;
+};
+
+inline auto error_message_from(const std::string& message) -> std::string { return message; }
+inline auto error_message_from(const char* message) -> std::string { return message == nullptr ? std::string{} : std::string{message}; }
+inline auto error_message_from(const error& value) -> std::string { return value.message; }
+
+template <class E>
+auto error_message_from(const E& value) -> std::string {
+  if constexpr (streamable_error<E>) {
+    std::ostringstream stream;
+    stream << value;
+    return stream.str();
+  } else {
+    return "expected-like object reported an error";
+  }
+}
+
+template <class E>
+auto normalize_expected_error(E&& value) -> error {
+  if constexpr (std::same_as<std::remove_cvref_t<E>, error>) {
+    return std::forward<E>(value);
+  } else {
+    return error{.category = error_category::expected_error,
+                 .message = error_message_from(std::forward<E>(value))};
+  }
+}
 } // namespace detail
 
 template <class T>
 inline constexpr bool is_result_v = detail::is_result<std::remove_cvref_t<T>>::value;
+
+template <class T>
+concept expected_like = is_result_v<T> || requires(T value) {
+  typename std::remove_cvref_t<T>::value_type;
+  typename std::remove_cvref_t<T>::error_type;
+  { value.has_value() } -> std::convertible_to<bool>;
+  value.value();
+  value.error();
+};
+
+template <class T>
+[[nodiscard]] auto to_result(T&& value) {
+  using Value = std::remove_cvref_t<T>;
+  if constexpr (is_result_v<Value>) {
+    return std::forward<T>(value);
+  } else if constexpr (expected_like<Value>) {
+    using Output = typename Value::value_type;
+    if (value.has_value()) {
+      return result<Output>{value.value()};
+    }
+    return result<Output>{detail::normalize_expected_error(value.error())};
+  } else {
+    using Output = std::remove_cvref_t<T>;
+    return result<Output>{std::forward<T>(value)};
+  }
+}
+
+template <class T>
+[[nodiscard]] auto make_result(T&& value) {
+  return to_result(std::forward<T>(value));
+}
 
 } // namespace pb::runtime

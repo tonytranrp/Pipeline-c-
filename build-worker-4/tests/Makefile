@@ -199,6 +199,34 @@ pb_runtime_smoke/fast:
 	cd /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4 && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/pb_runtime_smoke.dir/build.make tests/CMakeFiles/pb_runtime_smoke.dir/build
 .PHONY : pb_runtime_smoke/fast
 
+# Convenience name for target.
+tests/CMakeFiles/pb_runtime_result_smoke.dir/rule:
+	cd /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4 && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/pb_runtime_result_smoke.dir/rule
+.PHONY : tests/CMakeFiles/pb_runtime_result_smoke.dir/rule
+
+# Convenience name for target.
+pb_runtime_result_smoke: tests/CMakeFiles/pb_runtime_result_smoke.dir/rule
+.PHONY : pb_runtime_result_smoke
+
+# fast build rule for target.
+pb_runtime_result_smoke/fast:
+	cd /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4 && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/pb_runtime_result_smoke.dir/build.make tests/CMakeFiles/pb_runtime_result_smoke.dir/build
+.PHONY : pb_runtime_result_smoke/fast
+
+# Convenience name for target.
+tests/CMakeFiles/pb_runtime_sequential_result_smoke.dir/rule:
+	cd /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4 && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/pb_runtime_sequential_result_smoke.dir/rule
+.PHONY : tests/CMakeFiles/pb_runtime_sequential_result_smoke.dir/rule
+
+# Convenience name for target.
+pb_runtime_sequential_result_smoke: tests/CMakeFiles/pb_runtime_sequential_result_smoke.dir/rule
+.PHONY : pb_runtime_sequential_result_smoke
+
+# fast build rule for target.
+pb_runtime_sequential_result_smoke/fast:
+	cd /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4 && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/pb_runtime_sequential_result_smoke.dir/build.make tests/CMakeFiles/pb_runtime_sequential_result_smoke.dir/build
+.PHONY : pb_runtime_sequential_result_smoke/fast
+
 compile_pass/smoke_pipeline.o: compile_pass/smoke_pipeline.cpp.o
 .PHONY : compile_pass/smoke_pipeline.o
 
@@ -222,6 +250,54 @@ compile_pass/smoke_pipeline.s: compile_pass/smoke_pipeline.cpp.s
 compile_pass/smoke_pipeline.cpp.s:
 	cd /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4 && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/pb_smoke_compile_pass.dir/build.make tests/CMakeFiles/pb_smoke_compile_pass.dir/compile_pass/smoke_pipeline.cpp.s
 .PHONY : compile_pass/smoke_pipeline.cpp.s
+
+runtime/result_smoke.o: runtime/result_smoke.cpp.o
+.PHONY : runtime/result_smoke.o
+
+# target to build an object file
+runtime/result_smoke.cpp.o:
+	cd /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4 && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/pb_runtime_result_smoke.dir/build.make tests/CMakeFiles/pb_runtime_result_smoke.dir/runtime/result_smoke.cpp.o
+.PHONY : runtime/result_smoke.cpp.o
+
+runtime/result_smoke.i: runtime/result_smoke.cpp.i
+.PHONY : runtime/result_smoke.i
+
+# target to preprocess a source file
+runtime/result_smoke.cpp.i:
+	cd /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4 && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/pb_runtime_result_smoke.dir/build.make tests/CMakeFiles/pb_runtime_result_smoke.dir/runtime/result_smoke.cpp.i
+.PHONY : runtime/result_smoke.cpp.i
+
+runtime/result_smoke.s: runtime/result_smoke.cpp.s
+.PHONY : runtime/result_smoke.s
+
+# target to generate assembly for a file
+runtime/result_smoke.cpp.s:
+	cd /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4 && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/pb_runtime_result_smoke.dir/build.make tests/CMakeFiles/pb_runtime_result_smoke.dir/runtime/result_smoke.cpp.s
+.PHONY : runtime/result_smoke.cpp.s
+
+runtime/sequential_result_smoke.o: runtime/sequential_result_smoke.cpp.o
+.PHONY : runtime/sequential_result_smoke.o
+
+# target to build an object file
+runtime/sequential_result_smoke.cpp.o:
+	cd /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4 && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/pb_runtime_sequential_result_smoke.dir/build.make tests/CMakeFiles/pb_runtime_sequential_result_smoke.dir/runtime/sequential_result_smoke.cpp.o
+.PHONY : runtime/sequential_result_smoke.cpp.o
+
+runtime/sequential_result_smoke.i: runtime/sequential_result_smoke.cpp.i
+.PHONY : runtime/sequential_result_smoke.i
+
+# target to preprocess a source file
+runtime/sequential_result_smoke.cpp.i:
+	cd /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4 && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/pb_runtime_sequential_result_smoke.dir/build.make tests/CMakeFiles/pb_runtime_sequential_result_smoke.dir/runtime/sequential_result_smoke.cpp.i
+.PHONY : runtime/sequential_result_smoke.cpp.i
+
+runtime/sequential_result_smoke.s: runtime/sequential_result_smoke.cpp.s
+.PHONY : runtime/sequential_result_smoke.s
+
+# target to generate assembly for a file
+runtime/sequential_result_smoke.cpp.s:
+	cd /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4 && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/pb_runtime_sequential_result_smoke.dir/build.make tests/CMakeFiles/pb_runtime_sequential_result_smoke.dir/runtime/sequential_result_smoke.cpp.s
+.PHONY : runtime/sequential_result_smoke.cpp.s
 
 runtime/sequential_smoke.o: runtime/sequential_smoke.cpp.o
 .PHONY : runtime/sequential_smoke.o
@@ -260,11 +336,19 @@ help:
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
 	@echo "... test"
+	@echo "... pb_runtime_result_smoke"
+	@echo "... pb_runtime_sequential_result_smoke"
 	@echo "... pb_runtime_smoke"
 	@echo "... pb_smoke_compile_pass"
 	@echo "... compile_pass/smoke_pipeline.o"
 	@echo "... compile_pass/smoke_pipeline.i"
 	@echo "... compile_pass/smoke_pipeline.s"
+	@echo "... runtime/result_smoke.o"
+	@echo "... runtime/result_smoke.i"
+	@echo "... runtime/result_smoke.s"
+	@echo "... runtime/sequential_result_smoke.o"
+	@echo "... runtime/sequential_result_smoke.i"
+	@echo "... runtime/sequential_result_smoke.s"
 	@echo "... runtime/sequential_smoke.o"
 	@echo "... runtime/sequential_smoke.i"
 	@echo "... runtime/sequential_smoke.s"

@@ -236,6 +236,32 @@ pb_runtime_smoke/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/pb_runtime_smoke.dir/build.make tests/CMakeFiles/pb_runtime_smoke.dir/build
 .PHONY : pb_runtime_smoke/fast
 
+#=============================================================================
+# Target rules for targets named pb_runtime_result_smoke
+
+# Build rule for target.
+pb_runtime_result_smoke: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pb_runtime_result_smoke
+.PHONY : pb_runtime_result_smoke
+
+# fast build rule for target.
+pb_runtime_result_smoke/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/pb_runtime_result_smoke.dir/build.make tests/CMakeFiles/pb_runtime_result_smoke.dir/build
+.PHONY : pb_runtime_result_smoke/fast
+
+#=============================================================================
+# Target rules for targets named pb_runtime_sequential_result_smoke
+
+# Build rule for target.
+pb_runtime_sequential_result_smoke: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pb_runtime_sequential_result_smoke
+.PHONY : pb_runtime_sequential_result_smoke
+
+# fast build rule for target.
+pb_runtime_sequential_result_smoke/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/pb_runtime_sequential_result_smoke.dir/build.make tests/CMakeFiles/pb_runtime_sequential_result_smoke.dir/build
+.PHONY : pb_runtime_sequential_result_smoke/fast
+
 src/runtime/error.o: src/runtime/error.cpp.o
 .PHONY : src/runtime/error.o
 
@@ -300,6 +326,8 @@ help:
 	@echo "... pb_basic_order_pipeline"
 	@echo "... pb_error_diagnostic_example"
 	@echo "... pb_runtime"
+	@echo "... pb_runtime_result_smoke"
+	@echo "... pb_runtime_sequential_result_smoke"
 	@echo "... pb_runtime_smoke"
 	@echo "... pb_smoke_compile_pass"
 	@echo "... src/runtime/error.o"

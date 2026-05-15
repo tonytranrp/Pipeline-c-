@@ -17,6 +17,8 @@
 /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/examples/CMakeFiles/install/strip.dir
 /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/tests/CMakeFiles/pb_smoke_compile_pass.dir
 /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/tests/CMakeFiles/pb_runtime_smoke.dir
+/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/tests/CMakeFiles/pb_runtime_result_smoke.dir
+/mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/tests/CMakeFiles/pb_runtime_sequential_result_smoke.dir
 /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/tests/CMakeFiles/test.dir
 /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/tests/CMakeFiles/edit_cache.dir
 /mnt/c/users/tonyt/documents/github/pipeline-c++/.omx/team/deliver-the-pipeline-1a2d869d/worktrees/worker-4/build-worker-4/tests/CMakeFiles/rebuild_cache.dir
