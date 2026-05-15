@@ -52,7 +52,7 @@ Before cutting a release candidate, collect evidence for:
 
 ## Known gaps before a stable release
 
-- Branch, join, graph export, observer hooks, and optional backend execution are roadmap items, not current guarantees. See [Branch / Join Roadmap / Status](branch-join-roadmap.md), [Graph Export Roadmap / Status](graph-export-roadmap.md), and [Observer Hooks Roadmap / Status](observer-hooks-roadmap.md) for the current roadmap-only boundaries and planned follow-on work.
+- Branch, join, graph export, observer hooks, and optional backend execution are roadmap items, not current guarantees. See [Branch / Join Roadmap / Status](branch-join-roadmap.md), [Graph Export Roadmap / Status](graph-export-roadmap.md), [Observer Hooks Roadmap / Status](observer-hooks-roadmap.md), and [Optional Backends Roadmap / Status](optional-backends-roadmap.md) for the current roadmap-only boundaries and planned follow-on work.
 - Public diagnostics are covered by compile-fail smoke tests, but the exact diagnostic wording is still being hardened.
 - Runtime error propagation exists for the current sequential path; richer exception policies, `std::expected` integration, and observer/error-category APIs are future slices.
 - Sequential `run()` and `try_run()` are currently split in error-handling behavior: `try_run()` captures stage exceptions, while `run()` does not. Harmonizing this path is a queued runtime hardening item.

@@ -6,6 +6,7 @@ This repository is bootstrapping a typed C++20 pipeline builder. Start with:
 - [Branch / Join Roadmap / Status](branch-join-roadmap.md)
 - [Examples](examples.md)
 - [Graph Export Roadmap / Status](graph-export-roadmap.md)
+- [Optional Backends Roadmap / Status](optional-backends-roadmap.md)
 - [Observer Hooks Roadmap / Status](observer-hooks-roadmap.md)
 - [Coordinated Work Lanes](work-lanes.md)
 - `research/pipeline_builder_cpp_research_plan.md` for the full roadmap
