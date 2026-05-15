@@ -137,6 +137,13 @@
       "output": {
         "outputOnFailure": true
       }
+    },
+    {
+      "name": "package-dev-ninja",
+      "configurePreset": "package-dev-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
     }
   ]
 }
