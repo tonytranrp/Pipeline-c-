@@ -1,6 +1,7 @@
 #include <pb/pipeline.hpp>
 
 #include <array>
+#include <cassert>
 #include <string_view>
 #include <type_traits>
 
@@ -49,8 +50,16 @@ static_assert(std::same_as<pb::stage_descriptor<0, Parse>::input_type, Raw>);
 static_assert(pb::pipeline_descriptor<Pipeline>::stage_count == 2);
 static_assert(pb::describe<Pipeline>().stage_name<0>() == std::string_view{"parse"});
 static_assert(pb::describe<Pipeline>().stage_name<1>() == std::string_view{"finish"});
+static_assert(std::is_same_v<pb::error_category, pb::runtime::error_category>);
+static_assert(std::is_same_v<pb::error, pb::runtime::error>);
+static_assert(std::is_same_v<pb::result<int>, pb::runtime::result<int>>);
+static_assert(pb::is_result_v<pb::result<int>>);
+static_assert(pb::expected_like<pb::result<int>>);
 
 int main() {
+  assert(pb::has_stage(pb::error{.stage = {.key = "parse", .name = "parse"}}));
+  assert(pb::has_message(pb::error{.message = "parse failed"}));
+
   constexpr auto desc = pb::describe<Pipeline>();
   constexpr auto names = desc.stage_names();
   constexpr auto records = desc.stage_records();

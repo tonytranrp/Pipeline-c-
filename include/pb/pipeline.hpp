@@ -37,4 +37,17 @@ using core::stage_input_t;
 using core::stage_output_t;
 using core::stage_traits;
 using core::valid;
+using runtime::category_name;
+using runtime::describe;
+using runtime::expected_like;
+using runtime::error;
+using runtime::error_category;
+using runtime::has_category;
+using runtime::has_message;
+using runtime::has_stage;
+using runtime::is_result_v;
+using runtime::make_result;
+using runtime::result;
+using runtime::stage_id;
+using runtime::to_result;
 } // namespace pb
