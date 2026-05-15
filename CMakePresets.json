@@ -144,6 +144,13 @@
       "output": {
         "outputOnFailure": true
       }
+    },
+    {
+      "name": "bench-dev-ninja",
+      "configurePreset": "bench-dev-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
     }
   ]
 }
