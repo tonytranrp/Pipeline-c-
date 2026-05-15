@@ -46,9 +46,10 @@ static_assert(std::same_as<pb::pipeline_input_t<OrderPipeline>, domain::RawText>
 static_assert(std::same_as<pb::pipeline_output_t<OrderPipeline>, domain::Receipt>);
 static_assert(std::same_as<pb::pipeline_stage_t<OrderPipeline, 0>, ParseOrder>);
 static_assert(pb::describe<OrderPipeline>().stage_name<0>() == "parse_order");
+static_assert(pb::describe<OrderPipeline>().edge_count == 2);
 ```
 
-Use `pb::describe<Pipeline>().stage_names()` or `stage_records()` when tooling needs a stable stage order without depending on template internals. `stage_record` currently carries the stage index and name.
+Use `pb::describe<Pipeline>().stage_names()`, `stage_records()`, or `edge_records()` when tooling needs stable linear stage/edge order without depending on template internals. `stage_record` carries the stage index, key, and name; `edge_record` carries adjacent stage indexes plus the source/target stage keys and names for each linear stage-to-stage edge.
 
 ## Diagnostic failure example
 

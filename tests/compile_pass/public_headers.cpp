@@ -67,9 +67,14 @@ static_assert(std::same_as<pb::stage_descriptor<0, Parse>::input_type, Raw>);
 static_assert(std::same_as<pb::stage_descriptor<0, Parse>::error_type, ParseError>);
 static_assert(pb::stage_descriptor<0, Parse>::key() == std::string_view{"order.parse"});
 static_assert(pb::pipeline_descriptor<Pipeline>::stage_count == 2);
+static_assert(pb::pipeline_descriptor<Pipeline>::edge_count == 1);
 static_assert(pb::describe<Pipeline>().stage_key<0>() == std::string_view{"order.parse"});
 static_assert(pb::describe<Pipeline>().stage_name<0>() == std::string_view{"parse"});
 static_assert(pb::describe<Pipeline>().stage_name<1>() == std::string_view{"finish"});
+static_assert(pb::describe<Pipeline>().edge_records()[0].from_stage_index == 0);
+static_assert(pb::describe<Pipeline>().edge_records()[0].to_stage_index == 1);
+static_assert(pb::describe<Pipeline>().edge_records()[0].from_key == std::string_view{"order.parse"});
+static_assert(pb::describe<Pipeline>().edge_records()[0].to_key == std::string_view{"finish"});
 static_assert(std::is_same_v<pb::error_category, pb::runtime::error_category>);
 static_assert(std::is_same_v<pb::error, pb::runtime::error>);
 static_assert(std::is_same_v<pb::result<int>, pb::runtime::result<int>>);
@@ -84,9 +89,12 @@ int main() {
   constexpr auto keys = desc.stage_keys();
   constexpr auto names = desc.stage_names();
   constexpr auto records = desc.stage_records();
+  constexpr auto edges = desc.edge_records();
   static_assert(keys[0] == std::string_view{"order.parse"});
   static_assert(records[0].index == 0);
   static_assert(records[0].key == std::string_view{"order.parse"});
   static_assert(records[1].name == std::string_view{"finish"});
+  static_assert(edges[0].from_name == std::string_view{"parse"});
+  static_assert(edges[0].to_name == std::string_view{"finish"});
   return names == std::array<std::string_view, 2>{"parse", "finish"} ? 0 : 1;
 }

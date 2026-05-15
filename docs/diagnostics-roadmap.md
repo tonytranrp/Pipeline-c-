@@ -11,7 +11,7 @@ Today the repository supports:
 - a public runtime diagnostic surface in `pb::runtime::error`, `error_category`, `category_name(...)`, and `describe(...)`
 - a runtime diagnostic smoke test in `tests/runtime/error_diagnostic_smoke.cpp`
 - a user-facing compile-fail example in `examples/error_diagnostic.cpp`
-- stage names and stage records that help keep error text tied to the linear pipeline stages that failed
+- stage names, stage records, and linear edge records that help keep error text tied to the linear pipeline stages and adjacent stage-to-stage edges that failed
 
 Today the repository does **not** support:
 

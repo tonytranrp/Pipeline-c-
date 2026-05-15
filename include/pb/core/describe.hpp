@@ -17,16 +17,33 @@ struct stage_record {
   std::string_view name{};
 };
 
+struct edge_record {
+  std::size_t index{};
+  std::size_t from_stage_index{};
+  std::size_t to_stage_index{};
+  std::string_view from_key{};
+  std::string_view from_name{};
+  std::string_view to_key{};
+  std::string_view to_name{};
+};
+
 template <std::size_t StageCount>
 struct pipeline_descriptor_view {
   static constexpr std::size_t stage_count = StageCount;
+  static constexpr std::size_t edge_count = StageCount > 0 ? StageCount - 1 : 0;
   static constexpr bool empty = StageCount == 0;
 
   std::array<stage_record, StageCount> stages{};
+  std::array<edge_record, edge_count> edges{};
 
   [[nodiscard]] constexpr auto stage_records() const noexcept
       -> const std::array<stage_record, StageCount>& {
     return stages;
+  }
+
+  [[nodiscard]] constexpr auto edge_records() const noexcept
+      -> const std::array<edge_record, edge_count>& {
+    return edges;
   }
 };
 
@@ -86,6 +103,31 @@ template <class... Stages, std::size_t... Indexes>
   return {stage_record{Indexes, stage_descriptor<Indexes, Stages>::key(),
                        stage_descriptor<Indexes, Stages>::name()}...};
 }
+
+template <class StageList, std::size_t Index>
+struct edge_record_at;
+
+template <class... Stages, std::size_t Index>
+struct edge_record_at<meta::type_list<Stages...>, Index> {
+  using from_stage = meta::at_t<meta::type_list<Stages...>, Index>;
+  using to_stage = meta::at_t<meta::type_list<Stages...>, Index + 1>;
+
+  [[nodiscard]] static constexpr auto value() noexcept -> edge_record {
+    return edge_record{Index,
+                       Index,
+                       Index + 1,
+                       stage_traits<from_stage>::key(),
+                       stage_traits<from_stage>::name(),
+                       stage_traits<to_stage>::key(),
+                       stage_traits<to_stage>::name()};
+  }
+};
+
+template <class StageList, std::size_t... Indexes>
+[[nodiscard]] constexpr auto edge_records(StageList, std::index_sequence<Indexes...>) noexcept
+    -> std::array<edge_record, sizeof...(Indexes)> {
+  return {edge_record_at<StageList, Indexes>::value()...};
+}
 } // namespace detail
 
 template <ValidPipeline Pipeline>
@@ -97,6 +139,7 @@ struct pipeline_descriptor {
   using stages = typename traits::stages;
 
   static constexpr std::size_t stage_count = traits::stage_count;
+  static constexpr std::size_t edge_count = stage_count > 0 ? stage_count - 1 : 0;
   static constexpr bool empty = traits::empty;
 
   using view_type = pipeline_descriptor_view<stage_count>;
@@ -129,8 +172,12 @@ struct pipeline_descriptor {
     return detail::stage_records(stages{}, std::make_index_sequence<stage_count>{});
   }
 
+  [[nodiscard]] static constexpr auto edge_records() noexcept -> std::array<edge_record, edge_count> {
+    return detail::edge_records(stages{}, std::make_index_sequence<edge_count>{});
+  }
+
   [[nodiscard]] static constexpr auto view() noexcept -> view_type {
-    return view_type{stage_records()};
+    return view_type{stage_records(), edge_records()};
   }
 };
 

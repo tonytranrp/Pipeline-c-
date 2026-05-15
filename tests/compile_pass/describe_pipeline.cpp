@@ -25,12 +25,15 @@ struct Finish {
 };
 
 using Pipeline = pb::from<Raw>::then<Parse>::then<Finish>::to<Done>;
+using EmptyPipeline = pb::from<Raw>::to<Raw>;
 using Traits = pb::pipeline_traits<Pipeline>;
 using ParseDescriptor = pb::stage_descriptor<0, Parse>;
 using PipelineDescriptorView = pb::pipeline_descriptor_view<2>;
 
 static_assert(pb::valid<Pipeline>);
 static_assert(Traits::stage_count == 2);
+static_assert(pb::pipeline_descriptor<Pipeline>::edge_count == 1);
+static_assert(pb::pipeline_descriptor<EmptyPipeline>::edge_count == 0);
 static_assert(pb::pipeline_size_v<Pipeline> == 2);
 static_assert(!pb::pipeline_empty_v<Pipeline>);
 static_assert(!Traits::empty);
@@ -56,17 +59,26 @@ static_assert(pb::descriptor_view<Pipeline>().stage_records()[0].name == pb::des
 static_assert(pb::descriptor_view<Pipeline>().stage_records()[1].index == pb::describe<Pipeline>().stage_records()[1].index);
 static_assert(pb::descriptor_view<Pipeline>().stage_records()[1].key == pb::describe<Pipeline>().stage_records()[1].key);
 static_assert(pb::descriptor_view<Pipeline>().stage_records()[1].name == pb::describe<Pipeline>().stage_records()[1].name);
+static_assert(pb::descriptor_view<Pipeline>().edge_records()[0].index == pb::describe<Pipeline>().edge_records()[0].index);
+static_assert(pb::descriptor_view<Pipeline>().edge_records()[0].from_key ==
+              pb::describe<Pipeline>().edge_records()[0].from_key);
+static_assert(pb::descriptor_view<Pipeline>().edge_records()[0].to_key ==
+              pb::describe<Pipeline>().edge_records()[0].to_key);
 static_assert(pb::describe<Pipeline>().stage_count == 2);
+static_assert(pb::describe<Pipeline>().edge_count == 1);
 static_assert(pb::describe<Pipeline>().stage_key<0>() == std::string_view{"order.parse"});
 static_assert(pb::describe<Pipeline>().stage_key<1>() == std::string_view{"finish"});
 static_assert(pb::describe<Pipeline>().stage_name<0>() == std::string_view{"parse"});
 static_assert(pb::describe<Pipeline>().stage_name<1>() == std::string_view{"finish"});
+static_assert(pb::describe<EmptyPipeline>().edge_records().empty());
+static_assert(pb::descriptor_view<EmptyPipeline>().edge_records().empty());
 
 int main() {
   constexpr auto desc = pb::describe<Pipeline>();
   constexpr auto keys = desc.stage_keys();
   constexpr auto names = desc.stage_names();
   constexpr auto records = desc.stage_records();
+  constexpr auto edges = desc.edge_records();
   static_assert(keys.size() == 2);
   static_assert(keys[0] == std::string_view{"order.parse"});
   static_assert(keys[1] == std::string_view{"finish"});
@@ -80,5 +92,13 @@ int main() {
   static_assert(records[1].index == 1);
   static_assert(records[1].key == std::string_view{"finish"});
   static_assert(records[1].name == std::string_view{"finish"});
+  static_assert(edges.size() == 1);
+  static_assert(edges[0].index == 0);
+  static_assert(edges[0].from_stage_index == 0);
+  static_assert(edges[0].to_stage_index == 1);
+  static_assert(edges[0].from_key == std::string_view{"order.parse"});
+  static_assert(edges[0].from_name == std::string_view{"parse"});
+  static_assert(edges[0].to_key == std::string_view{"finish"});
+  static_assert(edges[0].to_name == std::string_view{"finish"});
   return names == std::array<std::string_view, 2>{"parse", "finish"} ? 0 : 1;
 }
