@@ -1,17 +1,18 @@
 #include <pb/pipeline.hpp>
 
-struct read_bytes {
-  using input_type = const char*;
-  using output_type = int;
+struct Raw {};
+struct Parsed {};
+struct Receipt {};
+
+struct Parse {
+  using input_type = Raw;
+  using output_type = Parsed;
 };
 
-struct expects_text {
-  using input_type = const char*;
-  using output_type = void;
+struct Persist {
+  using input_type = Receipt;
+  using output_type = Receipt;
 };
 
-using invalid_pipeline = pb::from<const char*>::then<read_bytes>::to<expects_text>;
-
-int main() {
-  return sizeof(invalid_pipeline);
-}
+using Broken = pb::from<Raw>::then<Parse>::then<Persist>::to<Receipt>;
+static_assert(pb::valid<Broken>);

@@ -1,29 +1,59 @@
 {
-  "version": 6,
+  "version": 4,
+  "cmakeMinimumRequired": { "major": 3, "minor": 23, "patch": 0 },
   "configurePresets": [
     {
-      "name": "default",
-      "displayName": "Default",
+      "name": "dev-ninja",
+      "displayName": "Developer Debug (Ninja)",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build/dev-ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "PB_BUILD_TESTS": "ON",
-        "PB_BUILD_BENCHMARKS": "ON",
-        "PB_BUILD_DOCS": "OFF"
+        "PB_BUILD_EXAMPLES": "ON",
+        "PB_BUILD_BENCHMARKS": "OFF"
+      }
+    },
+    {
+      "name": "clang-dev-ninja",
+      "displayName": "Clang Developer Debug (Ninja)",
+      "inherits": "dev-ninja",
+      "binaryDir": "${sourceDir}/build/clang-dev-ninja",
+      "cacheVariables": { "CMAKE_CXX_COMPILER": "clang++" }
+    },
+    {
+      "name": "clang-time-trace",
+      "displayName": "Clang Compile-Time Trace",
+      "inherits": "clang-dev-ninja",
+      "binaryDir": "${sourceDir}/build/clang-time-trace",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "PB_ENABLE_CLANG_TIME_TRACE": "ON"
+      }
+    },
+    {
+      "name": "release-ninja",
+      "displayName": "Release (Ninja)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/release-ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "PB_BUILD_TESTS": "ON",
+        "PB_BUILD_EXAMPLES": "ON",
+        "PB_BUILD_BENCHMARKS": "OFF"
       }
     }
   ],
   "buildPresets": [
-    {
-      "name": "default",
-      "configurePreset": "default"
-    }
+    { "name": "dev-ninja", "configurePreset": "dev-ninja" },
+    { "name": "clang-dev-ninja", "configurePreset": "clang-dev-ninja" },
+    { "name": "clang-time-trace", "configurePreset": "clang-time-trace" },
+    { "name": "release-ninja", "configurePreset": "release-ninja" }
   ],
   "testPresets": [
-    {
-      "name": "default",
-      "configurePreset": "default"
-    }
+    { "name": "dev-ninja", "configurePreset": "dev-ninja", "output": { "outputOnFailure": true } },
+    { "name": "clang-dev-ninja", "configurePreset": "clang-dev-ninja", "output": { "outputOnFailure": true } }
   ]
 }

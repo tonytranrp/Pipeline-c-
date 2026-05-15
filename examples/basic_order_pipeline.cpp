@@ -1,0 +1,63 @@
+#include <pb/pipeline.hpp>
+
+#include <string>
+#include <utility>
+
+namespace domain {
+struct RawText { std::string value; };
+struct OrderDraft { std::string id; };
+struct ValidatedOrder { std::string id; };
+struct Receipt { std::string id; };
+struct ParseError { std::string message; };
+struct ValidationError { std::string message; };
+} // namespace domain
+
+namespace legacy {
+auto parse_order(domain::RawText input) -> domain::OrderDraft {
+  return domain::OrderDraft{std::move(input.value)};
+}
+
+struct validate_order {
+  auto operator()(domain::OrderDraft draft) const -> domain::ValidatedOrder {
+    return domain::ValidatedOrder{std::move(draft.id)};
+  }
+};
+} // namespace legacy
+
+namespace stage_names {
+struct parse_order { static constexpr auto value = "parse_order"; };
+struct validate_order { static constexpr auto value = "validate_order"; };
+} // namespace stage_names
+
+using ParseOrder = pb::adapt_fn<legacy::parse_order, domain::RawText, domain::OrderDraft,
+                                domain::ParseError, stage_names::parse_order>;
+using ValidateOrder = pb::adapt_functor<legacy::validate_order, domain::OrderDraft,
+                                        domain::ValidatedOrder, domain::ValidationError,
+                                        stage_names::validate_order>;
+
+struct PersistOrder {
+  using input_type = domain::ValidatedOrder;
+  using output_type = domain::Receipt;
+  using error_type = pb::no_error;
+  static constexpr auto stage_name() noexcept { return "persist_order"; }
+  auto operator()(domain::ValidatedOrder order) const -> domain::Receipt {
+    return domain::Receipt{std::move(order.id)};
+  }
+};
+
+using OrderPipeline = pb::from<domain::RawText>
+                          ::then<ParseOrder>
+                          ::then<ValidateOrder>
+                          ::then<PersistOrder>
+                          ::to<domain::Receipt>;
+
+static_assert(pb::adapted_stage<ParseOrder>);
+static_assert(pb::adapted_stage<ValidateOrder>);
+static_assert(pb::valid<OrderPipeline>);
+static_assert(ParseOrder::stage_name() == "parse_order");
+
+int main() {
+  auto engine = pb::compile<OrderPipeline>(pb::runtime::sequential{});
+  auto receipt = engine.run(domain::RawText{"order-1002"});
+  return receipt.id == "order-1002" ? 0 : 1;
+}

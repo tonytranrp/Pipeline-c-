@@ -1,43 +1,36 @@
 #include <pb/pipeline.hpp>
 
-#include <concepts>
+struct Raw { int value{}; };
+struct Parsed { int value{}; };
+struct Normalized { int value{}; };
+struct Done { int value{}; };
 
-namespace {
-
-struct parse_order {
-  static constexpr auto name = pb::fixed_string{"parse_order"};
-  using input_type = const char*;
-  using output_type = int;
+struct Parse {
+  using input_type = Raw;
+  using output_type = Parsed;
+  static constexpr auto stage_name() noexcept { return "parse"; }
+  Parsed operator()(Raw raw) const { return {raw.value + 1}; }
 };
 
-struct validate_order {
-  static constexpr auto name = pb::fixed_string{"validate_order"};
-  using input_type = int;
-  using output_type = long;
+struct Normalize {
+  using input_type = Parsed;
+  using output_type = Normalized;
+  static constexpr auto stage_name() noexcept { return "normalize"; }
+  Normalized operator()(Parsed parsed) const { return {parsed.value * 2}; }
 };
 
-struct persist_order {
-  static constexpr auto name = pb::fixed_string{"persist_order"};
-  using input_type = long;
-  using output_type = void;
+struct Finish {
+  using input_type = Normalized;
+  using output_type = Done;
+  static constexpr auto stage_name() noexcept { return "finish"; }
+  Done operator()(Normalized normalized) const { return {normalized.value - 3}; }
 };
 
-using order_pipeline =
-    pb::from<const char*>::then<parse_order>::to<validate_order>::then<persist_order>::chain;
-
-static_assert(pb::core::meta::type_list_size_v<pb::core::meta::type_list<int, double, char>> == 3);
-static_assert(pb::core::meta::contains<pb::core::meta::type_list<int, double>, double>::value);
-static_assert(std::same_as<pb::core::meta::at_t<pb::core::meta::type_list<int, double>, 1>, double>);
-static_assert(pb::core::stage<parse_order>);
-static_assert(pb::core::connectable<parse_order, validate_order>);
-static_assert(pb::core::stage_to_sink<validate_order, persist_order>);
-static_assert(pb::validate_chain_v<const char*, parse_order, validate_order, persist_order>);
-static_assert(pb::core::validate<order_pipeline>::value);
-static_assert(pb::core::is_valid_chain_v<order_pipeline>);
-static_assert(pb::core::stage_traits<parse_order>::name.view() == "parse_order");
-
-}  // namespace
+using Pipeline = pb::from<Raw>::then<Parse>::then<Normalize>::then<Finish>::to<Done>;
+static_assert(pb::valid<Pipeline>);
 
 int main() {
-  return 0;
+  auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
+  auto done = engine.run(Raw{4});
+  return done.value == 7 ? 0 : 1;
 }
