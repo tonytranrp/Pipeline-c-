@@ -57,6 +57,27 @@ cmake --build --preset clang-dev-ninja --target pb_bench_sequential_5_stage
 
 Use `pb_bench_include_pipeline` as a guard for the public-header include surface. Use `pb_bench_sequential_5_stage` as a smoke check that the runtime benchmark scaffold still exercises the sequential executor. These targets are not pass/fail performance gates yet; record timings alongside compiler, build type, and preset before comparing results across machines.
 
+### Recording benchmark results
+
+Benchmark smoke results are only comparable when the environment is recorded with the result. For a release-readiness note or regression investigation, capture at least:
+
+- Git commit SHA and whether the tree had local changes.
+- Preset name, build type, compiler ID/version, generator, and target name.
+- Machine/OS summary and whether the build directory was clean or incremental.
+- Command used to build or run the benchmark.
+- Observed wall time or trace summary, plus whether the number came from CTest, shell `time`, or a Clang time-trace artifact.
+
+Use a short text record such as:
+
+```text
+commit=<sha> tree=<clean|dirty>
+preset=bench-dev-ninja target=pb_bench_include_pipeline compiler=<id-version>
+mode=<clean|incremental> metric=<wall-time|trace-summary> value=<value>
+notes=<local context, suspected outlier, or follow-up>
+```
+
+Do not compare Debug and Release presets as regressions against each other. Use `bench-dev-ninja` for fast local smoke checks and `benchmark-ninja` when a release-like benchmark signal is needed.
+
 For compile-time profiling, build the same translation units with the Clang time-trace preset:
 
 ```bash
