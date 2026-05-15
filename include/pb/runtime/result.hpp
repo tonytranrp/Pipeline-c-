@@ -45,9 +45,33 @@ public:
   [[nodiscard]] const T& value() const& { return std::get<T>(storage_); }
   [[nodiscard]] T&& value() && { return std::move(std::get<T>(storage_)); }
 
+  template <class U>
+    requires std::copy_constructible<T> && std::constructible_from<T, U>
+  [[nodiscard]] T value_or(U&& fallback) const& {
+    return has_value() ? value() : T{std::forward<U>(fallback)};
+  }
+
+  template <class U>
+    requires std::move_constructible<T> && std::constructible_from<T, U>
+  [[nodiscard]] T value_or(U&& fallback) && {
+    return has_value() ? std::move(*this).value() : T{std::forward<U>(fallback)};
+  }
+
   [[nodiscard]] E& error() & { return std::get<E>(storage_); }
   [[nodiscard]] const E& error() const& { return std::get<E>(storage_); }
   [[nodiscard]] E&& error() && { return std::move(std::get<E>(storage_)); }
+
+  template <class G>
+    requires std::copy_constructible<E> && std::constructible_from<E, G>
+  [[nodiscard]] E error_or(G&& fallback) const& {
+    return has_value() ? E{std::forward<G>(fallback)} : error();
+  }
+
+  template <class G>
+    requires std::move_constructible<E> && std::constructible_from<E, G>
+  [[nodiscard]] E error_or(G&& fallback) && {
+    return has_value() ? E{std::forward<G>(fallback)} : std::move(*this).error();
+  }
 
 private:
   static_assert(!std::same_as<T, E>, "pb::runtime::result value_type and error_type must differ");
@@ -69,6 +93,18 @@ public:
   [[nodiscard]] E& error() & { return error_; }
   [[nodiscard]] const E& error() const& { return error_; }
   [[nodiscard]] E&& error() && { return std::move(error_); }
+
+  template <class G>
+    requires std::copy_constructible<E> && std::constructible_from<E, G>
+  [[nodiscard]] E error_or(G&& fallback) const& {
+    return has_value() ? E{std::forward<G>(fallback)} : error();
+  }
+
+  template <class G>
+    requires std::move_constructible<E> && std::constructible_from<E, G>
+  [[nodiscard]] E error_or(G&& fallback) && {
+    return has_value() ? E{std::forward<G>(fallback)} : std::move(*this).error();
+  }
 
 private:
   E error_{};

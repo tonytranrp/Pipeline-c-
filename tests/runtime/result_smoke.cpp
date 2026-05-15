@@ -14,10 +14,22 @@ int main()
     auto ok = result<int>{7};
     assert(ok.has_value());
     assert(ok.value() == 7);
+    assert(ok.value_or(99) == 7);
+    assert(ok.error_or(error{.message = "fallback"}).message == "fallback");
 
     auto failed = result<int>{error{.stage = {"stage-1", "parse"}, .category = error_category::stage_failure, .message = "boom"}};
     assert(!failed.has_value());
+    assert(failed.value_or(99) == 99);
     assert(failed.error().message == "boom");
+    assert(failed.error_or(error{.message = "fallback"}).message == "boom");
+
+    auto void_ok = result<void>{};
+    assert(void_ok.has_value());
+    assert(void_ok.error_or(error{.message = "fallback"}).message == "fallback");
+
+    auto void_failed = result<void>{error{.message = "void boom"}};
+    assert(!void_failed.has_value());
+    assert(void_failed.error_or(error{.message = "fallback"}).message == "void boom");
 
     struct fake_expected {
         using value_type = int;
