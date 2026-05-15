@@ -28,11 +28,13 @@ int main() {
   auto diagnostic_error = error{.stage = {.key = "validate", .name = "ValidateOrder"},
                                 .category = error_category::exception,
                                 .message = "bad order"};
+  assert(has_stage(diagnostic_error));
   assert(has_message(diagnostic_error));
   auto diagnostic = describe(diagnostic_error);
   assert(diagnostic == "exception at ValidateOrder (validate): bad order");
 
   auto no_message_error = error{.category = error_category::contract_violation};
+  assert(!has_stage(no_message_error));
   assert(!has_message(no_message_error));
   auto message_less = describe(no_message_error);
   assert(message_less == "contract_violation at <unknown stage>");

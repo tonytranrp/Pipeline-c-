@@ -23,6 +23,10 @@ auto has_stage(const stage_id& stage) noexcept -> bool {
   return !stage.key.empty() || !stage.name.empty();
 }
 
+auto has_stage(const error& value) noexcept -> bool {
+  return has_stage(value.stage);
+}
+
 auto has_message(const error& value) noexcept -> bool {
   return !value.message.empty();
 }
