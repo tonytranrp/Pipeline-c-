@@ -115,6 +115,10 @@ int main() {
   static_assert(pb::ValidPipeline<Pipeline>);
 
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
+  // If the installed package leaks this project's warning policy (especially
+  // -Werror) through its exported interface targets, this downstream consumer
+  // becomes a package-smoke failure under the warnings-as-errors preset.
+  int intentionally_unused_for_package_warning_leak_check = 0;
   return engine.run(41) == 42 ? 0 : 1;
 }
 ]=])
@@ -164,42 +168,49 @@ if(NOT PB_PACKAGE_SMOKE_BUILD_RESULT EQUAL 0)
 endif()
 
 set(PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATES)
-if(DEFINED PB_PACKAGE_SMOKE_BUILD_CONFIG AND NOT PB_PACKAGE_SMOKE_BUILD_CONFIG STREQUAL "")
-  list(APPEND PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATES
-    "${PB_PACKAGE_SMOKE_CONSUMER_BINARY_DIR}/${PB_PACKAGE_SMOKE_BUILD_CONFIG}/pipebuilder_package_smoke@CMAKE_EXECUTABLE_SUFFIX@"
-  )
-endif()
-list(APPEND PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATES
-  "${PB_PACKAGE_SMOKE_CONSUMER_BINARY_DIR}/pipebuilder_package_smoke@CMAKE_EXECUTABLE_SUFFIX@"
+foreach(PB_PACKAGE_SMOKE_EXECUTABLE_NAME IN ITEMS
+  pipebuilder_core_target_smoke
+  pipebuilder_runtime_target_smoke
+  pipebuilder_pipeline_alias_smoke
 )
+  set(PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATES)
+  if(DEFINED PB_PACKAGE_SMOKE_BUILD_CONFIG AND NOT PB_PACKAGE_SMOKE_BUILD_CONFIG STREQUAL "")
+    list(APPEND PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATES
+      "${PB_PACKAGE_SMOKE_CONSUMER_BINARY_DIR}/${PB_PACKAGE_SMOKE_BUILD_CONFIG}/${PB_PACKAGE_SMOKE_EXECUTABLE_NAME}@CMAKE_EXECUTABLE_SUFFIX@"
+    )
+  endif()
+  list(APPEND PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATES
+    "${PB_PACKAGE_SMOKE_CONSUMER_BINARY_DIR}/${PB_PACKAGE_SMOKE_EXECUTABLE_NAME}@CMAKE_EXECUTABLE_SUFFIX@"
+  )
 
-set(PB_PACKAGE_SMOKE_EXECUTABLE)
-foreach(PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATE IN LISTS PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATES)
-  if(EXISTS "${PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATE}")
-    set(PB_PACKAGE_SMOKE_EXECUTABLE "${PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATE}")
-    break()
+  set(PB_PACKAGE_SMOKE_EXECUTABLE)
+  foreach(PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATE IN LISTS PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATES)
+    if(EXISTS "${PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATE}")
+      set(PB_PACKAGE_SMOKE_EXECUTABLE "${PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATE}")
+      break()
+    endif()
+  endforeach()
+
+  if(NOT PB_PACKAGE_SMOKE_EXECUTABLE)
+    message(FATAL_ERROR
+      "pipebuilder package consumer executable ${PB_PACKAGE_SMOKE_EXECUTABLE_NAME} was not found. Checked: ${PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATES}"
+    )
+  endif()
+
+  execute_process(
+    COMMAND "${PB_PACKAGE_SMOKE_EXECUTABLE}"
+    RESULT_VARIABLE PB_PACKAGE_SMOKE_RUN_RESULT
+    OUTPUT_VARIABLE PB_PACKAGE_SMOKE_RUN_OUTPUT
+    ERROR_VARIABLE PB_PACKAGE_SMOKE_RUN_ERROR
+  )
+  if(NOT PB_PACKAGE_SMOKE_RUN_RESULT EQUAL 0)
+    message(FATAL_ERROR
+      "pipebuilder package consumer ${PB_PACKAGE_SMOKE_EXECUTABLE_NAME} run failed.\n"
+      "stdout:\n${PB_PACKAGE_SMOKE_RUN_OUTPUT}\n"
+      "stderr:\n${PB_PACKAGE_SMOKE_RUN_ERROR}"
+    )
   endif()
 endforeach()
-
-if(NOT PB_PACKAGE_SMOKE_EXECUTABLE)
-  message(FATAL_ERROR
-    "pipebuilder package consumer executable was not found. Checked: ${PB_PACKAGE_SMOKE_EXECUTABLE_CANDIDATES}"
-  )
-endif()
-
-execute_process(
-  COMMAND "${PB_PACKAGE_SMOKE_EXECUTABLE}"
-  RESULT_VARIABLE PB_PACKAGE_SMOKE_RUN_RESULT
-  OUTPUT_VARIABLE PB_PACKAGE_SMOKE_RUN_OUTPUT
-  ERROR_VARIABLE PB_PACKAGE_SMOKE_RUN_ERROR
-)
-if(NOT PB_PACKAGE_SMOKE_RUN_RESULT EQUAL 0)
-  message(FATAL_ERROR
-    "pipebuilder package consumer run failed.\n"
-    "stdout:\n${PB_PACKAGE_SMOKE_RUN_OUTPUT}\n"
-    "stderr:\n${PB_PACKAGE_SMOKE_RUN_ERROR}"
-  )
-endif()
 
 execute_process(
   COMMAND "@CMAKE_CPACK_COMMAND@"

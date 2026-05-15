@@ -5,8 +5,8 @@ function(pb_apply_project_options target visibility)
     target_compile_options(
       ${target}
       ${visibility}
-        $<$<CXX_COMPILER_ID:MSVC>:/W4>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra;-Wpedantic>
+        $<$<AND:$<BUILD_INTERFACE:1>,$<CXX_COMPILER_ID:MSVC>>:/W4>
+        $<$<AND:$<BUILD_INTERFACE:1>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:-Wall;-Wextra;-Wpedantic>
     )
   endif()
 
@@ -14,8 +14,8 @@ function(pb_apply_project_options target visibility)
     target_compile_options(
       ${target}
       ${visibility}
-        $<$<CXX_COMPILER_ID:MSVC>:/WX>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Werror>
+        $<$<AND:$<BUILD_INTERFACE:1>,$<CXX_COMPILER_ID:MSVC>>:/WX>
+        $<$<AND:$<BUILD_INTERFACE:1>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:-Werror>
     )
   endif()
 
@@ -23,7 +23,7 @@ function(pb_apply_project_options target visibility)
     target_compile_options(
       ${target}
       ${visibility}
-        $<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>:-ftime-trace>
+        $<$<AND:$<BUILD_INTERFACE:1>,$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>>:-ftime-trace>
     )
   endif()
 endfunction()
