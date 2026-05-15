@@ -134,6 +134,7 @@ add_test(NAME pb_compile_fail_invalid_stage
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
     -DEXPECT_DIAGNOSTIC=Pipeline\ stage\ is\ invalid
+    -DEXPECTED_DIAGNOSTICS=define\ input_type\ and\ output_type
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_invalid_stage PROPERTIES LABELS "compile-fail;diagnostics")
