@@ -1,6 +1,10 @@
 {
   "version": 4,
-  "cmakeMinimumRequired": { "major": 3, "minor": 23, "patch": 0 },
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
   "configurePresets": [
     {
       "name": "dev-ninja",
@@ -20,7 +24,9 @@
       "displayName": "Clang Developer Debug (Ninja)",
       "inherits": "dev-ninja",
       "binaryDir": "${sourceDir}/build/clang-dev-ninja",
-      "cacheVariables": { "CMAKE_CXX_COMPILER": "clang++" }
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
     },
     {
       "name": "clang-time-trace",
@@ -30,6 +36,15 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "PB_ENABLE_CLANG_TIME_TRACE": "ON"
+      }
+    },
+    {
+      "name": "clang-tidy-ninja",
+      "displayName": "Clang-Tidy (Ninja)",
+      "inherits": "clang-dev-ninja",
+      "binaryDir": "${sourceDir}/build/clang-tidy-ninja",
+      "cacheVariables": {
+        "PB_ENABLE_CLANG_TIDY": "ON"
       }
     },
     {
@@ -58,14 +73,52 @@
     }
   ],
   "buildPresets": [
-    { "name": "dev-ninja", "configurePreset": "dev-ninja" },
-    { "name": "clang-dev-ninja", "configurePreset": "clang-dev-ninja" },
-    { "name": "clang-time-trace", "configurePreset": "clang-time-trace" },
-    { "name": "release-ninja", "configurePreset": "release-ninja" },
-    { "name": "bench-dev-ninja", "configurePreset": "bench-dev-ninja" }
+    {
+      "name": "dev-ninja",
+      "configurePreset": "dev-ninja"
+    },
+    {
+      "name": "clang-dev-ninja",
+      "configurePreset": "clang-dev-ninja"
+    },
+    {
+      "name": "clang-time-trace",
+      "configurePreset": "clang-time-trace"
+    },
+    {
+      "name": "clang-tidy-ninja",
+      "configurePreset": "clang-tidy-ninja"
+    },
+    {
+      "name": "release-ninja",
+      "configurePreset": "release-ninja"
+    },
+    {
+      "name": "bench-dev-ninja",
+      "configurePreset": "bench-dev-ninja"
+    }
   ],
   "testPresets": [
-    { "name": "dev-ninja", "configurePreset": "dev-ninja", "output": { "outputOnFailure": true } },
-    { "name": "clang-dev-ninja", "configurePreset": "clang-dev-ninja", "output": { "outputOnFailure": true } }
+    {
+      "name": "dev-ninja",
+      "configurePreset": "dev-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-dev-ninja",
+      "configurePreset": "clang-dev-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-tidy-ninja",
+      "configurePreset": "clang-tidy-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
   ]
 }
