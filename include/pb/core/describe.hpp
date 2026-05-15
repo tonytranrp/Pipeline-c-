@@ -14,56 +14,34 @@ namespace pb::core {
 template <std::size_t Index, class StageType>
 struct stage_descriptor {
   using stage_type = StageType;
-  using info = stage_info<StageType>;
-  using input_type = typename info::input_type;
-  using output_type = typename info::output_type;
-  using error_type = typename info::error_type;
+  using input_type = stage_input_t<StageType>;
+  using output_type = stage_output_t<StageType>;
+  using error_type = stage_error_t<StageType>;
 
   static constexpr std::size_t index = Index;
 
   [[nodiscard]] static constexpr std::string_view name() noexcept {
-    return info::name();
+    return stage_traits<StageType>::name();
   }
 };
 
 template <class Pipeline>
 struct pipeline_traits;
 
-template <class Input, class Output>
-struct pipeline_traits<pipeline<Input, Output, meta::type_list<>>> {
+template <class Input, class Output, class... Stages>
+struct pipeline_traits<pipeline<Input, Output, meta::type_list<Stages...>>> {
   using input_type = Input;
   using output_type = Output;
-  using stages = meta::type_list<>;
+  using stages = meta::type_list<Stages...>;
 
-  static constexpr std::size_t stage_count = 0;
-  static constexpr bool empty = true;
+  static constexpr std::size_t stage_count = sizeof...(Stages);
+  static constexpr bool empty = stage_count == 0;
 
   template <std::size_t Index>
   using stage_type = meta::at_t<stages, Index>;
 
   template <std::size_t Index>
   using stage = stage_descriptor<Index, stage_type<Index>>;
-};
-
-template <class Input, class Output, class FirstStage, class... RestStages>
-struct pipeline_traits<pipeline<Input, Output, meta::type_list<FirstStage, RestStages...>>> {
-  using input_type = Input;
-  using output_type = Output;
-  using stages = meta::type_list<FirstStage, RestStages...>;
-  using first_stage_type = FirstStage;
-  using last_stage_type = meta::back_t<stages>;
-
-  static constexpr std::size_t stage_count = 1 + sizeof...(RestStages);
-  static constexpr bool empty = false;
-
-  template <std::size_t Index>
-  using stage_type = meta::at_t<stages, Index>;
-
-  template <std::size_t Index>
-  using stage = stage_descriptor<Index, stage_type<Index>>;
-
-  using first_stage = stage<0>;
-  using last_stage = stage<stage_count - 1>;
 };
 
 namespace detail {
@@ -73,21 +51,6 @@ template <class... Stages, std::size_t... Indexes>
   return {stage_descriptor<Indexes, Stages>::name()...};
 }
 } // namespace detail
-
-template <ValidPipeline Pipeline>
-inline constexpr std::size_t pipeline_size_v = pipeline_traits<Pipeline>::stage_count;
-
-template <ValidPipeline Pipeline>
-using pipeline_input_t = typename pipeline_traits<Pipeline>::input_type;
-
-template <ValidPipeline Pipeline>
-using pipeline_output_t = typename pipeline_traits<Pipeline>::output_type;
-
-template <ValidPipeline Pipeline, std::size_t Index>
-using pipeline_stage_t = typename pipeline_traits<Pipeline>::template stage_type<Index>;
-
-template <ValidPipeline Pipeline, std::size_t Index>
-using pipeline_stage_descriptor_t = typename pipeline_traits<Pipeline>::template stage<Index>;
 
 template <ValidPipeline Pipeline>
 struct pipeline_descriptor {
