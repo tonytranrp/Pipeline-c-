@@ -34,3 +34,5 @@
 # CMake preset build trees
 build/
 out/
+# Ad-hoc local/worker CMake build trees
+build-*/

@@ -21,13 +21,14 @@ else()
 endif()
 
 execute_process(COMMAND ${compile_cmd} RESULT_VARIABLE result OUTPUT_VARIABLE stdout ERROR_VARIABLE stderr)
-file(WRITE "${output_file}" "${stdout}\n${stderr}\n")
+set(diagnostics "${stdout}\n${stderr}")
+file(WRITE "${output_file}" "${diagnostics}\n")
 
 if(result EQUAL 0)
   message(FATAL_ERROR "Expected compile failure for ${test_name}")
 endif()
 
-string(FIND "${stdout}\n${stderr}" "${EXPECT_DIAGNOSTIC}" diagnostic_found)
+string(FIND "${diagnostics}" "${EXPECT_DIAGNOSTIC}" diagnostic_found)
 if(diagnostic_found EQUAL -1)
   message(FATAL_ERROR "Missing expected diagnostic text '${EXPECT_DIAGNOSTIC}' for ${test_name}. See ${output_file}")
 endif()

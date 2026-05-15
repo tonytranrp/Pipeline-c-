@@ -57,12 +57,15 @@ if(PB_ENABLE_UNITY)
 endif()
 pb_enable_ipo_if_requested(pb_runtime)
 
+if(PB_BUILD_TESTS OR PB_BUILD_EXAMPLES)
+  enable_testing()
+endif()
+
 if(PB_BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
 if(PB_BUILD_TESTS)
-  enable_testing()
   add_subdirectory(tests)
 endif()
 

@@ -1,6 +1,0 @@
-pb_smoke_compile_pass 2 0.00219537
-pb_runtime_smoke 2 0.00168334
-pb_compile_fail_edge_mismatch 2 0.353518
-pb_runtime_result_smoke 1 0.00507164
-pb_runtime_sequential_result_smoke 1 0.00443134
----

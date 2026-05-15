@@ -1,2 +1,0 @@
-/usr/bin/ar qc libpb_runtime.a CMakeFiles/pb_runtime.dir/src/runtime/error.cpp.o CMakeFiles/pb_runtime.dir/src/runtime/sequential.cpp.o
-/usr/bin/ranlib libpb_runtime.a
