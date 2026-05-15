@@ -33,6 +33,8 @@ struct CheckedMayThrow {
   using output_type = Output;
   using error_type = pb::runtime::error;
 
+  static constexpr auto stage_name() noexcept { return "checked_may_throw"; }
+
   pb::runtime::result<Output> operator()(Middle input) const {
     if (input.value == 0) {
       throw std::runtime_error{"checked maybe throw"};

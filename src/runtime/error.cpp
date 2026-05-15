@@ -42,6 +42,9 @@ auto describe(const stage_id& stage) -> std::string {
   if (stage.key.empty()) {
     return stage.name;
   }
+  if (stage.key == stage.name) {
+    return stage.name;
+  }
   return stage.name + " (" + stage.key + ")";
 }
 
