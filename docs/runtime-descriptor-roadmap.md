@@ -17,7 +17,7 @@ Today the repository does **not** support:
 - descriptor-backed DOT/JSON export support
 - descriptor-specific examples, tests, or compatibility guarantees
 
-Keep release notes and examples aligned with that boundary. Descriptor alias symmetry and `pb::runtime::error_record` strengthen current linear introspection/diagnostic projections, but they do not create a stable runtime descriptor/export schema or runtime graph view.
+Keep release notes and examples aligned with that boundary. Descriptor alias symmetry, linear descriptor/error/observer identity checks, and `pb::runtime::error_record` strengthen current linear introspection/diagnostic projections, but they do not create a stable runtime descriptor/export schema or runtime graph view.
 
 ## Why an exportable runtime descriptor matters
 
@@ -69,7 +69,7 @@ Before a runtime descriptor can move from roadmap to supported behavior, the rep
 
 ## Verification status today
 
-The current verification evidence covers the existing compile-time metadata and sequential runtime core, not a stable runtime descriptor feature:
+The current verification evidence covers the existing compile-time metadata, linear descriptor/error/observer identity, and sequential runtime core, not a stable runtime descriptor feature:
 
 - compile-pass coverage
 - compile-fail diagnostic coverage

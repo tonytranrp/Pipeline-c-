@@ -48,8 +48,9 @@ These are RTK/SigMap/Repomix context-saving files, not pipeline feature changes.
 
 ## Latest team-batch checkpoint (2026-05-16)
 
-Docs-lane monitoring observed current integration head `218664c` plus docs checkpoint `3967894` after the core/runtime/adapter/docs hardening batch:
+Docs-lane monitoring observed current integration head `4be3ab1` / `3e48488` plus docs checkpoint `b376749` after the core/runtime/adapter/docs hardening batch:
 
+- `4be3ab1` / `3e48488` locked linear descriptor, observer failure callback, and `try_run()` error identity consistency.
 - `371312a` / `218664c` added runtime `error_record` / `to_record(...)` diagnostic projection and smoke coverage.
 - `dbb8d5b` added marker-only `join_node` validation and invalid join-stage diagnostics.
 - `b737175` checked branch_case source compatibility at the marker boundary.
@@ -109,7 +110,7 @@ Owns: `include/pb/runtime/*`, `src/runtime/*`, `include/pb/adapt/*`, runtime/ada
 
 Next safe queue:
 
-1. Audit `run()`/`try_run()` boundaries, result factories, expected-like conversion, observer lifecycle, adapter diagnostics, and runtime diagnostic record/export boundaries.
+1. Audit `run()`/`try_run()` boundaries, result factories, expected-like conversion, observer lifecycle, adapter diagnostics, and runtime diagnostic record/export boundaries, and descriptor/observer/error identity consistency.
 2. Add one narrow runtime hardening slice: clearer error construction, observer ordering evidence, adapter edge-case coverage, or exception-policy documentation tests.
 3. Preserve current `run()` and `try_run()` semantics unless the leader scopes a policy change.
 4. Keep standard-library-only design.

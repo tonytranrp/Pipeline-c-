@@ -6,6 +6,7 @@ Status snapshot for the current long-horizon team batch. Use this page as a comp
 
 - Candidate commit observed by the docs lane: `218664c` / docs checkpoint `3967894` (detached worker integration history).
 - Recent integrated hardening commits observed in this worktree:
+  - `4be3ab1` / `3e48488` — locked linear descriptor, observer failure callback, and `try_run()` error identity consistency.
   - `371312a` / `218664c` — added runtime `error_record` / `to_record(...)` diagnostic projection and smoke coverage.
   - `dbb8d5b` — added marker-only `join_node` validation and invalid join-stage diagnostics.
   - `b737175` — checked branch_case source compatibility at the marker boundary.
@@ -17,7 +18,7 @@ Status snapshot for the current long-horizon team batch. Use this page as a comp
 
 ## PR summary draft
 
-- Runtime diagnostic records now provide a narrow value-level projection for current runtime errors; release notes should avoid calling this a stable exported diagnostic schema.
+- Runtime diagnostic records and linear descriptor/observer/error identity checks now strengthen the current sequential diagnostic story; release notes should avoid calling this a stable exported diagnostic schema or runtime descriptor contract.
 - Branch/join marker diagnostics now cover source compatibility, predicate shape, unsupported topology, and invalid join-stage markers; release notes must still label executable branch/join topology as roadmap.
 - Adapter/member hardening landed in the public adapter surface; release notes should keep this as incremental adapter ergonomics/hardening, not a new backend claim.
 - Core stage-traits public-header coverage now exercises the alias/metadata surface used by diagnostics and docs.

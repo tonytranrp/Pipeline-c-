@@ -79,10 +79,11 @@ The current verification evidence supports the existing linear-pipeline diagnost
 
 - compile-fail tests check for expected diagnostic text through `tests/run_compile_fail.cmake`
 - `pb_runtime_error_diagnostic_smoke` validates runtime category/stage/message formatting helpers and the `error_record` / `to_record(...)` diagnostic projection
+- `pb_runtime_sequential_observer_accessor_smoke` keeps the linear descriptor stage identity aligned with observer failure callbacks and the `try_run()` error envelope
 - `examples/error_diagnostic.cpp` documents the intentional compile-fail path for users
 - `docs/examples.md` explains how to run the diagnostic example and the compile-fail smoke target
 
-That evidence is enough to document the current diagnostic baseline, including a narrow value-level runtime error record. It is **not** enough to claim richer roadmap items such as graph-aware diagnostics, schema-stable exported artifacts, or fully hardened wording guarantees.
+That evidence is enough to document the current diagnostic baseline, including a narrow value-level runtime error record and linear descriptor/observer/error identity consistency. It is **not** enough to claim richer roadmap items such as graph-aware diagnostics, schema-stable exported artifacts, or fully hardened wording guarantees.
 
 ## Release guidance
 
