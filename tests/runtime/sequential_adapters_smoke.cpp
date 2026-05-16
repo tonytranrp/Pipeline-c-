@@ -187,6 +187,8 @@ struct MemberParser {
 struct MemberEmitter {
   Output emit(Parsed parsed) const { return Output{parsed.value + 4}; }
 
+  Output emit_noexcept(Parsed parsed) const noexcept { return Output{parsed.value + 6}; }
+
   MoveOnlyOutput emit_move_only(MoveOnlyParsed parsed) const {
     return MoveOnlyOutput{.value = std::make_unique<int>(*parsed.value + 4)};
   }
@@ -278,6 +280,8 @@ using DirectMemberMoveOnlyValueAdapter =
               pb::member<&MemberParser::parse_move_only_value>, pb::in<Input>, pb::out<MoveOnlyParsed>>;
 using UnnamedDirectMemberAdapter =
     pb::adapt<pb::member<&MemberEmitter::emit>, pb::in<Parsed>, pb::out<Output>>;
+using NoexceptDirectMemberAdapter =
+    pb::adapt<pb::member<&MemberEmitter::emit_noexcept>, pb::in<Parsed>, pb::out<Output>>;
 using DirectMemberMoveOnlyEmitterAdapter =
     pb::adapt<pb::name<adapter_stage_names::direct_member_emit_move_only>,
               pb::member<&MemberEmitter::emit_move_only>, pb::in<MoveOnlyParsed>, pb::out<MoveOnlyOutput>>;
@@ -359,6 +363,7 @@ static_assert(pb::adapted_stage<NamedDirectExpectedMemberAdapter>);
 static_assert(pb::adapted_stage<DirectMemberMoveOnlyDiagnosticAdapter>);
 static_assert(pb::adapted_stage<DirectMemberMoveOnlyValueAdapter>);
 static_assert(pb::adapted_stage<UnnamedDirectMemberAdapter>);
+static_assert(pb::adapted_stage<NoexceptDirectMemberAdapter>);
 static_assert(pb::adapted_stage<DirectMemberMoveOnlyEmitterAdapter>);
 static_assert(pb::adapted_stage<ExpectedFunctorAdapter>);
 static_assert(pb::adapted_stage<FunctorMoveOnlyDiagnosticAdapter>);
@@ -415,6 +420,9 @@ int main() {
   auto direct_member_engine = pb::compile<DirectMemberPipeline>(pb::runtime::sequential{});
   auto direct_member_output = direct_member_engine.run(Input{5});
   assert(direct_member_output.value == 12);
+
+  auto noexcept_member_output = NoexceptDirectMemberAdapter{}(Parsed{5});
+  assert(noexcept_member_output.value == 11);
 
   auto direct_expected_member_engine = pb::compile<DirectExpectedMemberPipeline>(pb::runtime::sequential{});
   recording_observer expected_observer{};
