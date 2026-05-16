@@ -1,8 +1,10 @@
 #include "pb/runtime/result.hpp"
 
 #include <cassert>
+#include <concepts>
 #include <memory>
 #include <string>
+#include <utility>
 
 int main()
 {
@@ -35,6 +37,24 @@ int main()
     assert(!void_failed.has_value());
     assert(void_failed.has_error());
     assert(void_failed.error_or(error{.message = "fallback"}).message == "void boom");
+
+    struct non_default_error {
+        explicit non_default_error(std::string message_value) : message(std::move(message_value)) {}
+        std::string message;
+    };
+
+    static_assert(std::default_initializable<result<void, non_default_error>>);
+
+    auto custom_void_ok = result<void, non_default_error>{};
+    assert(custom_void_ok.has_value());
+    assert(!custom_void_ok.has_error());
+    assert(custom_void_ok.error_or(non_default_error{"fallback"}).message == "fallback");
+
+    auto custom_void_failed = result<void, non_default_error>{non_default_error{"custom void boom"}};
+    assert(!custom_void_failed.has_value());
+    assert(custom_void_failed.has_error());
+    assert(custom_void_failed.error().message == "custom void boom");
+    assert(std::move(custom_void_failed).error_or(non_default_error{"fallback"}).message == "custom void boom");
 
     struct fake_expected {
         using value_type = int;
