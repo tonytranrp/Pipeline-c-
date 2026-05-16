@@ -31,6 +31,7 @@ using core::pipeline_input_t;
 using core::pipeline_output_t;
 using core::pipeline_size_v;
 using core::pipeline_descriptor_view;
+using core::pipeline_has_stage_v;
 using core::pipeline;
 using core::pipeline_state;
 using core::pipeline_stage_descriptor_t;

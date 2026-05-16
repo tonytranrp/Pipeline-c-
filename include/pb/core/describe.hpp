@@ -82,6 +82,9 @@ struct pipeline_traits<pipeline<Input, Output, meta::type_list<Stages...>>> {
 
   template <std::size_t Index>
   using stage = stage_descriptor<Index, stage_type<Index>>;
+
+  template <class Stage>
+  static constexpr bool has_stage_v = meta::contains<stages, Stage>::value;
 };
 
 namespace detail {
@@ -214,5 +217,18 @@ using pipeline_stage_descriptor_t = typename pipeline_traits<Pipeline>::template
 
 template <ValidPipeline Pipeline, std::size_t Index>
 using pipeline_stage_error_t = typename pipeline_stage_descriptor_t<Pipeline, Index>::error_type;
+
+template <ValidPipeline Pipeline, std::size_t Index>
+[[nodiscard]] constexpr auto stage_key() noexcept -> std::string_view {
+  return pipeline_stage_descriptor_t<Pipeline, Index>::key();
+}
+
+template <ValidPipeline Pipeline, std::size_t Index>
+[[nodiscard]] constexpr auto stage_name() noexcept -> std::string_view {
+  return pipeline_stage_descriptor_t<Pipeline, Index>::name();
+}
+
+template <ValidPipeline Pipeline, class Stage>
+inline constexpr bool pipeline_has_stage_v = pipeline_traits<Pipeline>::template has_stage_v<Stage>;
 
 } // namespace pb::core
