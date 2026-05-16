@@ -5,7 +5,10 @@
 namespace {
 struct raw {};
 struct parsed {};
-struct predicate {};
+struct predicate {
+  using input_type = raw;
+  using output_type = bool;
+};
 struct parse {
   using input_type = raw;
   using output_type = parsed;

@@ -210,6 +210,28 @@ add_test(NAME pb_compile_fail_branch_topology_unsupported_boundary
 )
 set_tests_properties(pb_compile_fail_branch_topology_unsupported_boundary PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 
+add_test(NAME pb_compile_fail_branch_case_invalid_predicate_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_case_invalid_predicate_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Branch\ predicate\ is\ invalid
+    -DEXPECTED_DIAGNOSTICS=bool-like\ output_type
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_branch_case_invalid_predicate_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+
+add_test(NAME pb_compile_fail_branch_case_predicate_output_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_case_predicate_output_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Branch\ predicate\ stage\ must\ produce\ a\ bool-like\ output_type
+    -DEXPECTED_DIAGNOSTICS=branch_case
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_branch_case_predicate_output_mismatch PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+
 add_test(NAME pb_compile_fail_adapt_fn_callable_mismatch
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/adapt_fn_callable_mismatch.cpp
