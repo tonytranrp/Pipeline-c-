@@ -4,13 +4,13 @@ This matrix maps the current repository evidence to the remaining roadmap gaps i
 
 ## Scope and source anchors
 
-Source-of-truth research anchors:
+Source-of-truth research anchors with line ranges from `research/pipeline_builder_cpp_research_plan.md`:
 
-- Phase 5 branch/join requirements: type-level branch node, predicate requirements, branch output validation, join validation, sequential branch execution, and branch diagnostics.
-- Phase 6 optional backend requirements: thread-pool executor plus oneTBB, Taskflow, stdexec prototypes, and a backend feature matrix.
-- Phase 7 packaging/release requirements: install targets, package config files, examples, docs, CI compiler matrix, and v0.1.0 publication.
-- Acceptance criteria: sequential valid chains, compile-time invalid edge diagnostics, expected-like failure propagation, adapters, throwing-function runtime errors, GCC/Clang public-header coverage, compile-time benchmark records, and one success plus one failure example.
-- Compile-time optimization notes: compile-time baselines/regression tracking and release-quality benchmark gates remain explicit goals.
+- Lines 989-997, Phase 5 branch/join requirements: type-level branch node, predicate requirements, branch output validation, join validation, sequential branch execution, and branch diagnostics.
+- Lines 998-1005, Phase 6 optional backend requirements: thread-pool executor plus oneTBB, Taskflow, stdexec prototypes, and a backend feature matrix.
+- Lines 1006-1013, Phase 7 packaging/release requirements: install targets, package config files, examples, docs, CI compiler matrix, and v0.1.0 publication.
+- Lines 1324-1336, acceptance criteria: sequential valid chains, compile-time invalid edge diagnostics, expected-like failure propagation, adapters, throwing-function runtime errors, GCC/Clang public-header coverage, compile-time benchmark records, and one success plus one failure example.
+- Lines 1490-1501 and 1518, compile-time optimization notes: compile-time baselines/regression tracking and release-quality benchmark gates remain explicit goals.
 
 ## Gap-to-evidence matrix
 

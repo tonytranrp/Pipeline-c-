@@ -3,6 +3,7 @@
 Use this page as the release-facing companion to [Production Readiness Status](production-readiness.md) and [Build and Verification](build.md). It consolidates the exact checks that are supportable **today** and keeps the roadmap-only gaps visible so a release candidate does not overclaim the current MVP.
 
 For copyable evidence capture fields, use [Release Evidence Template](release-evidence-template.md) while running the commands below.
+Use [Research Verification Matrix](research-verification-matrix.md) to check whether roadmap gaps have enough code, tests, and docs evidence to appear in release notes as shipped behavior.
 
 ## What is supported today
 
