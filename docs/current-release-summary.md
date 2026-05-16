@@ -4,10 +4,12 @@ Status snapshot for the current long-horizon team batch. Use this page as a comp
 
 ## Candidate snapshot
 
-- Candidate commit observed by the docs lane: `5afcb3a` / `f0652be` branch-output marker diagnostic integrations plus docs checkpoint `845d2d4` (detached worker integration history).
+- Candidate commit observed by the docs lane: `30447ae` branch-node input homogeneity plus `c13a54c` / `2939908` runtime diagnostic identity integrations and docs checkpoint `1182b6d` (detached worker integration history).
 - Recent integrated hardening commits observed in this worktree:
   - `4be3ab1` / `3e48488` — locked linear descriptor, observer failure callback, and `try_run()` error identity consistency.
   - `371312a` / `218664c` — added runtime `error_record` / `to_record(...)` diagnostic projection and smoke coverage.
+  - `c13a54c` / `2939908` — preserved/fill custom expected-like diagnostic stage identity and aligned error records, observer failure/exception stage identity, and `engine.describe()` in the linear runtime path.
+  - `30447ae` — required homogeneous `branch_node` case inputs and locked the mismatch diagnostic while staying marker-only.
   - `4c6419e` — added marker-only `branch_case_output` / `branch_outputs` metadata scaffolding and public-header coverage.
   - `5afcb3a` / `f0652be` — added compile-fail diagnostics for branch-output marker misuse.
   - `dbb8d5b` — added marker-only `join_node` validation and invalid join-stage diagnostics.
@@ -20,8 +22,8 @@ Status snapshot for the current long-horizon team batch. Use this page as a comp
 
 ## PR summary draft
 
-- Runtime diagnostic records and linear descriptor/observer/error identity checks now strengthen the current sequential diagnostic story; release notes should avoid calling this a stable exported diagnostic schema or runtime descriptor contract.
-- Branch/join marker diagnostics now cover source compatibility, predicate shape, unsupported topology, invalid join-stage markers, and branch-output marker misuse; release notes must still label branch output routing/compatibility, join consumption, graph export, and executable branch/join topology as roadmap.
+- Runtime diagnostic records and linear descriptor/observer/error identity checks, including custom expected-like failure and exception stage identity, now strengthen the current sequential diagnostic story; release notes should avoid calling this a stable exported diagnostic schema or runtime descriptor contract.
+- Branch/join marker diagnostics now cover source compatibility, predicate shape, homogeneous branch-node case inputs, unsupported topology, invalid join-stage markers, and branch-output marker misuse; release notes must still label branch output routing/compatibility, join consumption, graph export, and executable branch/join topology as roadmap.
 - Adapter/member hardening landed in the public adapter surface; release notes should keep this as incremental adapter ergonomics/hardening, not a new backend claim.
 - Core stage-traits public-header coverage now exercises the alias/metadata surface used by diagnostics and docs.
 - Runtime result normalization now has stronger coverage around fallback/error conversion boundaries.

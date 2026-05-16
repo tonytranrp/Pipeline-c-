@@ -9,7 +9,7 @@ Today the repository supports:
 - linear compile-time pipeline validation through `pb::from<T>::then<S>::to<U>`
 - compile-time metadata/introspection through `describe()` and stage records
 - sequential runtime execution for validated linear pipelines
-- branch marker aliases (`case_`, `branch_case`, `branch_node`, `join_node`) plus `branch_case_output` / `branch_outputs` marker metadata that lock the current unsupported boundary, branch source compatibility, predicate marker, invalid join-stage, and branch-output marker misuse requirements from research lines 468-479, 583-591, and 989-997
+- branch marker aliases (`case_`, `branch_case`, `branch_node`, `join_node`) plus `branch_case_output` / `branch_outputs` marker metadata that lock the current unsupported boundary, branch source compatibility, predicate marker, homogeneous branch-node case-input, invalid join-stage, and branch-output marker misuse requirements from research lines 468-479, 583-591, and 989-997
 
 Today the repository does **not** support:
 
@@ -78,13 +78,13 @@ The current verification evidence covers the existing linear pipeline core plus 
 - package-consumer smoke coverage
 - benchmark smoke scaffolding
 
-Current branch/join-specific verification is limited to compile-pass public marker aliases/branch-output marker metadata and compile-fail diagnostics for unsupported topology, branch source compatibility, predicate marker misuse, invalid join-stage markers, and branch-output marker misuse. There are still no supported branch/join examples, benchmarks, branch output compatibility/routing tests, join consumption/compatibility tests, graph-export tests, or executor tests.
+Current branch/join-specific verification is limited to compile-pass public marker aliases/branch-output marker metadata and compile-fail diagnostics for unsupported topology, branch source compatibility, predicate marker misuse, branch-node case-input mismatch, invalid join-stage markers, and branch-output marker misuse. There are still no supported branch/join examples, benchmarks, branch output compatibility/routing tests, join consumption/compatibility tests, graph-export tests, or executor tests.
 
 ## Release guidance
 
 Until implementation and tests land, release notes and docs should describe branch/join support as:
 
-> marker-only unsupported-boundary, branch source/predicate, invalid join-stage, and branch-output marker diagnostics exist; branch output routing, join consumption, graph export, and executable branch/join topology remain roadmap work
+> marker-only unsupported-boundary, branch source/predicate, homogeneous branch-node case-input, invalid join-stage, and branch-output marker diagnostics exist; branch output routing, join consumption, graph export, and executable branch/join topology remain roadmap work
 
 If a future slice adds branch/join support, update this page together with:
 
