@@ -243,13 +243,21 @@ template <class FinalOutput, class Error, class Input, class Stage, class... Res
           stage_index + 1, sink, std::move(stage_result));
     }
   } catch (const std::exception& exception) {
-    auto stage_error = convert_error<Error>(exception_error<Stage>(stage_index, exception));
+    auto stage_error = exception_error<Stage>(stage_index, exception);
     notify_stage_exception<Stage>(sink, stage_index, stage_error);
-    return result<FinalOutput, Error>{std::move(stage_error)};
+    if constexpr (std::constructible_from<Error, decltype(stage_error)>) {
+      return result<FinalOutput, Error>{Error{std::move(stage_error)}};
+    } else {
+      throw;
+    }
   } catch (...) {
-    auto stage_error = convert_error<Error>(unknown_exception_error<Stage>(stage_index));
+    auto stage_error = unknown_exception_error<Stage>(stage_index);
     notify_stage_exception<Stage>(sink, stage_index, stage_error);
-    return result<FinalOutput, Error>{std::move(stage_error)};
+    if constexpr (std::constructible_from<Error, decltype(stage_error)>) {
+      return result<FinalOutput, Error>{Error{std::move(stage_error)}};
+    } else {
+      throw;
+    }
   }
 }
 
