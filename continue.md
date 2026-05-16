@@ -21,7 +21,7 @@ The current tree is a **strong MVP foundation** for `research/pipeline_builder_c
 - Compile-pass, compile-fail, runtime, example, package-consumer, and benchmark smoke scaffolding.
 - Docs mostly separate supported MVP behavior from roadmap-only branch/join, graph export, runtime descriptor, optional backend, and performance-budget work.
 
-Fresh local verification from the current baseline:
+Fresh local verification from the current baseline (refreshed during the 2026-05-16 docs-lane checkpoint):
 
 ```bash
 cmake --preset clang-dev-ninja
@@ -29,7 +29,7 @@ cmake --build --preset clang-dev-ninja
 ctest --preset clang-dev-ninja --output-on-failure
 ```
 
-Result: **78/78 tests passed**.
+Result: **83/83 tests passed** with the `clang-dev-ninja` preset after configure and build.
 
 ## Current working tree note
 

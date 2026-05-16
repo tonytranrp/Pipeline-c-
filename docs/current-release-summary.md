@@ -17,6 +17,17 @@ Status snapshot for the current long-horizon team batch. Use this page as a comp
 - Sequential observer registration now has smoke coverage for replacing and clearing the observer sink through the public accessor path.
 - Roadmap-facing docs should continue to describe observer hooks as partial sequential-runtime support: the current callback path is supported, but ABI, event schema, cross-executor semantics, examples, and benchmark/cost evidence remain follow-on work.
 
+
+## Docs-lane verification collected
+
+For this docs/checkpoint update, the worker refreshed local developer evidence on the current worktree:
+
+- `cmake --preset clang-dev-ninja` — passed.
+- `cmake --build --preset clang-dev-ninja` — passed.
+- `ctest --preset clang-dev-ninja --output-on-failure` — passed, `83/83` tests.
+
+This is developer-preset evidence only. The package-release preset/package target evidence still needs to be collected on the final release candidate before tagging.
+
 ## Verification to attach before release tagging
 
 Collect fresh evidence on the final candidate SHA rather than relying on older checkpoints:
