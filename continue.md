@@ -48,8 +48,9 @@ These are RTK/SigMap/Repomix context-saving files, not pipeline feature changes.
 
 ## Latest team-batch checkpoint (2026-05-16)
 
-Docs-lane monitoring observed current integration head `73fc85f` after the core/runtime/docs hardening batch:
+Docs-lane monitoring observed current integration head `7a483b7` after the core/runtime/adapter/docs hardening batch:
 
+- `7a483b7` added adapter/member hardening in `include/pb/adapt/fn.hpp`.
 - `ee412f7` added public-header coverage for core `stage_traits` aliases and tightened related diagnostic misuse cases.
 - `3b1a231` / `23f1d60` hardened runtime `error_or(...)` fallback selection for expected-like/result normalization boundaries.
 - `ec45eae` / `62820ed` / merge `caa43ee` carried sequential observer replacement/accessor coverage into the integrated history.
