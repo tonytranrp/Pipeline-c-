@@ -48,10 +48,12 @@ These are RTK/SigMap/Repomix context-saving files, not pipeline feature changes.
 
 ## Latest team-batch checkpoint (2026-05-16)
 
-Docs-lane monitoring observed current integration head `5afcb3a` / `f0652be` plus docs checkpoint `845d2d4` after the core/runtime/adapter/docs hardening batch:
+Docs-lane monitoring observed current integration head `30447ae` plus runtime diagnostic identity integration `c13a54c` / `2939908` and docs checkpoint `1182b6d` after the core/runtime/adapter/docs hardening batch:
 
 - `4be3ab1` / `3e48488` locked linear descriptor, observer failure callback, and `try_run()` error identity consistency.
 - `371312a` / `218664c` added runtime `error_record` / `to_record(...)` diagnostic projection and smoke coverage.
+- `c13a54c` / `2939908` preserved/filled custom expected-like diagnostic stage identity and aligned `error_record` / observer failure/exception stage identity with `engine.describe()` in the linear runtime path.
+- `30447ae` required homogeneous `branch_node` case inputs and locked the mismatch diagnostic while staying marker-only.
 - `4c6419e` added marker-only `branch_case_output` / `branch_outputs` metadata scaffolding and public-header coverage.
 - `5afcb3a` / `f0652be` added compile-fail diagnostics for branch-output marker misuse.
 - `dbb8d5b` added marker-only `join_node` validation and invalid join-stage diagnostics.
@@ -65,7 +67,7 @@ Docs-lane monitoring observed current integration head `5afcb3a` / `f0652be` plu
 - `3b1a231` / `23f1d60` hardened runtime `error_or(...)` fallback selection for expected-like/result normalization boundaries.
 - `ec45eae` / `62820ed` / merge `caa43ee` carried sequential observer replacement/accessor coverage into the integrated history.
 
-Release-facing wording should stay narrow: these commits strengthen the current linear/sequential MVP and add branch/join marker diagnostics for unsupported boundaries, source compatibility, predicates, invalid join-stage markers, and branch-output marker misuse, plus branch-output marker metadata scaffolding. They do not complete branch output routing/compatibility validation, join consumption validation, branch execution, graph export, stable observer ABI/event schema, optional backend execution, runtime descriptor export, or release-grade benchmark budgets. Use `docs/current-release-summary.md` and `docs/research-verification-matrix.md` as compact PR/release note seeds for this batch.
+Release-facing wording should stay narrow: these commits strengthen the current linear/sequential MVP, align more linear runtime diagnostic stage identity evidence, and add branch/join marker diagnostics for unsupported boundaries, source compatibility, predicates, homogeneous branch-node case inputs, invalid join-stage markers, and branch-output marker misuse, plus branch-output marker metadata scaffolding. They do not complete branch output routing/compatibility validation, join consumption validation, branch execution, graph export, stable observer ABI/event schema, optional backend execution, runtime descriptor export, or release-grade benchmark budgets. Use `docs/current-release-summary.md` and `docs/research-verification-matrix.md` as compact PR/release note seeds for this batch.
 
 ## What is done from the research plan
 
@@ -81,7 +83,7 @@ Treat these as shipped MVP support unless a future regression proves otherwise:
 
 Do not claim these as supported until code, tests, examples, and docs land together:
 
-- Executable branch/join topology and non-linear validation beyond marker-only unsupported-boundary/source/predicate/join-stage/branch-output diagnostics.
+- Executable branch/join topology and non-linear validation beyond marker-only unsupported-boundary/source/predicate/branch-node-input/join-stage/branch-output diagnostics.
 - Graph export (`DOT`, JSON, or stable graph schema).
 - Stable runtime descriptor/export contract.
 - Optional Taskflow/oneTBB/stdexec backends.

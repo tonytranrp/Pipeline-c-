@@ -70,7 +70,7 @@ Each theme below records four things:
 
 ### 5. Branch/join topology
 
-- **Current repository evidence:** Marker-only branch/join aliases and `branch_case_output` / `branch_outputs` metadata compile today, with compile-fail diagnostics for unsupported topology and marker misuse, while the docs still mark non-linear execution and routing as unimplemented roadmap work.
+- **Current repository evidence:** Marker-only branch/join aliases and `branch_case_output` / `branch_outputs` metadata compile today, with compile-fail diagnostics for unsupported topology, branch-node case-input mismatch, and marker misuse, while the docs still mark non-linear execution and routing as unimplemented roadmap work.
 - **Current support level:** **Roadmap-only gap.**
 - **Proof points:**
   - `docs/branch-join-roadmap.md`
@@ -112,7 +112,7 @@ Each theme below records four things:
 
 ### 9. Stable runtime descriptor
 
-- **Current repository evidence:** Compile-time introspection exists today, but a stable runtime-facing descriptor/export contract does not.
+- **Current repository evidence:** Compile-time introspection and linear runtime diagnostic stage-identity checks exist today, but a stable runtime-facing descriptor/export contract does not.
 - **Current support level:** **Roadmap-only gap.**
 - **Proof points:**
   - `docs/runtime-descriptor-roadmap.md`
