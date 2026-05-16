@@ -248,7 +248,7 @@ add_test(NAME pb_compile_fail_branch_outputs_invalid_case_misuse
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_outputs_invalid_case_misuse.cpp
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
-    -DEXPECT_DIAGNOSTIC=Branch\ output\ marker\ requires\ pb::case_
+    -DEXPECT_DIAGNOSTIC=Branch\ outputs\ require\ pb::case_
     -DEXPECTED_DIAGNOSTICS=branch_outputs
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
@@ -303,7 +303,7 @@ add_test(NAME pb_compile_fail_branch_outputs_join_node_boundary_misuse
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_outputs_join_node_boundary_misuse.cpp
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
-    -DEXPECT_DIAGNOSTIC=Branch\ output\ marker\ requires\ pb::case_
+    -DEXPECT_DIAGNOSTIC=Branch\ outputs\ require\ pb::case_
     -DEXPECTED_DIAGNOSTICS=branch_outputs;join_node
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
