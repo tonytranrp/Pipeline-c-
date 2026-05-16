@@ -94,6 +94,10 @@ struct consume_void {
 struct consume_void_move_only {
   static constexpr auto value = "consume_void_move_only";
 };
+
+struct direct_member_consume_void {
+  static constexpr auto value = "direct_member_consume_void";
+};
 } // namespace adapter_stage_names
 
 Parsed parse_input_fn(Input input) {
@@ -119,6 +123,13 @@ struct MemberParser {
       return {.ok = false, .error_ = "member parse failed"};
     }
     return {.ok = true, .value_ = {input.value + 3}};
+  }
+
+  external_void_expected<std::string> consume_checked(Input input) const {
+    if (input.value < 0) {
+      return {.ok = false, .error_ = "member consume failed"};
+    }
+    return {.ok = true};
   }
 };
 
@@ -197,6 +208,9 @@ using VoidExpectedAdapter =
 using VoidMoveOnlyExpectedAdapter =
     pb::adapt<pb::name<adapter_stage_names::consume_void_move_only>, pb::fn<consume_void_move_only_expected>,
               pb::in<Input>, pb::out<void>>;
+using DirectMemberVoidExpectedAdapter =
+    pb::adapt<pb::name<adapter_stage_names::direct_member_consume_void>, pb::member<&MemberParser::consume_checked>,
+              pb::in<Input>, pb::out<void>>;
 
 struct Emit {
   using input_type = Parsed;
@@ -232,6 +246,7 @@ using DiagnosticErrorPipeline =
     pb::from<Input>::then<DiagnosticErrorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using VoidExpectedPipeline = pb::from<Input>::then<VoidExpectedAdapter>::to<void>;
 using VoidMoveOnlyExpectedPipeline = pb::from<Input>::then<VoidMoveOnlyExpectedAdapter>::to<void>;
+using DirectMemberVoidExpectedPipeline = pb::from<Input>::then<DirectMemberVoidExpectedAdapter>::to<void>;
 
 static_assert(pb::adapted_stage<ParsedAdapter>);
 static_assert(pb::adapted_stage<MultiplierAdapter>);
@@ -243,6 +258,7 @@ static_assert(pb::adapted_stage<OpaqueErrorAdapter>);
 static_assert(pb::adapted_stage<DiagnosticErrorAdapter>);
 static_assert(pb::adapted_stage<VoidExpectedAdapter>);
 static_assert(pb::adapted_stage<VoidMoveOnlyExpectedAdapter>);
+static_assert(pb::adapted_stage<DirectMemberVoidExpectedAdapter>);
 static_assert(pb::valid<Pipeline>);
 static_assert(pb::valid<ThrowingPipeline>);
 static_assert(pb::valid<ThrowingPipelineRaw>);
@@ -253,6 +269,7 @@ static_assert(pb::valid<OpaqueErrorPipeline>);
 static_assert(pb::valid<DiagnosticErrorPipeline>);
 static_assert(pb::valid<VoidExpectedPipeline>);
 static_assert(pb::valid<VoidMoveOnlyExpectedPipeline>);
+static_assert(pb::valid<DirectMemberVoidExpectedPipeline>);
 
 struct recording_observer final : pb::runtime::observer {
   std::vector<std::string> events{};
@@ -416,6 +433,41 @@ int main() {
   assert(void_move_only_raw_failed.error().stage.key == "consume_void_move_only");
   assert(void_move_only_raw_failed.error().stage.name == "consume_void_move_only");
   assert(void_move_only_raw_failed.error().message == "expected-like object reported an error");
+
+  auto direct_member_void_engine = pb::compile<DirectMemberVoidExpectedPipeline>(pb::runtime::sequential{});
+  recording_observer direct_member_void_observer{};
+  direct_member_void_engine.set_observer(&direct_member_void_observer);
+
+  auto direct_member_void_ok = direct_member_void_engine.try_run(Input{5});
+  assert(direct_member_void_ok.has_value());
+  assert(!direct_member_void_ok.has_error());
+
+  auto direct_member_void_failed = direct_member_void_engine.try_run(Input{-5});
+  assert(!direct_member_void_failed.has_value());
+  assert(direct_member_void_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(direct_member_void_failed.error().stage.key == "direct_member_consume_void");
+  assert(direct_member_void_failed.error().stage.name == "direct_member_consume_void");
+  assert(direct_member_void_failed.error().message == "member consume failed");
+  assert(pb::runtime::describe(direct_member_void_failed.error()) ==
+         "expected_error at direct_member_consume_void: member consume failed");
+  assert((direct_member_void_observer.events == std::vector<std::string>{
+                                                   "start:direct_member_consume_void/direct_member_consume_void",
+                                                   "success:direct_member_consume_void/direct_member_consume_void",
+                                                   "start:direct_member_consume_void/direct_member_consume_void",
+                                                   "failure:direct_member_consume_void/direct_member_consume_void:"
+                                                   "expected_error at direct_member_consume_void: member consume failed",
+                                               }));
+
+  auto direct_member_void_raw_ok = direct_member_void_engine.run(Input{5});
+  assert(direct_member_void_raw_ok.has_value());
+  assert(!direct_member_void_raw_ok.has_error());
+
+  auto direct_member_void_raw_failed = direct_member_void_engine.run(Input{-5});
+  assert(!direct_member_void_raw_failed.has_value());
+  assert(direct_member_void_raw_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(direct_member_void_raw_failed.error().stage.key == "direct_member_consume_void");
+  assert(direct_member_void_raw_failed.error().stage.name == "direct_member_consume_void");
+  assert(direct_member_void_raw_failed.error().message == "member consume failed");
 
   auto failed = engine.run(Input{-2});
   assert(!failed.has_value());
