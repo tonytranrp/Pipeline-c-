@@ -190,6 +190,29 @@ int main() {
                                               "failure:parse_member/parse_member:member parse failed",
                                           }));
 
+  auto direct_expected_member_engine = pb::compile<DirectExpectedMemberPipeline>(pb::runtime::sequential{});
+  recording_observer direct_expected_observer{};
+  direct_expected_member_engine.set_observer(&direct_expected_observer);
+
+  auto direct_expected_ok = direct_expected_member_engine.run(Input{5});
+  assert(direct_expected_ok.has_value());
+  assert(direct_expected_ok.value().value == 12);
+
+  auto direct_expected_failed = direct_expected_member_engine.try_run(Input{-5});
+  assert(!direct_expected_failed.has_value());
+  assert(direct_expected_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(direct_expected_failed.error().stage.name == "parse_member");
+  assert(direct_expected_failed.error().stage.key == "parse_member");
+  assert(direct_expected_failed.error().message == "member parse failed");
+  assert((direct_expected_observer.events == std::vector<std::string>{
+                                              "start:parse_member/parse_member",
+                                              "success:parse_member/parse_member",
+                                              "start:unnamed/unnamed",
+                                              "success:unnamed/unnamed",
+                                              "start:parse_member/parse_member",
+                                              "failure:parse_member/parse_member:member parse failed",
+                                          }));
+
   auto failed = engine.run(Input{-2});
   assert(!failed.has_value());
   assert(failed.error().stage.key == "emit");
