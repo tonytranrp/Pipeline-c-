@@ -163,7 +163,9 @@ int main() {
 
   auto direct_member_engine = pb::compile<DirectMemberPipeline>(pb::runtime::sequential{});
   auto direct_member_output = direct_member_engine.run(Input{5});
-  assert(direct_member_output.value == 12);
+  if (direct_member_output.value != 12) {
+    return 1;
+  }
 
   auto direct_expected_member_engine = pb::compile<DirectExpectedMemberPipeline>(pb::runtime::sequential{});
   recording_observer direct_expected_observer{};
