@@ -11,6 +11,9 @@ namespace pb::core {
 template <class Predicate, class BranchStage>
 struct branch_case;
 
+template <class JoinStage>
+struct join_node;
+
 namespace detail {
 
 template <class>
@@ -29,6 +32,12 @@ struct is_branch_case : std::false_type {};
 template <class Predicate, class BranchStage>
 struct is_branch_case<branch_case<Predicate, BranchStage>> : std::true_type {};
 
+template <class>
+struct is_join_node : std::false_type {};
+
+template <class JoinStage>
+struct is_join_node<join_node<JoinStage>> : std::true_type {};
+
 template <class Case, bool IsBranchCase = is_branch_case<Case>::value>
 struct branch_case_output_impl {
   static_assert(always_false_v<Case>,
@@ -39,6 +48,19 @@ template <class Case>
 struct branch_case_output_impl<Case, true> {
   using case_type = Case;
   using output_type = stage_output_t<typename Case::stage_type>;
+};
+
+template <class Join, bool IsJoinNode = is_join_node<Join>::value>
+struct join_output_impl {
+  static_assert(always_false_v<Join>, "Join output marker requires pb::join_node<Stage>");
+};
+
+template <class Join>
+struct join_output_impl<Join, true> {
+  using join_type = Join;
+  using stage_type = typename Join::stage_type;
+  using input_type = typename Join::input_type;
+  using output_type = typename Join::output_type;
 };
 
 template <class... Cases>
@@ -131,6 +153,9 @@ struct join_node {
   using input_type = stage_input_t<JoinStage>;
   using output_type = stage_output_t<JoinStage>;
 };
+
+template <class Join>
+struct join_output : detail::join_output_impl<Join> {};
 
 template <class Input, class Output, class StageList>
 struct pipeline {
