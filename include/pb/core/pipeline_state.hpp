@@ -8,13 +8,38 @@
 
 namespace pb::core {
 
+template <class Predicate, class BranchStage>
+struct branch_case;
+
 namespace detail {
+
+template <class>
+inline constexpr bool always_false_v = false;
+
 template <class Predicate, bool IsPredicateStage = Stage<Predicate>>
 struct branch_predicate_output_bool : std::false_type {};
 
 template <class Predicate>
 struct branch_predicate_output_bool<Predicate, true>
     : std::bool_constant<std::convertible_to<stage_output_t<Predicate>, bool>> {};
+
+template <class>
+struct is_branch_case : std::false_type {};
+
+template <class Predicate, class BranchStage>
+struct is_branch_case<branch_case<Predicate, BranchStage>> : std::true_type {};
+
+template <class Case, bool IsBranchCase = is_branch_case<Case>::value>
+struct branch_case_output_impl {
+  static_assert(always_false_v<Case>,
+                "Branch output marker requires pb::case_<Predicate>::then<Stage>");
+};
+
+template <class Case>
+struct branch_case_output_impl<Case, true> {
+  using case_type = Case;
+  using output_type = stage_output_t<typename Case::stage_type>;
+};
 } // namespace detail
 
 template <class Predicate, class BranchStage>
@@ -32,6 +57,9 @@ struct branch_case {
   using input_type = stage_input_t<Predicate>;
 };
 
+template <class Case>
+struct branch_case_output : detail::branch_case_output_impl<Case> {};
+
 template <class Predicate>
 struct case_ {
   template <class Stage>
@@ -41,7 +69,15 @@ struct case_ {
 template <class... Cases>
 struct branch_node {
   using cases = meta::type_list<Cases...>;
+  using output_types = meta::type_list<typename branch_case_output<Cases>::output_type...>;
   static constexpr std::size_t case_count = sizeof...(Cases);
+};
+
+template <class... Cases>
+struct branch_outputs {
+  using cases = meta::type_list<Cases...>;
+  using output_types = meta::type_list<typename branch_case_output<Cases>::output_type...>;
+  static constexpr std::size_t output_count = sizeof...(Cases);
 };
 
 template <class JoinStage>
@@ -65,9 +101,6 @@ template <class Input, class Current, class... Stages>
 struct pipeline_state;
 
 namespace detail {
-
-template <class>
-inline constexpr bool always_false_v = false;
 
 template <class State, class Stage>
 struct append_stage;
