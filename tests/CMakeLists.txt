@@ -236,6 +236,16 @@ add_test(NAME pb_compile_fail_branch_builder_source_mismatch
 )
 set_tests_properties(pb_compile_fail_branch_builder_source_mismatch PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 
+add_test(NAME pb_compile_fail_branch_join_execution_unsupported
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_join_execution_unsupported.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Branch/join\ topology\ is\ not\ implemented\ yet
+    -DEXPECTED_DIAGNOSTICS=pb::branch_node;unsupported\ boundary
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_branch_join_execution_unsupported PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 add_test(NAME pb_compile_fail_branch_case_invalid_predicate_misuse
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_case_invalid_predicate_misuse.cpp
