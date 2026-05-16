@@ -23,6 +23,7 @@ using core::ValidPipeline;
 using core::adjacent_stages_v;
 using core::branch_case;
 using core::branch_case_output;
+using core::branch_output_validation;
 using core::branch_node;
 using core::branch_outputs;
 using core::case_;

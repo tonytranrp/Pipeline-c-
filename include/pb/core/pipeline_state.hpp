@@ -17,6 +17,12 @@ struct join_node;
 template <class... Cases>
 struct branch_outputs;
 
+template <class Case>
+struct branch_case_output;
+
+template <class Outputs, class Output>
+struct branch_output_validation;
+
 namespace detail {
 
 template <class>
@@ -46,6 +52,10 @@ struct is_branch_outputs : std::false_type {};
 
 template <class... Cases>
 struct is_branch_outputs<branch_outputs<Cases...>> : std::true_type {};
+
+template <class Output, class... Cases>
+struct branch_outputs_match_output
+    : std::bool_constant<(std::same_as<typename branch_case_output<Cases>::output_type, Output> && ...)> {};
 
 template <class Case, bool IsBranchCase = is_branch_case<Case>::value>
 struct branch_case_output_impl {
@@ -88,6 +98,24 @@ struct join_validation_impl<Outputs, Join, true, true> {
   using join_type = Join;
   using input_type = typename Outputs::output_types;
   using output_type = typename Join::output_type;
+};
+
+template <class Outputs, class Output, bool IsOutputs = is_branch_outputs<Outputs>::value>
+struct branch_output_validation_impl {
+  static_assert(always_false_v<Outputs>,
+                "Branch output validation requires pb::branch_outputs<...>");
+};
+
+template <class Output, class... Cases>
+struct branch_output_validation_impl<branch_outputs<Cases...>, Output, true> {
+  static_assert(branch_outputs_match_output<Output, Cases...>::value,
+                "Branch output validation mismatch: every branch output_type must match requested output_type");
+
+  using branch_outputs_type = branch_outputs<Cases...>;
+  using input_type = typename branch_outputs<Cases...>::input_type;
+  using output_type = Output;
+  using output_types = typename branch_outputs<Cases...>::output_types;
+  static constexpr std::size_t output_count = sizeof...(Cases);
 };
 
 template <class... Cases>
@@ -178,6 +206,9 @@ struct branch_outputs {
   using output_types = meta::type_list<typename branch_case_output<Cases>::output_type...>;
   static constexpr std::size_t output_count = sizeof...(Cases);
 };
+
+template <class Outputs, class Output>
+struct branch_output_validation : detail::branch_output_validation_impl<Outputs, Output> {};
 
 template <class JoinStage>
 struct join_node {
