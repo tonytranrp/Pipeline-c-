@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <exception>
 #include <sstream>
 #include <string>
@@ -39,6 +40,16 @@ template <class Stage>
 template <class Stage>
 [[nodiscard]] auto stage_identity(std::size_t stage_index = 0) -> stage_id {
   return stage_id_for<Stage>(stage_index);
+}
+
+template <class... Stages, std::size_t... Indexes>
+[[nodiscard]] auto stage_descriptors(std::index_sequence<Indexes...>) -> std::array<stage_id, sizeof...(Stages)> {
+  return {stage_identity<Stages>(Indexes)...};
+}
+
+template <class... Stages>
+[[nodiscard]] auto stage_descriptors() -> std::array<stage_id, sizeof...(Stages)> {
+  return stage_descriptors<Stages...>(std::index_sequence_for<Stages...>{});
 }
 
 template <class Stage, class Error>
@@ -333,12 +344,15 @@ public:
   using output_type = Output;
   using stages = pb::meta::type_list<Stages...>;
   using try_result_type = result<Output>;
+  using descriptor_type = std::array<stage_id, sizeof...(Stages)>;
 
   static constexpr auto stage_count = sizeof...(Stages);
 
   void set_observer(observer* value) noexcept { observer_ = value; }
 
   [[nodiscard]] observer* get_observer() const noexcept { return observer_; }
+
+  [[nodiscard]] auto describe() const -> descriptor_type { return detail::stage_descriptors<Stages...>(); }
 
   [[nodiscard]] decltype(auto) run(Input input) const {
     if constexpr (sizeof...(Stages) == 0) {

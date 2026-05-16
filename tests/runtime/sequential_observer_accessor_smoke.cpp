@@ -55,6 +55,12 @@ int main() {
 
   assert(engine.get_observer() == nullptr);
 
+  const auto descriptor = engine.describe();
+  static_assert(decltype(engine)::stage_count == 1);
+  assert(descriptor.size() == 1);
+  assert(descriptor[0].key == "add_one");
+  assert(descriptor[0].name == "add_one");
+
   NullObserver observer{};
   engine.set_observer(&observer);
   assert(engine.get_observer() == &observer);
@@ -74,6 +80,10 @@ int main() {
   CountingObserver first_observer{};
   CountingObserver second_observer{};
   auto failing_engine = pb::compile<FailingPipeline>(pb::runtime::sequential{});
+  const auto failing_descriptor = failing_engine.describe();
+  assert(failing_descriptor.size() == 2);
+  assert(failing_descriptor[0].key == "add_one");
+  assert(failing_descriptor[1].key == "checked_double");
 
   failing_engine.set_observer(&first_observer);
   auto first_pass = failing_engine.try_run(Input{-2});
