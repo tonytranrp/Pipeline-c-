@@ -98,9 +98,9 @@ Before tagging, confirm the release notes and docs still describe these as **not
 
 - branch/join topology support
 - graph export
-- observer callbacks in the sequential runtime (ABI/stability hardening remains a follow-on)
+- observer behavior beyond the current sequential runtime callback path
 - optional backend execution beyond the sequential MVP path
-- fully stable observer contracts beyond current sequential runtime
+- fully stable observer ABI, event schema, and cross-executor contracts beyond current sequential support
 - a stable runtime descriptor/export contract
 - fully hardened diagnostic wording or broader machine-readable diagnostic schemas
 - cross-compiler validation beyond the toolchains that were actually exercised for the candidate
