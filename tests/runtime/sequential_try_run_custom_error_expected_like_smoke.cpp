@@ -35,7 +35,7 @@ struct CheckedWithDiagnostic {
   }
 };
 
-struct Pipeline = pb::from<Input>::then<CheckedWithDiagnostic>::to<Output>;
+using Pipeline = pb::from<Input>::then<CheckedWithDiagnostic>::to<Output>;
 
 int main() {
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
