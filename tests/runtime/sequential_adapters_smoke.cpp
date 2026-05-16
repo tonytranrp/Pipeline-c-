@@ -28,6 +28,11 @@ struct diagnostic_error {
   pb::runtime::error diagnostic{};
 };
 
+struct move_only_diagnostic_error {
+  pb::runtime::error diagnostic{};
+  std::unique_ptr<int> token{};
+};
+
 struct move_only_opaque_error {
   std::unique_ptr<int> code{};
 };
@@ -87,6 +92,10 @@ struct parse_diagnostic {
   static constexpr auto value = "parse_diagnostic";
 };
 
+struct parse_member_move_only_diagnostic {
+  static constexpr auto value = "parse_member_move_only_diagnostic";
+};
+
 struct consume_void {
   static constexpr auto value = "consume_void";
 };
@@ -123,6 +132,17 @@ struct MemberParser {
       return {.ok = false, .error_ = "member parse failed"};
     }
     return {.ok = true, .value_ = {input.value + 3}};
+  }
+
+  external_expected<Parsed, move_only_diagnostic_error> parse_move_only_diagnostic(Input input) const {
+    if (input.value < 0) {
+      return {.ok = false,
+              .error_ = {.diagnostic = {.stage = {.key = "member.external", .name = "MemberExternal"},
+                                        .category = pb::runtime::error_category::stage_failure,
+                                        .message = "move-only member diagnostic failed"},
+                         .token = std::make_unique<int>(17)}};
+    }
+    return {.ok = true, .value_ = {input.value + 11}};
   }
 
   external_void_expected<std::string> consume_checked(Input input) const {
@@ -191,6 +211,9 @@ using NamedDirectMemberAdapter =
 using NamedDirectExpectedMemberAdapter =
     pb::adapt<pb::name<adapter_stage_names::parse_member>, pb::member<&MemberParser::parse_checked>, pb::in<Input>,
               pb::out<Parsed>>;
+using DirectMemberMoveOnlyDiagnosticAdapter =
+    pb::adapt<pb::name<adapter_stage_names::parse_member_move_only_diagnostic>,
+              pb::member<&MemberParser::parse_move_only_diagnostic>, pb::in<Input>, pb::out<Parsed>>;
 using UnnamedDirectMemberAdapter =
     pb::adapt<pb::member<&MemberEmitter::emit>, pb::in<Parsed>, pb::out<Output>>;
 using ExpectedFunctorAdapter =
@@ -238,6 +261,8 @@ using DirectMemberPipeline =
     pb::from<Input>::then<NamedDirectMemberAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using DirectExpectedMemberPipeline =
     pb::from<Input>::then<NamedDirectExpectedMemberAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
+using DirectMemberMoveOnlyDiagnosticPipeline =
+    pb::from<Input>::then<DirectMemberMoveOnlyDiagnosticAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using ExpectedFunctorPipeline =
     pb::from<Input>::then<ExpectedFunctorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using OpaqueErrorPipeline =
@@ -252,6 +277,7 @@ static_assert(pb::adapted_stage<ParsedAdapter>);
 static_assert(pb::adapted_stage<MultiplierAdapter>);
 static_assert(pb::adapted_stage<NamedDirectMemberAdapter>);
 static_assert(pb::adapted_stage<NamedDirectExpectedMemberAdapter>);
+static_assert(pb::adapted_stage<DirectMemberMoveOnlyDiagnosticAdapter>);
 static_assert(pb::adapted_stage<UnnamedDirectMemberAdapter>);
 static_assert(pb::adapted_stage<ExpectedFunctorAdapter>);
 static_assert(pb::adapted_stage<OpaqueErrorAdapter>);
@@ -264,6 +290,7 @@ static_assert(pb::valid<ThrowingPipeline>);
 static_assert(pb::valid<ThrowingPipelineRaw>);
 static_assert(pb::valid<DirectMemberPipeline>);
 static_assert(pb::valid<DirectExpectedMemberPipeline>);
+static_assert(pb::valid<DirectMemberMoveOnlyDiagnosticPipeline>);
 static_assert(pb::valid<ExpectedFunctorPipeline>);
 static_assert(pb::valid<OpaqueErrorPipeline>);
 static_assert(pb::valid<DiagnosticErrorPipeline>);
@@ -319,6 +346,42 @@ int main() {
                                           "failure:parse_member/parse_member:expected_error at parse_member: "
                                           "member parse failed",
                                       }));
+
+  auto direct_member_move_only_diagnostic_engine =
+      pb::compile<DirectMemberMoveOnlyDiagnosticPipeline>(pb::runtime::sequential{});
+  recording_observer direct_member_move_only_diagnostic_observer{};
+  direct_member_move_only_diagnostic_engine.set_observer(&direct_member_move_only_diagnostic_observer);
+
+  auto direct_member_move_only_diagnostic_failed =
+      direct_member_move_only_diagnostic_engine.try_run(Input{-5});
+  assert(!direct_member_move_only_diagnostic_failed.has_value());
+  assert(direct_member_move_only_diagnostic_failed.error().category ==
+         pb::runtime::error_category::expected_error);
+  assert(direct_member_move_only_diagnostic_failed.error().stage.key ==
+         "parse_member_move_only_diagnostic");
+  assert(direct_member_move_only_diagnostic_failed.error().stage.name ==
+         "parse_member_move_only_diagnostic");
+  assert(direct_member_move_only_diagnostic_failed.error().message == "move-only member diagnostic failed");
+  assert(pb::runtime::describe(direct_member_move_only_diagnostic_failed.error()) ==
+         "expected_error at parse_member_move_only_diagnostic: move-only member diagnostic failed");
+  assert((direct_member_move_only_diagnostic_observer.events ==
+          std::vector<std::string>{
+              "start:parse_member_move_only_diagnostic/parse_member_move_only_diagnostic",
+              "failure:parse_member_move_only_diagnostic/parse_member_move_only_diagnostic:"
+              "expected_error at parse_member_move_only_diagnostic: move-only member diagnostic failed",
+          }));
+
+  auto direct_member_move_only_diagnostic_raw_failed =
+      direct_member_move_only_diagnostic_engine.run(Input{-5});
+  assert(!direct_member_move_only_diagnostic_raw_failed.has_value());
+  assert(direct_member_move_only_diagnostic_raw_failed.error().category ==
+         pb::runtime::error_category::expected_error);
+  assert(direct_member_move_only_diagnostic_raw_failed.error().stage.key ==
+         "parse_member_move_only_diagnostic");
+  assert(direct_member_move_only_diagnostic_raw_failed.error().stage.name ==
+         "parse_member_move_only_diagnostic");
+  assert(direct_member_move_only_diagnostic_raw_failed.error().message ==
+         "move-only member diagnostic failed");
 
   auto expected_functor_engine = pb::compile<ExpectedFunctorPipeline>(pb::runtime::sequential{});
   recording_observer functor_observer{};
