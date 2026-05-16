@@ -25,7 +25,7 @@ struct CheckedAddOne {
   using error_type = PipelineError;
 
   pb::runtime::result<Middle, PipelineError> operator()(Input input) const {
-    if (input.value < 0) {
+    if (input.value < -1) {
       return PipelineError{"negative input"};
     }
     return Middle{input.value + 1};
@@ -56,12 +56,13 @@ int main() {
   assert(ok.has_value());
   assert(ok.value().value == 42);
 
-  auto failed_first = engine.run(Input{-1});
+  auto failed_first = engine.run(Input{-2});
   assert(!failed_first.has_value());
   assert(failed_first.error().message == "negative input");
 
   auto failed_second = engine.run(Input{-1});
   assert(!failed_second.has_value());
+  assert(failed_second.error().message == "zero middle");
 
   return 0;
 }
