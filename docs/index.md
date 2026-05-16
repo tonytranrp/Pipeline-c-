@@ -13,4 +13,5 @@ This repository is bootstrapping a typed C++20 pipeline builder. Start with:
 - [Runtime Descriptor Roadmap / Status](runtime-descriptor-roadmap.md)
 - [Roadmap Gap Map](roadmap-gap-map.md)
 - [Coordinated Work Lanes](work-lanes.md)
+- [Continuation Checkpoint](../continue.md)
 - `research/pipeline_builder_cpp_research_plan.md` for the full roadmap

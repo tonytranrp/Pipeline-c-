@@ -2,6 +2,12 @@
 
 This page maps the major themes in `research/pipeline_builder_cpp_research_plan.md` to the repository evidence that exists **today**. Use it to separate shipped MVP support from roadmap-only gaps, and to identify the next safe documentation or implementation slices without overstating production readiness.
 
+## Current audited baseline
+
+Last local audit baseline: `aa3b8f6` on `main`. The current MVP audit found the linear pipeline builder sound and locally green: developer configure/build/CTest completed with **78/78 tests passed**. Use `continue.md` as the resume checkpoint for the next long-horizon team wave.
+
+This baseline supports planning and documentation claims only for the linear MVP. Any later code change should refresh the evidence before release-facing wording is updated.
+
 ## Reading this map
 
 Each theme below records four things:
@@ -150,3 +156,13 @@ When adding a new status page or release-facing note:
 4. Prefer one narrow page or one narrow link update over broad cross-doc churn.
 
 That keeps the documentation truthful while the repo continues moving from MVP scaffolding toward wider roadmap coverage.
+
+## Next long-horizon queue
+
+Use these as the first finite batches when the next 3-agent team resumes:
+
+1. **Core API / diagnostics:** improve one small compile-time diagnostics or metadata ergonomics gap, then add compile-pass/compile-fail evidence.
+2. **Runtime / adapters:** harden one small result/error/observer/adapter edge case, then add targeted runtime coverage.
+3. **Updater / docs:** keep docs, examples, release notes, and this map aligned with the coding batches without promoting roadmap-only features.
+
+The next safe work should continue from shipped MVP surfaces. Branch/join and graph export remain separate design/implementation phases, not opportunistic follow-ups inside a routine hardening batch.

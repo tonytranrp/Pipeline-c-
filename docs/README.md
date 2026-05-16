@@ -11,3 +11,4 @@ This directory holds quickstart notes, diagnostic examples, benchmark guidance, 
 - [Examples](examples.md)
 - [Production Readiness Status](production-readiness.md)
 - [Coordinated Work Lanes](work-lanes.md)
+- [Continuation Checkpoint](../continue.md)
