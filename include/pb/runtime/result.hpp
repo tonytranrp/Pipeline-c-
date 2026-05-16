@@ -70,15 +70,15 @@ public:
   using error_type = E;
 
   result() = default;
-  result(const E& error_value) : error_(error_value), has_value_(false) {}
-  result(E&& error_value) : error_(std::move(error_value)), has_value_(false) {}
+  result(const E& error_value) : storage_(error_value) {}
+  result(E&& error_value) : storage_(std::move(error_value)) {}
 
-  [[nodiscard]] bool has_value() const noexcept { return has_value_; }
+  [[nodiscard]] bool has_value() const noexcept { return std::holds_alternative<std::monostate>(storage_); }
   [[nodiscard]] bool has_error() const noexcept { return !has_value(); }
   explicit operator bool() const noexcept { return has_value(); }
-  [[nodiscard]] E& error() & { return error_; }
-  [[nodiscard]] const E& error() const& { return error_; }
-  [[nodiscard]] E&& error() && { return std::move(error_); }
+  [[nodiscard]] E& error() & { return std::get<E>(storage_); }
+  [[nodiscard]] const E& error() const& { return std::get<E>(storage_); }
+  [[nodiscard]] E&& error() && { return std::move(std::get<E>(storage_)); }
 
   template <class G>
     requires std::copy_constructible<E> && std::constructible_from<E, G>
@@ -93,8 +93,7 @@ public:
   }
 
 private:
-  E error_{};
-  bool has_value_{true};
+  std::variant<std::monostate, E> storage_{std::monostate{}};
 };
 
 namespace detail {
