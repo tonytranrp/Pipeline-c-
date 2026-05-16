@@ -54,6 +54,7 @@ int main()
     assert(!custom_void_failed.has_value());
     assert(custom_void_failed.has_error());
     assert(custom_void_failed.error().message == "custom void boom");
+    assert(custom_void_failed.error_or(non_default_error{"fallback"}).message == "custom void boom");
     assert(std::move(custom_void_failed).error_or(non_default_error{"fallback"}).message == "custom void boom");
 
     struct fake_expected {
