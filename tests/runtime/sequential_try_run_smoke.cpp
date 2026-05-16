@@ -116,6 +116,12 @@ int main() {
   assert(exception.error().stage.name == "maybe_throwing_double");
   assert(pb::runtime::describe(exception.error().stage) == "maybe_throwing_double (math.double)");
   assert(exception.error().message == "negative middle");
+  assert(pb::runtime::describe(exception.error()) == "exception at maybe_throwing_double (math.double): negative middle");
+  auto exception_record = pb::runtime::to_record(exception.error());
+  assert(exception_record.stage_key == "math.double");
+  assert(exception_record.stage_name == "maybe_throwing_double");
+  assert(exception_record.category == "exception");
+  assert(exception_record.message == "negative middle");
 
   auto unknown_throwing_engine = pb::compile<UnknownThrowingPipeline>(pb::runtime::sequential{});
   auto unknown_exception = unknown_throwing_engine.try_run(Input{1});
@@ -125,20 +131,37 @@ int main() {
   assert(unknown_exception.error().stage.name == "unknown_throwing_double");
   assert(pb::runtime::describe(unknown_exception.error().stage) == "unknown_throwing_double");
   assert(unknown_exception.error().message == "stage threw an unknown exception");
+  assert(pb::runtime::describe(unknown_exception.error()) ==
+         "exception at unknown_throwing_double: stage threw an unknown exception");
 
   auto result_engine = pb::compile<ResultPipeline>(pb::runtime::sequential{});
   auto failed = result_engine.try_run(Input{-1});
   assert(!failed.has_value());
   assert(failed.error().category == pb::runtime::error_category::stage_failure);
+  assert(failed.error().stage.key == "checked_double");
   assert(failed.error().stage.name == "checked_double");
   assert(failed.error().message == "zero middle");
+  assert(pb::runtime::describe(failed.error()) == "stage_failure at checked_double: zero middle");
+  auto failed_record = pb::runtime::to_record(failed.error());
+  assert(failed_record.stage_key == "checked_double");
+  assert(failed_record.stage_name == "checked_double");
+  assert(failed_record.category == "stage_failure");
+  assert(failed_record.message == "zero middle");
 
   auto external_expected_engine = pb::compile<ExternalExpectedPipeline>(pb::runtime::sequential{});
   auto external_failed = external_expected_engine.try_run(Input{-1});
   assert(!external_failed.has_value());
   assert(external_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(external_failed.error().stage.key == "externally_checked_double");
   assert(external_failed.error().stage.name == "externally_checked_double");
   assert(external_failed.error().message == "external zero middle");
+  assert(pb::runtime::describe(external_failed.error()) ==
+         "expected_error at externally_checked_double: external zero middle");
+  auto external_record = pb::runtime::to_record(external_failed.error());
+  assert(external_record.stage_key == "externally_checked_double");
+  assert(external_record.stage_name == "externally_checked_double");
+  assert(external_record.category == "expected_error");
+  assert(external_record.message == "external zero middle");
 
   return 0;
 }
