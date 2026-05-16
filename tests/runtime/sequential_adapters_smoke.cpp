@@ -47,6 +47,10 @@ struct multiply_input {
 struct parse_member {
   static constexpr auto value = "parse_member";
 };
+
+struct parse_functor {
+  static constexpr auto value = "parse_functor";
+};
 } // namespace adapter_stage_names
 
 Parsed parse_input_fn(Input input) {
@@ -79,6 +83,15 @@ struct MemberEmitter {
   Output emit(Parsed parsed) const { return Output{parsed.value + 4}; }
 };
 
+struct FunctorParser {
+  external_expected<Parsed, std::string> operator()(Input input) const {
+    if (input.value < 0) {
+      return {.ok = false, .error_ = "functor parse failed"};
+    }
+    return {.ok = true, .value_ = {input.value + 5}};
+  }
+};
+
 using ParsedAdapter = pb::adapt<pb::name<adapter_stage_names::parse_input>, pb::fn<parse_input_fn>,
                                  pb::in<Input>, pb::out<Parsed>>;
 using ThrowingParsedAdapter =
@@ -95,6 +108,9 @@ using NamedDirectExpectedMemberAdapter =
               pb::out<Parsed>>;
 using UnnamedDirectMemberAdapter =
     pb::adapt<pb::member<&MemberEmitter::emit>, pb::in<Parsed>, pb::out<Output>>;
+using ExpectedFunctorAdapter =
+    pb::adapt<pb::name<adapter_stage_names::parse_functor>, pb::functor<FunctorParser>, pb::in<Input>,
+              pb::out<Parsed>>;
 
 struct Emit {
   using input_type = Parsed;
@@ -122,17 +138,21 @@ using DirectMemberPipeline =
     pb::from<Input>::then<NamedDirectMemberAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using DirectExpectedMemberPipeline =
     pb::from<Input>::then<NamedDirectExpectedMemberAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
+using ExpectedFunctorPipeline =
+    pb::from<Input>::then<ExpectedFunctorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 
 static_assert(pb::adapted_stage<ParsedAdapter>);
 static_assert(pb::adapted_stage<MultiplierAdapter>);
 static_assert(pb::adapted_stage<NamedDirectMemberAdapter>);
 static_assert(pb::adapted_stage<NamedDirectExpectedMemberAdapter>);
 static_assert(pb::adapted_stage<UnnamedDirectMemberAdapter>);
+static_assert(pb::adapted_stage<ExpectedFunctorAdapter>);
 static_assert(pb::valid<Pipeline>);
 static_assert(pb::valid<ThrowingPipeline>);
 static_assert(pb::valid<ThrowingPipelineRaw>);
 static_assert(pb::valid<DirectMemberPipeline>);
 static_assert(pb::valid<DirectExpectedMemberPipeline>);
+static_assert(pb::valid<ExpectedFunctorPipeline>);
 
 struct recording_observer final : pb::runtime::observer {
   std::vector<std::string> events{};
@@ -182,6 +202,24 @@ int main() {
                                           "failure:parse_member/parse_member:expected_error at parse_member: "
                                           "member parse failed",
                                       }));
+
+  auto expected_functor_engine = pb::compile<ExpectedFunctorPipeline>(pb::runtime::sequential{});
+  recording_observer functor_observer{};
+  expected_functor_engine.set_observer(&functor_observer);
+
+  auto expected_functor_failed = expected_functor_engine.try_run(Input{-5});
+  assert(!expected_functor_failed.has_value());
+  assert(expected_functor_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(expected_functor_failed.error().stage.key == "parse_functor");
+  assert(expected_functor_failed.error().stage.name == "parse_functor");
+  assert(expected_functor_failed.error().message == "functor parse failed");
+  assert(pb::runtime::describe(expected_functor_failed.error()) ==
+         "expected_error at parse_functor: functor parse failed");
+  assert((functor_observer.events == std::vector<std::string>{
+                                         "start:parse_functor/parse_functor",
+                                         "failure:parse_functor/parse_functor:expected_error at parse_functor: "
+                                         "functor parse failed",
+                                     }));
 
   auto failed = engine.run(Input{-2});
   assert(!failed.has_value());
