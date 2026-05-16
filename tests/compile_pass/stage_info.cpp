@@ -17,9 +17,16 @@ struct Parse {
   Parsed operator()(Raw raw) const { return {raw.value + 1}; }
 };
 
+struct Unnamed {
+  using input_type = Parsed;
+  using output_type = Parsed;
+};
+
 using Info = pb::stage_info<Parse>;
+using UnnamedInfo = pb::stage_info<Unnamed>;
 
 static_assert(Info::valid);
+static_assert(UnnamedInfo::valid);
 static_assert(!pb::stage_info<NotAStage>::valid);
 static_assert(pb::stage_info<NotAStage>::name() == std::string_view{"<invalid>"});
 static_assert(pb::stage_info<NotAStage>::key() == std::string_view{"<invalid>"});
@@ -29,10 +36,14 @@ static_assert(std::same_as<Info::output_type, Parsed>);
 static_assert(std::same_as<Info::error_type, ParseError>);
 static_assert(Info::key() == std::string_view{"order.parse"});
 static_assert(Info::name() == std::string_view{"parse"});
+static_assert(UnnamedInfo::key() == std::string_view{"<unnamed>"});
+static_assert(UnnamedInfo::name() == std::string_view{"<unnamed>"});
 static_assert(std::same_as<pb::stage_input_t<Parse>, Raw>);
 static_assert(std::same_as<pb::stage_output_t<Parse>, Parsed>);
 static_assert(std::same_as<pb::stage_error_t<Parse>, ParseError>);
 static_assert(pb::stage_key<Parse>() == std::string_view{"order.parse"});
 static_assert(pb::stage_name<Parse>() == std::string_view{"parse"});
+static_assert(pb::stage_key<Unnamed>() == std::string_view{"<unnamed>"});
+static_assert(pb::stage_name<Unnamed>() == std::string_view{"<unnamed>"});
 
 int main() { return Info::name() == "parse" ? 0 : 1; }
