@@ -9,6 +9,7 @@
 #include "pb/core/pipeline_state.hpp"
 #include "pb/core/stage_traits.hpp"
 #include "pb/core/validate.hpp"
+#include "pb/runtime/descriptor.hpp"
 #include "pb/runtime/error.hpp"
 #include "pb/runtime/observer.hpp"
 #include "pb/runtime/result.hpp"
@@ -76,6 +77,11 @@ using core::valid;
 using runtime::category_name;
 using runtime::construct_stages_per_run;
 using runtime::describe;
+using runtime::descriptor_edge_record;
+using runtime::descriptor_schema_version;
+using runtime::descriptor_stage_record;
+using runtime::descriptor_topology;
+using runtime::make_descriptor;
 using runtime::expected_like;
 using runtime::error;
 using runtime::error_category;

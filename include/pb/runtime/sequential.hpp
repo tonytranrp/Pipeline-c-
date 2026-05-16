@@ -10,6 +10,7 @@
 
 #include "pb/core/meta.hpp"
 #include "pb/core/validate.hpp"
+#include "pb/runtime/descriptor.hpp"
 #include "pb/runtime/error.hpp"
 #include "pb/runtime/observer.hpp"
 #include "pb/runtime/result.hpp"
@@ -380,6 +381,7 @@ public:
   using descriptor_type = std::array<stage_id, sizeof...(Stages)>;
   using stage_storage_type =
       std::conditional_t<stores_stages_in_engine_v<StageStoragePolicy>, std::tuple<Stages...>, no_stage_storage>;
+  using runtime_descriptor_type = descriptor_view<sizeof...(Stages)>;
 
   static constexpr auto stage_count = sizeof...(Stages);
 
@@ -388,6 +390,10 @@ public:
   [[nodiscard]] observer* get_observer() const noexcept { return observer_; }
 
   [[nodiscard]] auto describe() const -> descriptor_type { return detail::stage_descriptors<Stages...>(); }
+
+  [[nodiscard]] constexpr auto descriptor() const noexcept -> runtime_descriptor_type {
+    return make_descriptor<pipeline_type>();
+  }
 
   [[nodiscard]] decltype(auto) run(Input input) const {
     if constexpr (sizeof...(Stages) == 0) {

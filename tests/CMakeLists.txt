@@ -63,6 +63,7 @@ add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers/core_stage_traits.cpp
   compile_pass/public_headers/core_validate.cpp
   compile_pass/public_headers/pipeline.cpp
+  compile_pass/public_headers/runtime_descriptor.cpp
   compile_pass/public_headers/runtime_error.cpp
   compile_pass/public_headers/runtime_result.cpp
   compile_pass/public_headers/runtime_sequential.cpp
@@ -81,6 +82,12 @@ pb_apply_project_options(pb_runtime_smoke PRIVATE)
 pb_enable_pch_if_requested(pb_runtime_smoke)
 add_test(NAME pb_runtime_smoke COMMAND pb_runtime_smoke)
 set_tests_properties(pb_runtime_smoke PROPERTIES LABELS "runtime;smoke")
+
+add_executable(pb_runtime_descriptor_smoke runtime/descriptor_smoke.cpp)
+target_link_libraries(pb_runtime_descriptor_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_descriptor_smoke PRIVATE)
+add_test(NAME pb_runtime_descriptor_smoke COMMAND pb_runtime_descriptor_smoke)
+set_tests_properties(pb_runtime_descriptor_smoke PROPERTIES LABELS "runtime;metadata")
 
 add_executable(pb_runtime_result_smoke runtime/result_smoke.cpp)
 target_link_libraries(pb_runtime_result_smoke PRIVATE pb::pipeline)
