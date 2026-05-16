@@ -23,6 +23,10 @@ struct opaque_error {
   int code{};
 };
 
+struct diagnostic_error {
+  pb::runtime::error diagnostic{};
+};
+
 template <class T, class E>
 struct external_expected {
   using value_type = T;
@@ -58,6 +62,10 @@ struct parse_functor {
 
 struct parse_opaque {
   static constexpr auto value = "parse_opaque";
+};
+
+struct parse_diagnostic {
+  static constexpr auto value = "parse_diagnostic";
 };
 } // namespace adapter_stage_names
 
@@ -107,6 +115,16 @@ external_expected<Parsed, opaque_error> parse_opaque_error(Input input) {
   return {.ok = true, .value_ = {input.value + 7}};
 }
 
+external_expected<Parsed, diagnostic_error> parse_diagnostic_error(Input input) {
+  if (input.value < 0) {
+    return {.ok = false,
+            .error_ = {.diagnostic = {.stage = {.key = "external.parse", .name = "ExternalParse"},
+                                      .category = pb::runtime::error_category::stage_failure,
+                                      .message = "diagnostic parse failed"}}};
+  }
+  return {.ok = true, .value_ = {input.value + 9}};
+}
+
 using ParsedAdapter = pb::adapt<pb::name<adapter_stage_names::parse_input>, pb::fn<parse_input_fn>,
                                  pb::in<Input>, pb::out<Parsed>>;
 using ThrowingParsedAdapter =
@@ -128,6 +146,9 @@ using ExpectedFunctorAdapter =
               pb::out<Parsed>>;
 using OpaqueErrorAdapter =
     pb::adapt<pb::name<adapter_stage_names::parse_opaque>, pb::fn<parse_opaque_error>, pb::in<Input>,
+              pb::out<Parsed>>;
+using DiagnosticErrorAdapter =
+    pb::adapt<pb::name<adapter_stage_names::parse_diagnostic>, pb::fn<parse_diagnostic_error>, pb::in<Input>,
               pb::out<Parsed>>;
 
 struct Emit {
@@ -160,6 +181,8 @@ using ExpectedFunctorPipeline =
     pb::from<Input>::then<ExpectedFunctorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using OpaqueErrorPipeline =
     pb::from<Input>::then<OpaqueErrorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
+using DiagnosticErrorPipeline =
+    pb::from<Input>::then<DiagnosticErrorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 
 static_assert(pb::adapted_stage<ParsedAdapter>);
 static_assert(pb::adapted_stage<MultiplierAdapter>);
@@ -168,6 +191,7 @@ static_assert(pb::adapted_stage<NamedDirectExpectedMemberAdapter>);
 static_assert(pb::adapted_stage<UnnamedDirectMemberAdapter>);
 static_assert(pb::adapted_stage<ExpectedFunctorAdapter>);
 static_assert(pb::adapted_stage<OpaqueErrorAdapter>);
+static_assert(pb::adapted_stage<DiagnosticErrorAdapter>);
 static_assert(pb::valid<Pipeline>);
 static_assert(pb::valid<ThrowingPipeline>);
 static_assert(pb::valid<ThrowingPipelineRaw>);
@@ -175,6 +199,7 @@ static_assert(pb::valid<DirectMemberPipeline>);
 static_assert(pb::valid<DirectExpectedMemberPipeline>);
 static_assert(pb::valid<ExpectedFunctorPipeline>);
 static_assert(pb::valid<OpaqueErrorPipeline>);
+static_assert(pb::valid<DiagnosticErrorPipeline>);
 
 struct recording_observer final : pb::runtime::observer {
   std::vector<std::string> events{};
@@ -260,6 +285,24 @@ int main() {
                                            "failure:parse_opaque/parse_opaque:expected_error at parse_opaque: "
                                            "expected-like object reported an error",
                                        }));
+
+  auto diagnostic_error_engine = pb::compile<DiagnosticErrorPipeline>(pb::runtime::sequential{});
+  recording_observer diagnostic_observer{};
+  diagnostic_error_engine.set_observer(&diagnostic_observer);
+
+  auto diagnostic_failed = diagnostic_error_engine.try_run(Input{-5});
+  assert(!diagnostic_failed.has_value());
+  assert(diagnostic_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(diagnostic_failed.error().stage.key == "parse_diagnostic");
+  assert(diagnostic_failed.error().stage.name == "parse_diagnostic");
+  assert(diagnostic_failed.error().message == "diagnostic parse failed");
+  assert(pb::runtime::describe(diagnostic_failed.error()) ==
+         "expected_error at parse_diagnostic: diagnostic parse failed");
+  assert((diagnostic_observer.events == std::vector<std::string>{
+                                               "start:parse_diagnostic/parse_diagnostic",
+                                               "failure:parse_diagnostic/parse_diagnostic:expected_error at "
+                                               "parse_diagnostic: diagnostic parse failed",
+                                           }));
 
   auto failed = engine.run(Input{-2});
   assert(!failed.has_value());
