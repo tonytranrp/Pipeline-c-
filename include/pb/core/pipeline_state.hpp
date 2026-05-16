@@ -14,6 +14,9 @@ struct branch_case;
 template <class JoinStage>
 struct join_node;
 
+template <class... Cases>
+struct branch_outputs;
+
 namespace detail {
 
 template <class>
@@ -38,6 +41,12 @@ struct is_join_node : std::false_type {};
 template <class JoinStage>
 struct is_join_node<join_node<JoinStage>> : std::true_type {};
 
+template <class>
+struct is_branch_outputs : std::false_type {};
+
+template <class... Cases>
+struct is_branch_outputs<branch_outputs<Cases...>> : std::true_type {};
+
 template <class Case, bool IsBranchCase = is_branch_case<Case>::value>
 struct branch_case_output_impl {
   static_assert(always_false_v<Case>,
@@ -60,6 +69,24 @@ struct join_output_impl<Join, true> {
   using join_type = Join;
   using stage_type = typename Join::stage_type;
   using input_type = typename Join::input_type;
+  using output_type = typename Join::output_type;
+};
+
+template <class Outputs, class Join, bool IsOutputs = is_branch_outputs<Outputs>::value,
+          bool IsJoin = is_join_node<Join>::value>
+struct join_validation_impl {
+  static_assert(always_false_v<Outputs>,
+                "Join validation requires pb::branch_outputs<...> and pb::join_node<Stage>");
+};
+
+template <class Outputs, class Join>
+struct join_validation_impl<Outputs, Join, true, true> {
+  static_assert(std::same_as<typename Join::input_type, typename Outputs::output_types>,
+                "Join validation mismatch: join stage input_type must match branch output_types");
+
+  using branch_outputs_type = Outputs;
+  using join_type = Join;
+  using input_type = typename Outputs::output_types;
   using output_type = typename Join::output_type;
 };
 
@@ -163,6 +190,9 @@ struct join_node {
 
 template <class Join>
 struct join_output : detail::join_output_impl<Join> {};
+
+template <class Outputs, class Join>
+struct join_validation : detail::join_validation_impl<Outputs, Join> {};
 
 template <class Input, class Output, class StageList>
 struct pipeline {
