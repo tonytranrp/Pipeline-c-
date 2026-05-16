@@ -20,6 +20,7 @@ using branch_node = pb::core::branch_node<branch_case>;
 
 static_assert(std::is_same_v<branch_case::predicate_type, predicate>);
 static_assert(std::is_same_v<branch_case::stage_type, parse>);
+static_assert(std::is_same_v<branch_case::input_type, raw>);
 static_assert(branch_node::case_count == 1);
 static_assert(std::is_same_v<branch_node::cases, pb::core::meta::type_list<branch_case>>);
 
