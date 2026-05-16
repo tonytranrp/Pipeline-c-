@@ -38,7 +38,17 @@ struct member_object<R (C::*)(Args...)> {
 };
 
 template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) noexcept> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
 struct member_object<R (C::*)(Args...) const> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) const noexcept> {
   using type = C;
 };
 
@@ -48,7 +58,17 @@ struct member_object<R (C::*)(Args...) const&> {
 };
 
 template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) const& noexcept> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
 struct member_object<R (C::*)(Args...) const&&> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) const&& noexcept> {
   using type = C;
 };
 
@@ -58,7 +78,17 @@ struct member_object<R (C::*)(Args...) &> {
 };
 
 template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) & noexcept> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
 struct member_object<R (C::*)(Args...) &&> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) && noexcept> {
   using type = C;
 };
 
@@ -68,12 +98,27 @@ struct member_object<R (C::*)(Args...) volatile> {
 };
 
 template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) volatile noexcept> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
 struct member_object<R (C::*)(Args...) volatile&> {
   using type = C;
 };
 
 template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) volatile& noexcept> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
 struct member_object<R (C::*)(Args...) volatile&&> {
+  using type = C;
+};
+
+template <class C, class R, class... Args>
+struct member_object<R (C::*)(Args...) volatile&& noexcept> {
   using type = C;
 };
 
