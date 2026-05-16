@@ -13,6 +13,7 @@ int main() {
   using pb::runtime::has_message;
   using pb::runtime::has_stage;
   using pb::runtime::stage_id;
+  using pb::runtime::to_record;
 
   assert(category_name(error_category::stage_failure) == "stage_failure");
   assert(category_name(error_category::expected_error) == "expected_error");
@@ -35,6 +36,11 @@ int main() {
   assert(has_message(diagnostic_error));
   auto diagnostic = describe(diagnostic_error);
   assert(diagnostic == "exception at ValidateOrder (validate): bad order");
+  auto record = to_record(diagnostic_error);
+  assert(record.stage_key == "validate");
+  assert(record.stage_name == "ValidateOrder");
+  assert(record.category == "exception");
+  assert(record.message == "bad order");
 
   auto no_message_error = error{.category = error_category::contract_violation};
   assert(has_category(no_message_error, error_category::contract_violation));
@@ -42,6 +48,11 @@ int main() {
   assert(!has_message(no_message_error));
   auto message_less = describe(no_message_error);
   assert(message_less == "contract_violation at <unknown stage>");
+  auto message_less_record = to_record(no_message_error);
+  assert(message_less_record.stage_key.empty());
+  assert(message_less_record.stage_name.empty());
+  assert(message_less_record.category == "contract_violation");
+  assert(message_less_record.message.empty());
 
   std::ostringstream stream;
   stream << error_category::expected_error << " | "

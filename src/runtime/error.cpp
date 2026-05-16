@@ -35,6 +35,13 @@ auto has_message(const error& value) noexcept -> bool {
   return !value.message.empty();
 }
 
+auto to_record(const error& value) -> error_record {
+  return error_record{.stage_key = value.stage.key,
+                      .stage_name = value.stage.name,
+                      .category = std::string{category_name(value.category)},
+                      .message = value.message};
+}
+
 auto describe(const stage_id& stage) -> std::string {
   if (stage.name.empty()) {
     return has_stage(stage) ? stage.key : std::string{"<unknown stage>"};
