@@ -70,13 +70,13 @@ Each theme below records four things:
 
 ### 5. Branch/join topology
 
-- **Current repository evidence:** The docs explicitly mark non-linear topology as unimplemented roadmap work.
+- **Current repository evidence:** Marker-only branch/join aliases and `branch_case_output` / `branch_outputs` metadata compile today, with compile-fail diagnostics for unsupported topology and marker misuse, while the docs still mark non-linear execution and routing as unimplemented roadmap work.
 - **Current support level:** **Roadmap-only gap.**
 - **Proof points:**
   - `docs/branch-join-roadmap.md`
   - known-gap references in `docs/production-readiness.md`
   - research-plan branch/join themes
-- **Safe next slice:** keep follow-on work isolated to status/docs until public API, validation, execution, and tests exist.
+- **Safe next slice:** keep follow-on work isolated to marker diagnostics/status docs until branch output routing, join consumption validation, graph export, execution, and tests exist.
 
 ### 6. Graph export
 
