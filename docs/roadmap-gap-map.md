@@ -33,7 +33,9 @@ Each theme below records four things:
   - `include/pb/runtime/sequential.hpp`
   - runtime smoke coverage under `tests/runtime/`
   - benchmark smoke references in `docs/build.md` and `docs/benchmark-workflow.md`
-- **Safe next slice:** keep runtime behavior, docs, and smoke coverage aligned while known `run()` / `try_run()` hardening work remains explicit.
+- **Safe next slice:** keep runtime behavior, docs, and smoke coverage aligned while known `run()` / `try_run()` parity and exception-handling hardening work remains explicit.
+- **Current policy note:** exception capture is documented as split behavior today (`run()` versus `try_run()`), so roadmap-facing claims should avoid wording that implies unified exception-policy semantics.
+- **Additional proof point for the policy note:** `docs/error-model-tutorial.md` explicitly documents the split and its current limits.
 
 ### 3. Diagnostics and compile-fail guidance
 
@@ -134,6 +136,7 @@ The current repository should **not** claim:
 
 - production-complete topology or execution coverage
 - branch/join, graph export, fully stabilized observer contracts, optional backend execution, or a stable runtime descriptor
+- exception-policy parity between `run()` and `try_run()` as a fully harmonized runtime guarantee
 - benchmark thresholds or CI-enforced performance budgets
 - fully frozen diagnostics across all future slices
 

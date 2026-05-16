@@ -9,9 +9,7 @@ Today the repository supports:
 - linear compile-time pipeline validation through `pb::from<T>::then<S>::to<U>`
 - compile-time metadata/introspection through `describe()` and stage records
 - sequential runtime execution with the current result/error plumbing
-
-Today the repository supports:
-
+- zero-stage identity pipelines that execute without emitting stage observer callbacks
 - a public observer interface and callback registration API
 - runtime `set_observer(...)` hooks on the shipped sequential execution surface
 - structured start/success/failure/exception event hooks
@@ -73,7 +71,7 @@ The current verification evidence includes:
 
 - compile-pass coverage
 - compile-fail diagnostic coverage
-- runtime smoke coverage (including observer callback behavior on the sequential engine)
+- runtime smoke coverage, including observer callback behavior on the sequential engine and zero-stage no-callback behavior
 - package-consumer smoke coverage
 - benchmark smoke scaffolding
 

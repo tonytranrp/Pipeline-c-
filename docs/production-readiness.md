@@ -10,7 +10,7 @@ This project is still an MVP foundation for the roadmap in `research/pipeline_bu
 - Stage metadata through explicit `input_type`, `output_type`, `error_type`, and `stage_name()` or adapter-provided traits.
 - Public pipeline introspection helpers: `pipeline_size_v`, `pipeline_input_t`, `pipeline_output_t`, `pipeline_stage_t`, `pipeline_stage_descriptor_t`, `describe()`, stage records, and linear edge records.
 - Free-function and function-object adapters for legacy code integration.
-- Sequential runtime execution for validated linear pipelines.
+- Sequential runtime execution for validated linear pipelines, including zero-stage identity pipelines.
 - Compile-pass, compile-fail, runtime, example, package, and benchmark smoke scaffolding.
 
 ## Current release gate status
@@ -58,7 +58,7 @@ Before cutting a release candidate, collect evidence for:
 
 - Branch, join, graph export, and a stable runtime descriptor are roadmap items, not current guarantees. See [Branch / Join Roadmap / Status](branch-join-roadmap.md), [Graph Export Roadmap / Status](graph-export-roadmap.md), [Observer Hooks Roadmap / Status](observer-hooks-roadmap.md), [Optional Backends Roadmap / Status](optional-backends-roadmap.md), and [Runtime Descriptor Roadmap / Status](runtime-descriptor-roadmap.md) for current boundaries.
 - Public diagnostics are covered by compile-fail smoke tests, but the exact diagnostic wording is still being hardened. See [Diagnostics Roadmap / Status](diagnostics-roadmap.md) for the current supported boundary versus the richer roadmap.
-- Runtime error propagation and observer callbacks exist for the current sequential path; richer exception policies, `std::expected` integration, and fully stable observer contracts are future slices.
+- Runtime error propagation and observer callbacks exist for the current sequential path; richer exception policies, `std::expected` integration, and fully stable observer contracts are future slices. Zero-stage identity pipelines have no stage callbacks because no stage executes.
 - Sequential `run()` and `try_run()` are currently split in error-handling behavior: `try_run()` captures stage exceptions, while `run()` does not. Harmonizing this path is a queued runtime hardening item.
 - Benchmark scaffolding can prove the targets build and run, but release thresholds and CI regression budgets are not established.
 - Cross-compiler validation beyond the local configured toolchain remains a release gate.

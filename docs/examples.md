@@ -36,6 +36,8 @@ Use `error` fields to drive logs and retry policies:
 - `stage.key` / `stage.name`: where the failure originated.
 - `message`: the stage-level reason.
 
+A zero-stage pipeline (`pb::from<T>::to<T>`) is an identity path in the sequential runtime. Because no stage executes, observer start/success/failure/exception callbacks are not emitted for that path.
+
 ## Inspecting pipeline metadata
 
 The public API now exposes lightweight compile-time introspection helpers for validated pipeline aliases:
