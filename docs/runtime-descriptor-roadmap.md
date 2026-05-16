@@ -19,6 +19,50 @@ Today the repository does **not** support:
 
 Keep release notes and examples aligned with that boundary. Descriptor alias symmetry, linear descriptor/error/observer identity checks, and `pb::runtime::error_record` strengthen current linear introspection/diagnostic projections, but they do not create a stable runtime descriptor/export schema or runtime graph view.
 
+## Stable descriptor schema for the current linear MVP
+
+The repository already exposes a small, fixed descriptor shape for validated linear pipelines. That shape is the current stable schema for compile-time-oriented descriptor consumers:
+
+### `pb::core::stage_record`
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `index` | `std::size_t` | Zero-based stage position in pipeline order. |
+| `key` | `std::string_view` | Stage key reported by `stage_traits`. |
+| `name` | `std::string_view` | Stage display name reported by `stage_traits`. |
+
+### `pb::core::edge_record`
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `index` | `std::size_t` | Zero-based edge position between adjacent stages. |
+| `from_stage_index` | `std::size_t` | Source stage index for the edge. |
+| `to_stage_index` | `std::size_t` | Target stage index for the edge. |
+| `from_key` | `std::string_view` | Source stage key. |
+| `from_name` | `std::string_view` | Source stage name. |
+| `to_key` | `std::string_view` | Target stage key. |
+| `to_name` | `std::string_view` | Target stage name. |
+
+### `pb::core::pipeline_descriptor_view<StageCount>`
+
+The view is a fixed-size aggregate with:
+
+- `stage_count == StageCount`
+- `edge_count == StageCount > 0 ? StageCount - 1 : 0`
+- `empty == (StageCount == 0)`
+- `stages` as an `std::array<stage_record, StageCount>`
+- `edges` as an `std::array<edge_record, edge_count>`
+
+The view preserves pipeline order. Stage records and edge records are indexed in the same linear order as the validated pipeline.
+
+### Stability rules
+
+- The schema is linear only; it models adjacent stage-to-stage relationships.
+- Field names and ordering are intentionally fixed so docs, tests, and tooling can refer to them consistently.
+- Keys and names are borrowed views; they reflect stage metadata and are not owning strings.
+- The schema is suitable for compile-time metadata inspection and deterministic test assertions.
+- This schema does **not** imply a stable runtime export format, graph serialization contract, or cross-release ABI promise.
+
 ## Why an exportable runtime descriptor matters
 
 The research plan treats an exportable runtime descriptor as the boundary between template-heavy compile-time metadata and tooling/runtime consumers that need a stable representation. That kind of descriptor would eventually support:
