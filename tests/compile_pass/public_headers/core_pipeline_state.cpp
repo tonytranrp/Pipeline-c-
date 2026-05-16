@@ -19,15 +19,23 @@ struct join {
 };
 
 using branch_case = pb::core::case_<predicate>::then<parse>;
+using branch_case_output = pb::core::branch_case_output<branch_case>;
 using branch_node = pb::core::branch_node<branch_case>;
+using branch_outputs = pb::core::branch_outputs<branch_case>;
 using join_node = pb::core::join_node<join>;
 } // namespace
 
 static_assert(std::is_same_v<branch_case::predicate_type, predicate>);
 static_assert(std::is_same_v<branch_case::stage_type, parse>);
 static_assert(std::is_same_v<branch_case::input_type, raw>);
+static_assert(std::is_same_v<branch_case_output::case_type, branch_case>);
+static_assert(std::is_same_v<branch_case_output::output_type, parsed>);
 static_assert(branch_node::case_count == 1);
 static_assert(std::is_same_v<branch_node::cases, pb::core::meta::type_list<branch_case>>);
+static_assert(std::is_same_v<branch_node::output_types, pb::core::meta::type_list<parsed>>);
+static_assert(branch_outputs::output_count == 1);
+static_assert(std::is_same_v<branch_outputs::cases, pb::core::meta::type_list<branch_case>>);
+static_assert(std::is_same_v<branch_outputs::output_types, pb::core::meta::type_list<parsed>>);
 static_assert(std::is_same_v<join_node::stage_type, join>);
 static_assert(std::is_same_v<join_node::input_type, parsed>);
 static_assert(std::is_same_v<join_node::output_type, parsed>);
