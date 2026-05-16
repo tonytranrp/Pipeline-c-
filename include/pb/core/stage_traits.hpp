@@ -69,6 +69,44 @@ struct stage_traits<T, std::void_t<typename T::input_type, typename T::output_ty
   }
 };
 
+namespace detail {
+template <class T, bool IsStage = stage_traits<T>::is_valid_stage>
+struct stage_input_type_or_diagnostic {
+  static_assert(IsStage,
+                "pb::stage_input_t requires a valid stage type with an input_type member");
+  using type = void;
+};
+
+template <class T>
+struct stage_input_type_or_diagnostic<T, true> {
+  using type = typename stage_traits<T>::input_type;
+};
+
+template <class T, bool IsStage = stage_traits<T>::is_valid_stage>
+struct stage_output_type_or_diagnostic {
+  static_assert(IsStage,
+                "pb::stage_output_t requires a valid stage type with an output_type member");
+  using type = void;
+};
+
+template <class T>
+struct stage_output_type_or_diagnostic<T, true> {
+  using type = typename stage_traits<T>::output_type;
+};
+
+template <class T, bool IsStage = stage_traits<T>::is_valid_stage>
+struct stage_error_type_or_diagnostic {
+  static_assert(IsStage,
+                "pb::stage_error_t requires a valid stage type with input_type and output_type members");
+  using type = void;
+};
+
+template <class T>
+struct stage_error_type_or_diagnostic<T, true> {
+  using type = typename stage_traits<T>::error_type;
+};
+} // namespace detail
+
 template <class T>
 inline constexpr bool is_stage_v = stage_traits<T>::is_valid_stage;
 
@@ -109,13 +147,13 @@ template <class T>
 using stage_info_t = stage_info<T>;
 
 template <class T>
-using stage_input_t = typename stage_info<T>::input_type;
+using stage_input_t = typename detail::stage_input_type_or_diagnostic<T>::type;
 
 template <class T>
-using stage_output_t = typename stage_info<T>::output_type;
+using stage_output_t = typename detail::stage_output_type_or_diagnostic<T>::type;
 
 template <class T>
-using stage_error_t = typename stage_info<T>::error_type;
+using stage_error_t = typename detail::stage_error_type_or_diagnostic<T>::type;
 
 template <class T>
 [[nodiscard]] constexpr std::string_view stage_name() noexcept {
