@@ -21,7 +21,7 @@ The current tree is a **strong MVP foundation** for `research/pipeline_builder_c
 - Compile-pass, compile-fail, runtime, example, package-consumer, and benchmark smoke scaffolding.
 - Docs mostly separate supported MVP behavior from roadmap-only branch/join, graph export, runtime descriptor, optional backend, and performance-budget work.
 
-Fresh local verification from the current baseline:
+Fresh local verification from the current baseline (refreshed during the 2026-05-16 docs-lane checkpoint):
 
 ```bash
 cmake --preset clang-dev-ninja
@@ -29,7 +29,7 @@ cmake --build --preset clang-dev-ninja
 ctest --preset clang-dev-ninja --output-on-failure
 ```
 
-Result: **78/78 tests passed**.
+Result: **83/83 tests passed** with the `clang-dev-ninja` preset after configure and build.
 
 ## Current working tree note
 
@@ -44,6 +44,17 @@ At checkpoint time the pipeline implementation was clean relative to `main`, but
 ```
 
 These are RTK/SigMap/Repomix context-saving files, not pipeline feature changes. Before launching workers, decide whether the leader owns committing them, keeping them uncommitted, or excluding them from worker lanes. Do not let coding workers revert them accidentally.
+
+
+## Latest team-batch checkpoint (2026-05-16)
+
+Docs-lane monitoring observed current candidate `caa43ee` on `main` / `origin/main` after the runtime hardening batch:
+
+- `9de8902` hardened runtime `error_or(...)` fallback selection for expected-like/result normalization boundaries.
+- `ec45eae` added runtime smoke coverage that locks sequential observer replacement/accessor behavior.
+- `62820ed` / merge `caa43ee` carried the sequential observer accessor update onto `main`.
+
+Release-facing wording should stay narrow: these commits strengthen the current linear/sequential MVP, but they do not complete branch/join, graph export, stable observer ABI/event schema, optional backend execution, runtime descriptor export, or release-grade benchmark budgets. Use `docs/current-release-summary.md` as the compact PR/release note seed for this batch.
 
 ## What is done from the research plan
 
