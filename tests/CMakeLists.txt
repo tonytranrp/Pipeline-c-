@@ -285,6 +285,39 @@ add_test(NAME pb_compile_fail_missing_input_stage
 )
 set_tests_properties(pb_compile_fail_missing_input_stage PROPERTIES LABELS "compile-fail;diagnostics")
 
+add_test(NAME pb_compile_fail_stage_input_invalid_stage_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/stage_input_invalid_stage_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=stage_input_t
+    -DEXPECTED_DIAGNOSTICS=input_type
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_stage_input_invalid_stage_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
+add_test(NAME pb_compile_fail_stage_output_invalid_stage_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/stage_output_invalid_stage_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=stage_output_t
+    -DEXPECTED_DIAGNOSTICS=output_type
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_stage_output_invalid_stage_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
+add_test(NAME pb_compile_fail_stage_error_invalid_stage_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/stage_error_invalid_stage_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=stage_error_t
+    -DEXPECTED_DIAGNOSTICS=error_type
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_stage_error_invalid_stage_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
 add_test(NAME pb_compile_fail_sink_mismatch
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/sink_mismatch.cpp
