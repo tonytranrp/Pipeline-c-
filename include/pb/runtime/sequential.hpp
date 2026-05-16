@@ -119,6 +119,17 @@ template <class Stage, class Error>
       annotated.stage = stage_id_for<Stage>(stage_index);
     }
     return annotated;
+  } else if constexpr (requires(ErrorType value, error diagnostic) {
+                         { value.diagnostic } -> std::convertible_to<error>;
+                         value.diagnostic = std::move(diagnostic);
+                       }) {
+    auto annotated = std::forward<Error>(source);
+    auto diagnostic = error{annotated.diagnostic};
+    if (!has_stage(diagnostic.stage)) {
+      diagnostic.stage = stage_id_for<Stage>(stage_index);
+    }
+    annotated.diagnostic = std::move(diagnostic);
+    return annotated;
   } else {
     return std::forward<Error>(source);
   }
