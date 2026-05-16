@@ -38,6 +38,18 @@ pb_apply_project_options(pb_stage_naming_descriptor_compile_pass PRIVATE)
 add_test(NAME pb_stage_naming_descriptor_compile_pass COMMAND pb_stage_naming_descriptor_compile_pass)
 set_tests_properties(pb_stage_naming_descriptor_compile_pass PROPERTIES LABELS "compile-pass;metadata")
 
+add_executable(pb_adapt_functor_compile_pass compile_pass/adapt_functor.cpp)
+target_link_libraries(pb_adapt_functor_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_adapt_functor_compile_pass PRIVATE)
+add_test(NAME pb_adapt_functor_compile_pass COMMAND pb_adapt_functor_compile_pass)
+set_tests_properties(pb_adapt_functor_compile_pass PROPERTIES LABELS "compile-pass;adapter")
+
+add_executable(pb_result_error_type_compatible_compile_pass compile_pass/result_error_type_compatible.cpp)
+target_link_libraries(pb_result_error_type_compatible_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_result_error_type_compatible_compile_pass PRIVATE)
+add_test(NAME pb_result_error_type_compatible_compile_pass COMMAND pb_result_error_type_compatible_compile_pass)
+set_tests_properties(pb_result_error_type_compatible_compile_pass PROPERTIES LABELS "compile-pass;runtime;result")
+
 add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers.cpp
   compile_pass/public_headers/adapt_fn.cpp
@@ -592,6 +604,39 @@ add_test(NAME pb_compile_fail_pipeline_edge_index_oob
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_pipeline_edge_index_oob PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
+add_test(NAME pb_compile_fail_pipeline_edge_from_key_zero_edge_oob
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_edge_from_key_zero_edge_oob.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Pipeline\ edge\ metadata\ index\ out\ of\ range
+    -DEXPECTED_DIAGNOSTICS=edge_count
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_edge_from_key_zero_edge_oob PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
+add_test(NAME pb_compile_fail_pipeline_edge_from_stage_index_oob
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_edge_from_stage_index_oob.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Pipeline\ edge\ metadata\ index\ out\ of\ range
+    -DEXPECTED_DIAGNOSTICS=edge_count
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_edge_from_stage_index_oob PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
+add_test(NAME pb_compile_fail_pipeline_edge_to_stage_zero_edge_oob
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_edge_to_stage_zero_edge_oob.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Pipeline\ edge\ metadata\ index\ out\ of\ range
+    -DEXPECTED_DIAGNOSTICS=edge_count
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_edge_to_stage_zero_edge_oob PROPERTIES LABELS "compile-fail;diagnostics;metadata")
 
 add_test(NAME pb_compile_fail_pipeline_edge_alias_non_pipeline_misuse
   COMMAND ${CMAKE_COMMAND}
