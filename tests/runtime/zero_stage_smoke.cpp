@@ -1,5 +1,6 @@
 #include <pb/pipeline.hpp>
 
+#include <cstddef>
 #include <type_traits>
 
 struct EmptyInput {};
@@ -11,6 +12,18 @@ struct Input {
 };
 
 using Pipeline = pb::from<Input>::to<Input>;
+
+struct counting_observer final : pb::runtime::observer {
+  std::size_t starts{};
+  std::size_t successes{};
+  std::size_t failures{};
+  std::size_t exceptions{};
+
+  void on_stage_start(const pb::runtime::stage_id&) override { ++starts; }
+  void on_stage_success(const pb::runtime::stage_id&) override { ++successes; }
+  void on_stage_failure(const pb::runtime::stage_id&, const pb::runtime::error&) override { ++failures; }
+  void on_stage_exception(const pb::runtime::stage_id&, const pb::runtime::error&) override { ++exceptions; }
+};
 using Traits = pb::pipeline_traits<Pipeline>;
 static_assert(pb::valid<Pipeline>);
 static_assert(Traits::empty);
@@ -26,6 +39,8 @@ static_assert(pb::describe<Pipeline>().stage_records().empty());
 
 int main() {
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
+  counting_observer observer{};
+  engine.set_observer(&observer);
 
   auto output = engine.run(Input{17});
   if (output.value != 17) {
@@ -34,6 +49,9 @@ int main() {
 
   auto safe_output = engine.try_run(Input{23});
   if (!safe_output.has_value() || safe_output.value().value != 23) {
+    return 1;
+  }
+  if (observer.starts != 0 || observer.successes != 0 || observer.failures != 0 || observer.exceptions != 0) {
     return 1;
   }
 

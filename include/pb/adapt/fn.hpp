@@ -213,6 +213,10 @@ template <class NameTag, auto Function, class Input, class Output>
 struct adapt<name<NameTag>, fn<Function>, in<Input>, out<Output>>
     : function_stage<NameTag, Function, Input, Output> {};
 
+template <class NameTag, auto Function, class Input, class Output>
+struct adapt<name<NameTag>, member<Function>, in<Input>, out<Output>>
+    : adapt<name<NameTag>, member<Function>, in<Input>, out<Output>, err<no_error>> {};
+
 template <auto Function, class Input, class Output, class Error>
 struct adapt<fn<Function>, in<Input>, out<Output>, err<Error>>
     : function_stage<adapt_detail::unnamed_stage, Function, Input, Output, Error> {};
@@ -220,6 +224,10 @@ struct adapt<fn<Function>, in<Input>, out<Output>, err<Error>>
 template <auto Function, class Input, class Output, class Error>
 struct adapt<member<Function>, in<Input>, out<Output>, err<Error>>
     : adapt<name<adapt_detail::unnamed_stage>, member<Function>, in<Input>, out<Output>, err<Error>> {};
+
+template <auto Function, class Input, class Output>
+struct adapt<member<Function>, in<Input>, out<Output>>
+    : adapt<name<adapt_detail::unnamed_stage>, member<Function>, in<Input>, out<Output>, err<no_error>> {};
 
 template <auto Function, class Input, class Output>
 struct adapt<fn<Function>, in<Input>, out<Output>>
