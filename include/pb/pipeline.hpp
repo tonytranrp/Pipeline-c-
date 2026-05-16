@@ -4,6 +4,7 @@
 #include "pb/core/concepts.hpp"
 #include "pb/core/describe.hpp"
 #include "pb/core/fixed_string.hpp"
+#include "pb/core/export_dot.hpp"
 #include "pb/core/meta.hpp"
 #include "pb/core/pipeline_state.hpp"
 #include "pb/core/stage_traits.hpp"
@@ -11,6 +12,7 @@
 #include "pb/runtime/error.hpp"
 #include "pb/runtime/observer.hpp"
 #include "pb/runtime/result.hpp"
+#include "pb/export/dot.hpp"
 #include "pb/runtime/sequential.hpp"
 
 namespace pb {
@@ -30,6 +32,7 @@ using core::join_node;
 using core::join_output;
 using core::join_validation;
 using core::describe;
+using core::to_dot;
 using core::fixed_string;
 using core::from;
 using core::is_pipeline_v;
@@ -83,4 +86,5 @@ using runtime::observer;
 using runtime::result;
 using runtime::stage_id;
 using runtime::to_result;
+using runtime::to_dot;
 } // namespace pb

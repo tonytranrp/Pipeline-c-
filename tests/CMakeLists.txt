@@ -67,6 +67,7 @@ add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers/runtime_result.cpp
   compile_pass/public_headers/runtime_sequential.cpp
   compile_pass/public_headers/runtime_observer.cpp
+  compile_pass/public_headers/export_dot.cpp
 )
 target_link_libraries(pb_public_headers_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_public_headers_compile_pass PRIVATE)
@@ -177,6 +178,12 @@ pb_apply_project_options(pb_runtime_sequential_adapters_smoke PRIVATE)
 add_test(NAME pb_runtime_sequential_adapters_smoke COMMAND pb_runtime_sequential_adapters_smoke)
 set_tests_properties(pb_runtime_sequential_adapters_smoke PROPERTIES LABELS "runtime;adapter")
 
+add_executable(pb_export_dot_compile_pass compile_pass/export_dot.cpp)
+target_link_libraries(pb_export_dot_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_export_dot_compile_pass PRIVATE)
+add_test(NAME pb_export_dot_compile_pass COMMAND pb_export_dot_compile_pass)
+set_tests_properties(pb_export_dot_compile_pass PROPERTIES LABELS "compile-pass;export;dot")
+
 add_test(NAME pb_compile_fail_edge_mismatch
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/edge_mismatch.cpp
@@ -275,6 +282,17 @@ add_test(NAME pb_compile_fail_branch_outputs_empty_misuse
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_branch_outputs_empty_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+
+add_test(NAME pb_compile_fail_join_validation_input_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/join_validation_input_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Join\ validation\ mismatch
+    -DEXPECTED_DIAGNOSTICS=Join\ validation;join\ stage\ input_type;branch\ output_types
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_join_validation_input_mismatch PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 
 add_test(NAME pb_compile_fail_branch_case_output_non_case_misuse
   COMMAND ${CMAKE_COMMAND}
