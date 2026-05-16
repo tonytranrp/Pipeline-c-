@@ -43,6 +43,20 @@ struct external_expected {
   [[nodiscard]] E&& error() && { return std::move(error_); }
 };
 
+template <class E>
+struct external_void_expected {
+  using value_type = void;
+  using error_type = E;
+
+  bool ok{};
+  E error_{};
+
+  [[nodiscard]] bool has_value() const { return ok; }
+  void value() const {}
+  [[nodiscard]] const E& error() const& { return error_; }
+  [[nodiscard]] E&& error() && { return std::move(error_); }
+};
+
 namespace adapter_stage_names {
 struct parse_input {
   static constexpr auto value = "parse_input";
@@ -66,6 +80,10 @@ struct parse_opaque {
 
 struct parse_diagnostic {
   static constexpr auto value = "parse_diagnostic";
+};
+
+struct consume_void {
+  static constexpr auto value = "consume_void";
 };
 } // namespace adapter_stage_names
 
@@ -125,6 +143,13 @@ external_expected<Parsed, diagnostic_error> parse_diagnostic_error(Input input) 
   return {.ok = true, .value_ = {input.value + 9}};
 }
 
+external_void_expected<opaque_error> consume_void_expected(Input input) {
+  if (input.value < 0) {
+    return {.ok = false, .error_ = {.code = 7}};
+  }
+  return {.ok = true};
+}
+
 using ParsedAdapter = pb::adapt<pb::name<adapter_stage_names::parse_input>, pb::fn<parse_input_fn>,
                                  pb::in<Input>, pb::out<Parsed>>;
 using ThrowingParsedAdapter =
@@ -150,6 +175,9 @@ using OpaqueErrorAdapter =
 using DiagnosticErrorAdapter =
     pb::adapt<pb::name<adapter_stage_names::parse_diagnostic>, pb::fn<parse_diagnostic_error>, pb::in<Input>,
               pb::out<Parsed>>;
+using VoidExpectedAdapter =
+    pb::adapt<pb::name<adapter_stage_names::consume_void>, pb::fn<consume_void_expected>, pb::in<Input>,
+              pb::out<void>>;
 
 struct Emit {
   using input_type = Parsed;
@@ -183,6 +211,7 @@ using OpaqueErrorPipeline =
     pb::from<Input>::then<OpaqueErrorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using DiagnosticErrorPipeline =
     pb::from<Input>::then<DiagnosticErrorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
+using VoidExpectedPipeline = pb::from<Input>::then<VoidExpectedAdapter>::to<void>;
 
 static_assert(pb::adapted_stage<ParsedAdapter>);
 static_assert(pb::adapted_stage<MultiplierAdapter>);
@@ -192,6 +221,7 @@ static_assert(pb::adapted_stage<UnnamedDirectMemberAdapter>);
 static_assert(pb::adapted_stage<ExpectedFunctorAdapter>);
 static_assert(pb::adapted_stage<OpaqueErrorAdapter>);
 static_assert(pb::adapted_stage<DiagnosticErrorAdapter>);
+static_assert(pb::adapted_stage<VoidExpectedAdapter>);
 static_assert(pb::valid<Pipeline>);
 static_assert(pb::valid<ThrowingPipeline>);
 static_assert(pb::valid<ThrowingPipelineRaw>);
@@ -200,6 +230,7 @@ static_assert(pb::valid<DirectExpectedMemberPipeline>);
 static_assert(pb::valid<ExpectedFunctorPipeline>);
 static_assert(pb::valid<OpaqueErrorPipeline>);
 static_assert(pb::valid<DiagnosticErrorPipeline>);
+static_assert(pb::valid<VoidExpectedPipeline>);
 
 struct recording_observer final : pb::runtime::observer {
   std::vector<std::string> events{};
@@ -303,6 +334,41 @@ int main() {
                                                "failure:parse_diagnostic/parse_diagnostic:expected_error at "
                                                "parse_diagnostic: diagnostic parse failed",
                                            }));
+
+  auto void_expected_engine = pb::compile<VoidExpectedPipeline>(pb::runtime::sequential{});
+  recording_observer void_observer{};
+  void_expected_engine.set_observer(&void_observer);
+
+  auto void_ok = void_expected_engine.try_run(Input{5});
+  assert(void_ok.has_value());
+  assert(!void_ok.has_error());
+
+  auto void_failed = void_expected_engine.try_run(Input{-5});
+  assert(!void_failed.has_value());
+  assert(void_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(void_failed.error().stage.key == "consume_void");
+  assert(void_failed.error().stage.name == "consume_void");
+  assert(void_failed.error().message == "expected-like object reported an error");
+  assert(pb::runtime::describe(void_failed.error()) ==
+         "expected_error at consume_void: expected-like object reported an error");
+  assert((void_observer.events == std::vector<std::string>{
+                                        "start:consume_void/consume_void",
+                                        "success:consume_void/consume_void",
+                                        "start:consume_void/consume_void",
+                                        "failure:consume_void/consume_void:expected_error at consume_void: "
+                                        "expected-like object reported an error",
+                                    }));
+
+  auto void_raw_ok = void_expected_engine.run(Input{5});
+  assert(void_raw_ok.has_value());
+  assert(!void_raw_ok.has_error());
+
+  auto void_raw_failed = void_expected_engine.run(Input{-5});
+  assert(!void_raw_failed.has_value());
+  assert(void_raw_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(void_raw_failed.error().stage.key == "consume_void");
+  assert(void_raw_failed.error().stage.name == "consume_void");
+  assert(void_raw_failed.error().message == "expected-like object reported an error");
 
   auto failed = engine.run(Input{-2});
   assert(!failed.has_value());

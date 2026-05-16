@@ -177,7 +177,11 @@ template <class FinalOutput, class Input, class Stage, class... Rest>
       }
       notify_stage_success<Stage>(sink, stage_index);
       if constexpr (sizeof...(Rest) == 0) {
-        return result<FinalOutput>{std::move(normalized_result).value()};
+        if constexpr (std::is_void_v<FinalOutput>) {
+          return result<FinalOutput>{};
+        } else {
+          return result<FinalOutput>{std::move(normalized_result).value()};
+        }
       } else {
         return try_run_after_result<FinalOutput, decltype(std::move(normalized_result).value()), Rest...>(
             stage_index + 1, sink, std::move(normalized_result).value());
@@ -221,7 +225,11 @@ template <class FinalOutput, class Error, class Input, class Stage, class... Res
       }
       notify_stage_success<Stage>(sink, stage_index);
       if constexpr (sizeof...(Rest) == 0) {
-        return result<FinalOutput, Error>{std::move(normalized_result).value()};
+        if constexpr (std::is_void_v<FinalOutput>) {
+          return result<FinalOutput, Error>{};
+        } else {
+          return result<FinalOutput, Error>{std::move(normalized_result).value()};
+        }
       } else {
         return run_after_result<FinalOutput, Error, decltype(std::move(normalized_result).value()), Rest...>(
             stage_index + 1, sink, std::move(normalized_result).value());
@@ -283,7 +291,11 @@ template <class FinalOutput, class Input, class Stage, class... Rest>
     }
     notify_stage_success<Stage>(sink, stage_index);
     if constexpr (sizeof...(Rest) == 0) {
-      return result<FinalOutput, Error>{std::move(normalized_result).value()};
+      if constexpr (std::is_void_v<FinalOutput>) {
+        return result<FinalOutput, Error>{};
+      } else {
+        return result<FinalOutput, Error>{std::move(normalized_result).value()};
+      }
     } else {
       return run_after_result<FinalOutput, Error, decltype(std::move(normalized_result).value()), Rest...>(
           stage_index + 1, sink, std::move(normalized_result).value());
