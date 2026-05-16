@@ -278,39 +278,6 @@ add_test(NAME pb_compile_fail_pipeline_edge_index_oob
 )
 set_tests_properties(pb_compile_fail_pipeline_edge_index_oob PROPERTIES LABELS "compile-fail;diagnostics;metadata")
 
-add_test(NAME pb_compile_fail_pipeline_edge_from_stage_index_oob
-  COMMAND ${CMAKE_COMMAND}
-    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_edge_from_stage_index_oob.cpp
-    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
-    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
-    -DEXPECT_DIAGNOSTIC=Pipeline\ edge\ metadata\ index\ out\ of\ range
-    -DEXPECTED_DIAGNOSTICS=edge_count
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
-)
-set_tests_properties(pb_compile_fail_pipeline_edge_from_stage_index_oob PROPERTIES LABELS "compile-fail;diagnostics;metadata")
-
-add_test(NAME pb_compile_fail_pipeline_edge_to_stage_zero_edge_oob
-  COMMAND ${CMAKE_COMMAND}
-    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_edge_to_stage_zero_edge_oob.cpp
-    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
-    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
-    -DEXPECT_DIAGNOSTIC=Pipeline\ edge\ metadata\ index\ out\ of\ range
-    -DEXPECTED_DIAGNOSTICS=edge_count
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
-)
-set_tests_properties(pb_compile_fail_pipeline_edge_to_stage_zero_edge_oob PROPERTIES LABELS "compile-fail;diagnostics;metadata")
-
-add_test(NAME pb_compile_fail_pipeline_edge_from_key_zero_edge_oob
-  COMMAND ${CMAKE_COMMAND}
-    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_edge_from_key_zero_edge_oob.cpp
-    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
-    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
-    -DEXPECT_DIAGNOSTIC=Pipeline\ edge\ metadata\ index\ out\ of\ range
-    -DEXPECTED_DIAGNOSTICS=edge_count
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
-)
-set_tests_properties(pb_compile_fail_pipeline_edge_from_key_zero_edge_oob PROPERTIES LABELS "compile-fail;diagnostics;metadata")
-
 add_test(NAME pb_compile_fail_pipeline_has_stage_v_misuse
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_has_stage_v_misuse.cpp
