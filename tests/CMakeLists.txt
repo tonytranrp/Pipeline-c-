@@ -379,6 +379,28 @@ add_test(NAME pb_compile_fail_join_output_branch_outputs_boundary_misuse
 )
 set_tests_properties(pb_compile_fail_join_output_branch_outputs_boundary_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 
+add_test(NAME pb_compile_fail_join_validation_invalid_outputs_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/join_validation_invalid_outputs_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Join\ validation\ requires\ pb::branch_outputs
+    -DEXPECTED_DIAGNOSTICS=pb::branch_outputs;pb::join_node
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_join_validation_invalid_outputs_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+
+add_test(NAME pb_compile_fail_join_validation_invalid_join_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/join_validation_invalid_join_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Join\ validation\ requires\ pb::branch_outputs
+    -DEXPECTED_DIAGNOSTICS=pb::branch_outputs;pb::join_node
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_join_validation_invalid_join_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+
 add_test(NAME pb_compile_fail_adapt_fn_callable_mismatch
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/adapt_fn_callable_mismatch.cpp
