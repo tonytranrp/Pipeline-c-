@@ -69,8 +69,10 @@ template <std::size_t Index, class FromStageType, class ToStageType>
 struct edge_descriptor {
   using from_stage_type = FromStageType;
   using to_stage_type = ToStageType;
+  using from_input_type = stage_input_t<FromStageType>;
   using from_output_type = stage_output_t<FromStageType>;
   using to_input_type = stage_input_t<ToStageType>;
+  using to_output_type = stage_output_t<ToStageType>;
 
   static constexpr std::size_t index = Index;
   static constexpr std::size_t from_stage_index = Index;
