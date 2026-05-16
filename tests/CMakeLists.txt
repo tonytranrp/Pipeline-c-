@@ -91,6 +91,12 @@ pb_apply_project_options(pb_runtime_error_diagnostic_smoke PRIVATE)
 add_test(NAME pb_runtime_error_diagnostic_smoke COMMAND pb_runtime_error_diagnostic_smoke)
 set_tests_properties(pb_runtime_error_diagnostic_smoke PROPERTIES LABELS "runtime;diagnostics")
 
+add_executable(pb_runtime_adapter_smoke runtime/sequential_adapter_smoke.cpp)
+target_link_libraries(pb_runtime_adapter_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_adapter_smoke PRIVATE)
+add_test(NAME pb_runtime_adapter_smoke COMMAND pb_runtime_adapter_smoke)
+set_tests_properties(pb_runtime_adapter_smoke PROPERTIES LABELS "runtime;adapter")
+
 add_executable(pb_runtime_sequential_try_run_smoke runtime/sequential_try_run_smoke.cpp)
 target_link_libraries(pb_runtime_sequential_try_run_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_sequential_try_run_smoke PRIVATE)
@@ -132,6 +138,12 @@ target_link_libraries(pb_runtime_sequential_observer_accessor_smoke PRIVATE pb::
 pb_apply_project_options(pb_runtime_sequential_observer_accessor_smoke PRIVATE)
 add_test(NAME pb_runtime_sequential_observer_accessor_smoke COMMAND pb_runtime_sequential_observer_accessor_smoke)
 set_tests_properties(pb_runtime_sequential_observer_accessor_smoke PROPERTIES LABELS "runtime;observer")
+
+add_executable(pb_runtime_sequential_adapters_smoke runtime/sequential_adapters_smoke.cpp)
+target_link_libraries(pb_runtime_sequential_adapters_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_sequential_adapters_smoke PRIVATE)
+add_test(NAME pb_runtime_sequential_adapters_smoke COMMAND pb_runtime_sequential_adapters_smoke)
+set_tests_properties(pb_runtime_sequential_adapters_smoke PROPERTIES LABELS "runtime;adapter")
 
 add_test(NAME pb_compile_fail_edge_mismatch
   COMMAND ${CMAKE_COMMAND}
@@ -216,6 +228,17 @@ add_test(NAME pb_compile_fail_result_error_type_mismatch
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
     -DEXPECT_DIAGNOSTIC=Pipeline stages that return result<T, E> must use a compatible error type
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+  -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_result_error_type_mismatch PROPERTIES LABELS "compile-fail;diagnostics")
+
+add_test(NAME pb_compile_fail_pipeline_stage_key_index_oob
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_stage_key_index_oob.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pb::meta::at
+    -DEXPECTED_DIAGNOSTICS=
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_stage_key_index_oob PROPERTIES LABELS "compile-fail;diagnostics;metadata")
