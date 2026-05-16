@@ -140,7 +140,14 @@ struct branch_node {
 
 template <class... Cases>
 struct branch_outputs {
+  static_assert(sizeof...(Cases) > 0, "Branch outputs require at least one pb::case_<Predicate>::then<Stage>");
+  static_assert(detail::branch_cases_valid<Cases...>::value,
+                "Branch outputs require pb::case_<Predicate>::then<Stage> cases");
+  static_assert(detail::branch_cases_same_input<Cases...>::value,
+                "Branch outputs source mismatch: all branch cases must share input_type");
+
   using cases = meta::type_list<Cases...>;
+  using input_type = typename detail::branch_node_input<Cases...>::type;
   using output_types = meta::type_list<typename branch_case_output<Cases>::output_type...>;
   static constexpr std::size_t output_count = sizeof...(Cases);
 };
