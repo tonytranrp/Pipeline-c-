@@ -124,6 +124,16 @@ auto error_message_from(const E& value) -> std::string {
 }
 
 template <class E>
+auto error_message_from(const E& value) -> std::string
+  requires requires(const E& source) {
+    { source.diagnostic } -> std::convertible_to<error>;
+  }
+{
+  auto as_error = error{value.diagnostic};
+  return as_error.message;
+}
+
+template <class E>
 auto normalize_expected_error(E&& value) -> error {
   if constexpr (std::same_as<std::remove_cvref_t<E>, error>) {
     return std::forward<E>(value);
