@@ -16,6 +16,10 @@ struct Parsed {
   int value{};
 };
 
+struct MoveOnlyParsed {
+  std::unique_ptr<int> value{};
+};
+
 struct Output {
   int value{};
 };
@@ -100,6 +104,10 @@ struct parse_member_move_only_diagnostic {
   static constexpr auto value = "parse_member_move_only_diagnostic";
 };
 
+struct parse_member_move_only_value {
+  static constexpr auto value = "parse_member_move_only_value";
+};
+
 struct consume_void {
   static constexpr auto value = "consume_void";
 };
@@ -147,6 +155,13 @@ struct MemberParser {
                          .token = std::make_unique<int>(17)}};
     }
     return {.ok = true, .value_ = {input.value + 11}};
+  }
+
+  external_expected<MoveOnlyParsed, std::string> parse_move_only_value(Input input) const {
+    if (input.value < 0) {
+      return {.ok = false, .error_ = "member move-only value failed"};
+    }
+    return {.ok = true, .value_ = {.value = std::make_unique<int>(input.value + 17)}};
   }
 
   external_void_expected<std::string> consume_checked(Input input) const {
@@ -231,6 +246,9 @@ using NamedDirectExpectedMemberAdapter =
 using DirectMemberMoveOnlyDiagnosticAdapter =
     pb::adapt<pb::name<adapter_stage_names::parse_member_move_only_diagnostic>,
               pb::member<&MemberParser::parse_move_only_diagnostic>, pb::in<Input>, pb::out<Parsed>>;
+using DirectMemberMoveOnlyValueAdapter =
+    pb::adapt<pb::name<adapter_stage_names::parse_member_move_only_value>,
+              pb::member<&MemberParser::parse_move_only_value>, pb::in<Input>, pb::out<MoveOnlyParsed>>;
 using UnnamedDirectMemberAdapter =
     pb::adapt<pb::member<&MemberEmitter::emit>, pb::in<Parsed>, pb::out<Output>>;
 using ExpectedFunctorAdapter =
@@ -283,6 +301,8 @@ using DirectExpectedMemberPipeline =
     pb::from<Input>::then<NamedDirectExpectedMemberAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using DirectMemberMoveOnlyDiagnosticPipeline =
     pb::from<Input>::then<DirectMemberMoveOnlyDiagnosticAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
+using DirectMemberMoveOnlyValuePipeline =
+    pb::from<Input>::then<DirectMemberMoveOnlyValueAdapter>::to<MoveOnlyParsed>;
 using ExpectedFunctorPipeline =
     pb::from<Input>::then<ExpectedFunctorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using FunctorMoveOnlyDiagnosticPipeline =
@@ -300,6 +320,7 @@ static_assert(pb::adapted_stage<MultiplierAdapter>);
 static_assert(pb::adapted_stage<NamedDirectMemberAdapter>);
 static_assert(pb::adapted_stage<NamedDirectExpectedMemberAdapter>);
 static_assert(pb::adapted_stage<DirectMemberMoveOnlyDiagnosticAdapter>);
+static_assert(pb::adapted_stage<DirectMemberMoveOnlyValueAdapter>);
 static_assert(pb::adapted_stage<UnnamedDirectMemberAdapter>);
 static_assert(pb::adapted_stage<ExpectedFunctorAdapter>);
 static_assert(pb::adapted_stage<FunctorMoveOnlyDiagnosticAdapter>);
@@ -314,6 +335,7 @@ static_assert(pb::valid<ThrowingPipelineRaw>);
 static_assert(pb::valid<DirectMemberPipeline>);
 static_assert(pb::valid<DirectExpectedMemberPipeline>);
 static_assert(pb::valid<DirectMemberMoveOnlyDiagnosticPipeline>);
+static_assert(pb::valid<DirectMemberMoveOnlyValuePipeline>);
 static_assert(pb::valid<ExpectedFunctorPipeline>);
 static_assert(pb::valid<FunctorMoveOnlyDiagnosticPipeline>);
 static_assert(pb::valid<OpaqueErrorPipeline>);
@@ -406,6 +428,39 @@ int main() {
          "parse_member_move_only_diagnostic");
   assert(direct_member_move_only_diagnostic_raw_failed.error().message ==
          "move-only member diagnostic failed");
+
+  auto direct_member_move_only_value_engine = pb::compile<DirectMemberMoveOnlyValuePipeline>(pb::runtime::sequential{});
+  recording_observer direct_member_move_only_value_observer{};
+  direct_member_move_only_value_engine.set_observer(&direct_member_move_only_value_observer);
+
+  auto direct_member_move_only_value_ok = direct_member_move_only_value_engine.try_run(Input{5});
+  assert(direct_member_move_only_value_ok.has_value());
+  assert(!direct_member_move_only_value_ok.has_error());
+  assert(direct_member_move_only_value_ok.value().value != nullptr);
+  assert(*direct_member_move_only_value_ok.value().value == 22);
+
+  auto direct_member_move_only_value_failed = direct_member_move_only_value_engine.try_run(Input{-5});
+  assert(!direct_member_move_only_value_failed.has_value());
+  assert(direct_member_move_only_value_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(direct_member_move_only_value_failed.error().stage.key == "parse_member_move_only_value");
+  assert(direct_member_move_only_value_failed.error().stage.name == "parse_member_move_only_value");
+  assert(direct_member_move_only_value_failed.error().message == "member move-only value failed");
+  assert(pb::runtime::describe(direct_member_move_only_value_failed.error()) ==
+         "expected_error at parse_member_move_only_value: member move-only value failed");
+  assert((direct_member_move_only_value_observer.events ==
+          std::vector<std::string>{
+              "start:parse_member_move_only_value/parse_member_move_only_value",
+              "success:parse_member_move_only_value/parse_member_move_only_value",
+              "start:parse_member_move_only_value/parse_member_move_only_value",
+              "failure:parse_member_move_only_value/parse_member_move_only_value:"
+              "expected_error at parse_member_move_only_value: member move-only value failed",
+          }));
+
+  auto direct_member_move_only_value_raw_ok = direct_member_move_only_value_engine.run(Input{7});
+  assert(direct_member_move_only_value_raw_ok.has_value());
+  assert(!direct_member_move_only_value_raw_ok.has_error());
+  assert(direct_member_move_only_value_raw_ok.value().value != nullptr);
+  assert(*direct_member_move_only_value_raw_ok.value().value == 24);
 
   auto expected_functor_engine = pb::compile<ExpectedFunctorPipeline>(pb::runtime::sequential{});
   recording_observer functor_observer{};
