@@ -46,15 +46,15 @@ public:
   [[nodiscard]] const E& error() const& { return std::get<E>(storage_); }
   [[nodiscard]] E&& error() && { return std::move(std::get<E>(storage_)); }
 
-template <class G>
-  requires std::copy_constructible<E> && std::constructible_from<E, G>
-[[nodiscard]] E error_or(G&& fallback) const& {
-    return has_value() ? error() : E{std::forward<G>(fallback)};
+  template <class G>
+    requires std::copy_constructible<E> && std::constructible_from<E, G>
+  [[nodiscard]] E error_or(G&& fallback) const& {
+    return has_value() ? E{std::forward<G>(fallback)} : error();
   }
 
-template <class G>
-  requires std::move_constructible<E> && std::constructible_from<E, G>
-[[nodiscard]] E error_or(G&& fallback) && {
+  template <class G>
+    requires std::move_constructible<E> && std::constructible_from<E, G>
+  [[nodiscard]] E error_or(G&& fallback) && {
     return has_value() ? E{std::forward<G>(fallback)} : std::move(*this).error();
   }
 
@@ -80,15 +80,15 @@ public:
   [[nodiscard]] const E& error() const& { return std::get<E>(storage_); }
   [[nodiscard]] E&& error() && { return std::move(std::get<E>(storage_)); }
 
-template <class G>
-  requires std::copy_constructible<E> && std::constructible_from<E, G>
-[[nodiscard]] E error_or(G&& fallback) const& {
-    return has_value() ? error() : E{std::forward<G>(fallback)};
+  template <class G>
+    requires std::copy_constructible<E> && std::constructible_from<E, G>
+  [[nodiscard]] E error_or(G&& fallback) const& {
+    return has_value() ? E{std::forward<G>(fallback)} : error();
   }
 
-template <class G>
-  requires std::move_constructible<E> && std::constructible_from<E, G>
-[[nodiscard]] E error_or(G&& fallback) && {
+  template <class G>
+    requires std::move_constructible<E> && std::constructible_from<E, G>
+  [[nodiscard]] E error_or(G&& fallback) && {
     return has_value() ? E{std::forward<G>(fallback)} : std::move(*this).error();
   }
 
