@@ -88,7 +88,7 @@ Each theme below records four things:
   - `tests/runtime/sequential_observer_accessor_smoke.cpp`
   - `tests/runtime/sequential_observer_try_run_exception_smoke.cpp`
   - `tests/runtime/sequential_custom_error_observer_smoke.cpp`
-- **Safe next slice:** harden public observer contract details (ABI/stability, lifecycle, ordering) and cross-runtime semantics before claiming full support.
+- **Safe next slice:** add observer examples/benchmarks and harden public contract details (ABI/stability, lifecycle, ordering) before claiming full support.
 
 ### 8. Optional backends
 
