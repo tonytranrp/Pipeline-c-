@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <exception>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -25,6 +26,10 @@ struct opaque_error {
 
 struct diagnostic_error {
   pb::runtime::error diagnostic{};
+};
+
+struct move_only_opaque_error {
+  std::unique_ptr<int> code{};
 };
 
 template <class T, class E>
@@ -84,6 +89,10 @@ struct parse_diagnostic {
 
 struct consume_void {
   static constexpr auto value = "consume_void";
+};
+
+struct consume_void_move_only {
+  static constexpr auto value = "consume_void_move_only";
 };
 } // namespace adapter_stage_names
 
@@ -150,6 +159,13 @@ external_void_expected<opaque_error> consume_void_expected(Input input) {
   return {.ok = true};
 }
 
+external_void_expected<move_only_opaque_error> consume_void_move_only_expected(Input input) {
+  if (input.value < 0) {
+    return {.ok = false, .error_ = {.code = std::make_unique<int>(13)}};
+  }
+  return {.ok = true};
+}
+
 using ParsedAdapter = pb::adapt<pb::name<adapter_stage_names::parse_input>, pb::fn<parse_input_fn>,
                                  pb::in<Input>, pb::out<Parsed>>;
 using ThrowingParsedAdapter =
@@ -178,6 +194,9 @@ using DiagnosticErrorAdapter =
 using VoidExpectedAdapter =
     pb::adapt<pb::name<adapter_stage_names::consume_void>, pb::fn<consume_void_expected>, pb::in<Input>,
               pb::out<void>>;
+using VoidMoveOnlyExpectedAdapter =
+    pb::adapt<pb::name<adapter_stage_names::consume_void_move_only>, pb::fn<consume_void_move_only_expected>,
+              pb::in<Input>, pb::out<void>>;
 
 struct Emit {
   using input_type = Parsed;
@@ -212,6 +231,7 @@ using OpaqueErrorPipeline =
 using DiagnosticErrorPipeline =
     pb::from<Input>::then<DiagnosticErrorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using VoidExpectedPipeline = pb::from<Input>::then<VoidExpectedAdapter>::to<void>;
+using VoidMoveOnlyExpectedPipeline = pb::from<Input>::then<VoidMoveOnlyExpectedAdapter>::to<void>;
 
 static_assert(pb::adapted_stage<ParsedAdapter>);
 static_assert(pb::adapted_stage<MultiplierAdapter>);
@@ -222,6 +242,7 @@ static_assert(pb::adapted_stage<ExpectedFunctorAdapter>);
 static_assert(pb::adapted_stage<OpaqueErrorAdapter>);
 static_assert(pb::adapted_stage<DiagnosticErrorAdapter>);
 static_assert(pb::adapted_stage<VoidExpectedAdapter>);
+static_assert(pb::adapted_stage<VoidMoveOnlyExpectedAdapter>);
 static_assert(pb::valid<Pipeline>);
 static_assert(pb::valid<ThrowingPipeline>);
 static_assert(pb::valid<ThrowingPipelineRaw>);
@@ -231,6 +252,7 @@ static_assert(pb::valid<ExpectedFunctorPipeline>);
 static_assert(pb::valid<OpaqueErrorPipeline>);
 static_assert(pb::valid<DiagnosticErrorPipeline>);
 static_assert(pb::valid<VoidExpectedPipeline>);
+static_assert(pb::valid<VoidMoveOnlyExpectedPipeline>);
 
 struct recording_observer final : pb::runtime::observer {
   std::vector<std::string> events{};
@@ -369,6 +391,31 @@ int main() {
   assert(void_raw_failed.error().stage.key == "consume_void");
   assert(void_raw_failed.error().stage.name == "consume_void");
   assert(void_raw_failed.error().message == "expected-like object reported an error");
+
+  auto void_move_only_engine = pb::compile<VoidMoveOnlyExpectedPipeline>(pb::runtime::sequential{});
+  recording_observer void_move_only_observer{};
+  void_move_only_engine.set_observer(&void_move_only_observer);
+
+  auto void_move_only_failed = void_move_only_engine.try_run(Input{-5});
+  assert(!void_move_only_failed.has_value());
+  assert(void_move_only_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(void_move_only_failed.error().stage.key == "consume_void_move_only");
+  assert(void_move_only_failed.error().stage.name == "consume_void_move_only");
+  assert(void_move_only_failed.error().message == "expected-like object reported an error");
+  assert(pb::runtime::describe(void_move_only_failed.error()) ==
+         "expected_error at consume_void_move_only: expected-like object reported an error");
+  assert((void_move_only_observer.events == std::vector<std::string>{
+                                                  "start:consume_void_move_only/consume_void_move_only",
+                                                  "failure:consume_void_move_only/consume_void_move_only:expected_error "
+                                                  "at consume_void_move_only: expected-like object reported an error",
+                                              }));
+
+  auto void_move_only_raw_failed = void_move_only_engine.run(Input{-5});
+  assert(!void_move_only_raw_failed.has_value());
+  assert(void_move_only_raw_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(void_move_only_raw_failed.error().stage.key == "consume_void_move_only");
+  assert(void_move_only_raw_failed.error().stage.name == "consume_void_move_only");
+  assert(void_move_only_raw_failed.error().message == "expected-like object reported an error");
 
   auto failed = engine.run(Input{-2});
   assert(!failed.has_value());
