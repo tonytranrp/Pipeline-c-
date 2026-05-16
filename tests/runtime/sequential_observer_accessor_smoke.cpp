@@ -40,10 +40,16 @@ struct CountingObserver final : pb::runtime::observer {
   int successes{};
   int failures{};
   int exceptions{};
+  pb::runtime::stage_id last_failure_stage{};
+  pb::runtime::error last_failure_error{};
 
   void on_stage_start(const pb::runtime::stage_id&) override { ++starts; }
   void on_stage_success(const pb::runtime::stage_id&) override { ++successes; }
-  void on_stage_failure(const pb::runtime::stage_id&, const pb::runtime::error&) override { ++failures; }
+  void on_stage_failure(const pb::runtime::stage_id& stage, const pb::runtime::error& value) override {
+    ++failures;
+    last_failure_stage = stage;
+    last_failure_error = value;
+  }
   void on_stage_exception(const pb::runtime::stage_id&, const pb::runtime::error&) override { ++exceptions; }
 };
 
@@ -90,6 +96,12 @@ int main() {
   assert(!first_pass.has_value());
   assert(first_observer.starts > 0);
   assert(first_observer.failures > 0);
+  assert(first_pass.error().stage.key == failing_descriptor[1].key);
+  assert(first_pass.error().stage.name == failing_descriptor[1].name);
+  assert(first_observer.last_failure_stage.key == failing_descriptor[1].key);
+  assert(first_observer.last_failure_stage.name == failing_descriptor[1].name);
+  assert(first_observer.last_failure_error.stage.key == failing_descriptor[1].key);
+  assert(first_observer.last_failure_error.stage.name == failing_descriptor[1].name);
   const auto first_starts = first_observer.starts;
 
   failing_engine.set_observer(&second_observer);
