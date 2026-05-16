@@ -350,6 +350,61 @@ add_test(NAME pb_compile_fail_pipeline_stage_alias_non_pipeline_misuse
 )
 set_tests_properties(pb_compile_fail_pipeline_stage_alias_non_pipeline_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata")
 
+add_test(NAME pb_compile_fail_pipeline_size_non_pipeline_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_size_non_pipeline_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=ValidPipeline
+    -DEXPECTED_DIAGNOSTICS=pipeline_size_v
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_size_non_pipeline_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
+add_test(NAME pb_compile_fail_pipeline_empty_non_pipeline_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_empty_non_pipeline_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=ValidPipeline
+    -DEXPECTED_DIAGNOSTICS=pipeline_empty_v
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_empty_non_pipeline_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
+add_test(NAME pb_compile_fail_pipeline_input_non_pipeline_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_input_non_pipeline_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=ValidPipeline
+    -DEXPECTED_DIAGNOSTICS=pipeline_input_t
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_input_non_pipeline_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
+add_test(NAME pb_compile_fail_pipeline_output_non_pipeline_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_output_non_pipeline_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=ValidPipeline
+    -DEXPECTED_DIAGNOSTICS=pipeline_output_t
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_output_non_pipeline_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
+add_test(NAME pb_compile_fail_pipeline_stages_non_pipeline_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_stages_non_pipeline_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=ValidPipeline
+    -DEXPECTED_DIAGNOSTICS=pipeline_stages_t
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_stages_non_pipeline_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
 add_test(NAME pb_compile_fail_pipeline_stage_key_non_pipeline_misuse
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_stage_key_non_pipeline_misuse.cpp
