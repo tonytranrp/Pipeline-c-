@@ -29,6 +29,7 @@ using branch_case_output = pb::core::branch_case_output<branch_case>;
 using branch_node = pb::core::branch_node<branch_case, review_branch_case>;
 using branch_outputs = pb::core::branch_outputs<branch_case>;
 using join_node = pb::core::join_node<join>;
+using join_output = pb::core::join_output<join_node>;
 } // namespace
 
 static_assert(std::is_same_v<branch_case::predicate_type, predicate>);
@@ -46,5 +47,9 @@ static_assert(std::is_same_v<branch_outputs::output_types, pb::core::meta::type_
 static_assert(std::is_same_v<join_node::stage_type, join>);
 static_assert(std::is_same_v<join_node::input_type, parsed>);
 static_assert(std::is_same_v<join_node::output_type, parsed>);
+static_assert(std::is_same_v<join_output::join_type, join_node>);
+static_assert(std::is_same_v<join_output::stage_type, join>);
+static_assert(std::is_same_v<join_output::input_type, parsed>);
+static_assert(std::is_same_v<join_output::output_type, parsed>);
 
 int pb_public_header_core_pipeline_state() { return 0; }
