@@ -33,6 +33,7 @@ using public_branch_output_validation = pb::branch_output_validation<public_revi
 using public_join_node = pb::join_node<join>;
 using public_join_output = pb::join_output<public_join_node>;
 using public_join_validation = pb::join_validation<public_branch_outputs, public_join_node>;
+using public_join_builder_validation = pb::join_builder_validation<public_branch_outputs, join>;
 } // namespace
 
 static_assert(std::is_same_v<public_branch_case::predicate_type, predicate>);
@@ -59,5 +60,11 @@ static_assert(std::is_same_v<public_join_validation::branch_outputs_type, public
 static_assert(std::is_same_v<public_join_validation::join_type, public_join_node>);
 static_assert(std::is_same_v<public_join_validation::input_type, pb::core::meta::type_list<parsed, reviewed>>);
 static_assert(std::is_same_v<public_join_validation::output_type, parsed>);
+static_assert(std::is_same_v<public_join_builder_validation::branch_outputs_type, public_branch_outputs>);
+static_assert(std::is_same_v<public_join_builder_validation::join_type, public_join_node>);
+static_assert(std::is_same_v<public_join_builder_validation::stage_type, join>);
+static_assert(std::is_same_v<public_join_builder_validation::input_type,
+                             pb::core::meta::type_list<parsed, reviewed>>);
+static_assert(std::is_same_v<public_join_builder_validation::output_type, parsed>);
 
 int pb_public_header_pipeline() { return 0; }

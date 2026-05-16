@@ -378,6 +378,17 @@ add_test(NAME pb_compile_fail_join_node_invalid_stage_misuse
 )
 set_tests_properties(pb_compile_fail_join_node_invalid_stage_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 
+add_test(NAME pb_compile_fail_join_builder_source_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/join_builder_source_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Join\ builder\ source\ mismatch
+    -DEXPECTED_DIAGNOSTICS=join\ stage\ input_type;branch\ output_types
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_join_builder_source_mismatch PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+
 add_test(NAME pb_compile_fail_join_output_invalid_node_misuse
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/join_output_invalid_node_misuse.cpp

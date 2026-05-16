@@ -29,6 +29,7 @@ using core::branch_outputs;
 using core::case_;
 using core::connectable_v;
 using core::join_node;
+using core::join_builder_validation;
 using core::join_output;
 using core::join_validation;
 using core::describe;

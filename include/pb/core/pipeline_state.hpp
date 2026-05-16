@@ -23,6 +23,9 @@ struct branch_case_output;
 template <class Outputs, class Output>
 struct branch_output_validation;
 
+template <class Outputs, class JoinStage>
+struct join_builder_validation;
+
 namespace detail {
 
 template <class>
@@ -98,6 +101,27 @@ struct join_validation_impl<Outputs, Join, true, true> {
   using join_type = Join;
   using input_type = typename Outputs::output_types;
   using output_type = typename Join::output_type;
+};
+
+template <class Outputs, class JoinStage, bool IsOutputs = is_branch_outputs<Outputs>::value,
+          bool IsJoinStage = Stage<JoinStage>>
+struct join_builder_validation_impl {
+  static_assert(always_false_v<Outputs>,
+                "Join builder validation requires pb::branch_outputs<...> and a valid join stage");
+};
+
+template <class Outputs, class JoinStage>
+struct join_builder_validation_impl<Outputs, JoinStage, true, true> {
+  using join_type = join_node<JoinStage>;
+
+  static_assert(std::same_as<stage_input_t<JoinStage>, typename Outputs::output_types>,
+                "Join builder source mismatch: join stage input_type must match branch output_types before "
+                "pb::from<...>::branch<...>::join<Stage>");
+
+  using branch_outputs_type = Outputs;
+  using stage_type = JoinStage;
+  using input_type = typename Outputs::output_types;
+  using output_type = stage_output_t<JoinStage>;
 };
 
 template <class Outputs, class Output, bool IsOutputs = is_branch_outputs<Outputs>::value>
@@ -224,6 +248,9 @@ struct join_output : detail::join_output_impl<Join> {};
 
 template <class Outputs, class Join>
 struct join_validation : detail::join_validation_impl<Outputs, Join> {};
+
+template <class Outputs, class JoinStage>
+struct join_builder_validation : detail::join_builder_validation_impl<Outputs, JoinStage> {};
 
 template <class Input, class Output, class StageList>
 struct pipeline {
