@@ -48,8 +48,11 @@ These are RTK/SigMap/Repomix context-saving files, not pipeline feature changes.
 
 ## Latest team-batch checkpoint (2026-05-16)
 
-Docs-lane monitoring observed current integration head `b293a65` after the core/runtime/adapter/docs hardening batch:
+Docs-lane monitoring observed current integration head `218664c` plus docs checkpoint `3967894` after the core/runtime/adapter/docs hardening batch:
 
+- `371312a` / `218664c` added runtime `error_record` / `to_record(...)` diagnostic projection and smoke coverage.
+- `dbb8d5b` added marker-only `join_node` validation and invalid join-stage diagnostics.
+- `b737175` checked branch_case source compatibility at the marker boundary.
 - `b293a65` added sequential observer accessor coverage in the runtime path.
 - `8a6ea8a` validated branch predicate marker shape while keeping branch execution unsupported.
 - `4722296` added branch marker aliases and an explicit unsupported-topology compile-fail boundary.
@@ -59,7 +62,7 @@ Docs-lane monitoring observed current integration head `b293a65` after the core/
 - `3b1a231` / `23f1d60` hardened runtime `error_or(...)` fallback selection for expected-like/result normalization boundaries.
 - `ec45eae` / `62820ed` / merge `caa43ee` carried sequential observer replacement/accessor coverage into the integrated history.
 
-Release-facing wording should stay narrow: these commits strengthen the current linear/sequential MVP and add branch marker diagnostics for an unsupported boundary, but they do not complete branch output validation, join validation, branch execution, graph export, stable observer ABI/event schema, optional backend execution, runtime descriptor export, or release-grade benchmark budgets. Use `docs/current-release-summary.md` and `docs/research-verification-matrix.md` as compact PR/release note seeds for this batch.
+Release-facing wording should stay narrow: these commits strengthen the current linear/sequential MVP and add branch/join marker diagnostics for unsupported boundaries, source compatibility, predicates, and invalid join-stage markers, but they do not complete branch output modeling, join compatibility validation, branch execution, graph export, stable observer ABI/event schema, optional backend execution, runtime descriptor export, or release-grade benchmark budgets. Use `docs/current-release-summary.md` and `docs/research-verification-matrix.md` as compact PR/release note seeds for this batch.
 
 ## What is done from the research plan
 
@@ -75,7 +78,7 @@ Treat these as shipped MVP support unless a future regression proves otherwise:
 
 Do not claim these as supported until code, tests, examples, and docs land together:
 
-- Executable branch/join topology and non-linear validation beyond marker-only unsupported-boundary diagnostics.
+- Executable branch/join topology and non-linear validation beyond marker-only unsupported-boundary/source/predicate/join-stage diagnostics.
 - Graph export (`DOT`, JSON, or stable graph schema).
 - Stable runtime descriptor/export contract.
 - Optional Taskflow/oneTBB/stdexec backends.
@@ -100,13 +103,13 @@ Next safe queue:
 
 Avoid: branch/join, graph export, expression-template rewrites, or broad public API churn.
 
-### Worker 2 — Runtime/adapters coding
+### Worker 2 — Runtime/adapters/diagnostics coding
 
 Owns: `include/pb/runtime/*`, `src/runtime/*`, `include/pb/adapt/*`, runtime/adapter tests.
 
 Next safe queue:
 
-1. Audit `run()`/`try_run()` boundaries, result factories, expected-like conversion, observer lifecycle, and adapter diagnostics.
+1. Audit `run()`/`try_run()` boundaries, result factories, expected-like conversion, observer lifecycle, adapter diagnostics, and runtime diagnostic record/export boundaries.
 2. Add one narrow runtime hardening slice: clearer error construction, observer ordering evidence, adapter edge-case coverage, or exception-policy documentation tests.
 3. Preserve current `run()` and `try_run()` semantics unless the leader scopes a policy change.
 4. Keep standard-library-only design.

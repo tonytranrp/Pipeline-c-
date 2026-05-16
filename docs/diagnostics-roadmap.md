@@ -78,11 +78,11 @@ Before the repo can claim richer diagnostics support beyond the current MVP, it 
 The current verification evidence supports the existing linear-pipeline diagnostic surface:
 
 - compile-fail tests check for expected diagnostic text through `tests/run_compile_fail.cmake`
-- `pb_runtime_error_diagnostic_smoke` validates runtime category/stage/message formatting helpers
+- `pb_runtime_error_diagnostic_smoke` validates runtime category/stage/message formatting helpers and the `error_record` / `to_record(...)` diagnostic projection
 - `examples/error_diagnostic.cpp` documents the intentional compile-fail path for users
 - `docs/examples.md` explains how to run the diagnostic example and the compile-fail smoke target
 
-That evidence is enough to document the current diagnostic baseline. It is **not** enough to claim richer roadmap items such as graph-aware diagnostics, schema-stable outputs, or fully hardened wording guarantees.
+That evidence is enough to document the current diagnostic baseline, including a narrow value-level runtime error record. It is **not** enough to claim richer roadmap items such as graph-aware diagnostics, schema-stable exported artifacts, or fully hardened wording guarantees.
 
 ## Release guidance
 

@@ -4,8 +4,11 @@ Status snapshot for the current long-horizon team batch. Use this page as a comp
 
 ## Candidate snapshot
 
-- Candidate commit observed by the docs lane: `7a483b7` (detached worker integration head).
+- Candidate commit observed by the docs lane: `218664c` / docs checkpoint `3967894` (detached worker integration history).
 - Recent integrated hardening commits observed in this worktree:
+  - `371312a` / `218664c` — added runtime `error_record` / `to_record(...)` diagnostic projection and smoke coverage.
+  - `dbb8d5b` — added marker-only `join_node` validation and invalid join-stage diagnostics.
+  - `b737175` — checked branch_case source compatibility at the marker boundary.
   - `7a483b7` — added adapter/member hardening in `include/pb/adapt/fn.hpp`.
   - `ee412f7` — added public-header coverage for core `stage_traits` aliases and tightened related diagnostic misuse cases.
   - `3b1a231` / `23f1d60` — integrated runtime `pb::runtime::result<T>::error_or(...)` fallback selection hardening.
@@ -14,6 +17,8 @@ Status snapshot for the current long-horizon team batch. Use this page as a comp
 
 ## PR summary draft
 
+- Runtime diagnostic records now provide a narrow value-level projection for current runtime errors; release notes should avoid calling this a stable exported diagnostic schema.
+- Branch/join marker diagnostics now cover source compatibility, predicate shape, unsupported topology, and invalid join-stage markers; release notes must still label executable branch/join topology as roadmap.
 - Adapter/member hardening landed in the public adapter surface; release notes should keep this as incremental adapter ergonomics/hardening, not a new backend claim.
 - Core stage-traits public-header coverage now exercises the alias/metadata surface used by diagnostics and docs.
 - Runtime result normalization now has stronger coverage around fallback/error conversion boundaries.

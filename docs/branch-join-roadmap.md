@@ -9,13 +9,13 @@ Today the repository supports:
 - linear compile-time pipeline validation through `pb::from<T>::then<S>::to<U>`
 - compile-time metadata/introspection through `describe()` and stage records
 - sequential runtime execution for validated linear pipelines
-- branch marker aliases (`case_`, `branch_case`, `branch_node`) that lock the current unsupported boundary and predicate marker requirements from research lines 468-479, 583-591, and 989-997
+- branch marker aliases (`case_`, `branch_case`, `branch_node`, `join_node`) that lock the current unsupported boundary, branch source compatibility, predicate marker, and invalid join-stage requirements from research lines 468-479, 583-591, and 989-997
 
 Today the repository does **not** support:
 
 - public `branch`, `fork`, `select`, or `join` pipeline builders
 - multi-output lowering into labeled branch paths
-- multi-input join validation or execution
+- branch output modeling, multi-input join compatibility validation, or execution
 - supported branch/join examples, benchmarks, or executor coverage
 
 Keep release notes and examples aligned with that boundary. The marker/diagnostic slice is evidence for the unsupported boundary only; do not present branch/join execution or graph topology as shipped just because the research plan already sketches the feature.
@@ -78,13 +78,13 @@ The current verification evidence covers the existing linear pipeline core plus 
 - package-consumer smoke coverage
 - benchmark smoke scaffolding
 
-Current branch/join-specific verification is limited to compile-pass public marker aliases and compile-fail diagnostics for unsupported topology and predicate marker misuse. There are still no supported branch/join examples, benchmarks, join-validation tests, or executor tests.
+Current branch/join-specific verification is limited to compile-pass public marker aliases and compile-fail diagnostics for unsupported topology, branch source compatibility, predicate marker misuse, and invalid join-stage markers. There are still no supported branch/join examples, benchmarks, branch output modeling tests, join compatibility tests, or executor tests.
 
 ## Release guidance
 
 Until implementation and tests land, release notes and docs should describe branch/join support as:
 
-> marker-only unsupported-boundary diagnostics exist; executable branch/join topology remains roadmap work
+> marker-only unsupported-boundary, branch source/predicate, and invalid join-stage diagnostics exist; executable branch/join topology remains roadmap work
 
 If a future slice adds branch/join support, update this page together with:
 
