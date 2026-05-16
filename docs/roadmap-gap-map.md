@@ -2,6 +2,8 @@
 
 This page maps the major themes in `research/pipeline_builder_cpp_research_plan.md` to the repository evidence that exists **today**. Use it to separate shipped MVP support from roadmap-only gaps, and to identify the next safe documentation or implementation slices without overstating production readiness.
 
+
+For a compact release-governance table that maps each gap to evidence, tests, release status, and the next required slice, see [Research Verification Matrix](research-verification-matrix.md).
 ## Current audited baseline
 
 Last local audit baseline: `aa3b8f6` on `main`. The current MVP audit found the linear pipeline builder sound and locally green: developer configure/build/CTest completed with **78/78 tests passed**. Use `continue.md` as the resume checkpoint for the next long-horizon team wave.

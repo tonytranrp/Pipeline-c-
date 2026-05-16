@@ -2,6 +2,8 @@
 
 This project treats benchmarks as smoke and profiling scaffolding, not release gates. The current workflow exists to prove that the benchmark targets still build and run, and to give maintainers a repeatable way to capture compile-time trace artifacts when investigating template or header cost.
 
+
+The release-facing status for benchmark thresholds and compile-time budgets is summarized in [Research Verification Matrix](research-verification-matrix.md).
 ## Current benchmark surface
 
 When `PB_BUILD_BENCHMARKS=ON`, the repository builds four benchmark-oriented executables under `bench/`:
