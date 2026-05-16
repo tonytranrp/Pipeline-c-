@@ -47,6 +47,14 @@ cmake --build --preset clang-time-trace --target pb_bench_compile_chain_50
 find build/clang-time-trace -name '*.json' -path '*CMakeFiles*' -print
 ```
 
+For the current header-inclusion, 5-stage, and 50-stage compile-time baseline surface, you can run the local helper instead of typing those build commands by hand:
+
+```bash
+bench/compile_time/collect_baseline.sh
+```
+
+The helper prints local timing command output and trace artifact paths only; copy the relevant observed values into the template below and keep the raw output machine/context-specific.
+
 ## Minimum context to record
 
 Every benchmark note should record at least:

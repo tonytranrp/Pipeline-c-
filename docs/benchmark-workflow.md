@@ -52,6 +52,7 @@ If you only need one target during a local investigation, build it directly:
 
 ```bash
 cmake --build --preset bench-dev-ninja --target pb_bench_include_pipeline
+cmake --build --preset bench-dev-ninja --target pb_bench_compile_chain_5
 cmake --build --preset bench-dev-ninja --target pb_bench_compile_chain_50
 cmake --build --preset bench-dev-ninja --target pb_bench_sequential_5_stage
 ```
@@ -75,6 +76,18 @@ Expected outputs today:
 - The same benchmark executables as the smoke lanes when you build those targets explicitly.
 
 Treat the JSON files as local diagnostic artifacts. They are useful for spotting expensive includes, template instantiations, or unusually heavy translation units, but they are not committed release evidence.
+
+### Local baseline collection helper
+
+Use `bench/compile_time/collect_baseline.sh` when you want one repeatable local command for the current compile-time baseline surface without inventing or committing numbers:
+
+```bash
+bench/compile_time/collect_baseline.sh
+bench/compile_time/collect_baseline.sh bench-dev-ninja
+bench/compile_time/collect_baseline.sh clang-time-trace pb_bench_compile_chain_5 pb_bench_compile_chain_50
+```
+
+The helper configures the requested preset with `PB_BUILD_BENCHMARKS=ON`, times builds for `pb_bench_include_pipeline`, `pb_bench_compile_chain_5`, and `pb_bench_compile_chain_50` by default, and lists Clang time-trace JSON artifacts when the preset is `clang-time-trace`. Treat its output as raw local evidence to paste into the evidence template below; it is not a threshold, regression budget, or release gate.
 
 ## Recording results
 
