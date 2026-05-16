@@ -1,5 +1,7 @@
 #include <pb/pipeline.hpp>
 
+#include <concepts>
+
 struct value { int n{}; };
 struct s1 { using input_type = value; using output_type = value; value operator()(value v) const { return {v.n + 1}; } };
 struct s2 { using input_type = value; using output_type = value; value operator()(value v) const { return {v.n + 1}; } };
@@ -53,4 +55,9 @@ struct s49 { using input_type = value; using output_type = value; value operator
 struct s50 { using input_type = value; using output_type = value; value operator()(value v) const { return {v.n + 1}; } };
 using pipeline = pb::from<value>::then<s1>::then<s2>::then<s3>::then<s4>::then<s5>::then<s6>::then<s7>::then<s8>::then<s9>::then<s10>::then<s11>::then<s12>::then<s13>::then<s14>::then<s15>::then<s16>::then<s17>::then<s18>::then<s19>::then<s20>::then<s21>::then<s22>::then<s23>::then<s24>::then<s25>::then<s26>::then<s27>::then<s28>::then<s29>::then<s30>::then<s31>::then<s32>::then<s33>::then<s34>::then<s35>::then<s36>::then<s37>::then<s38>::then<s39>::then<s40>::then<s41>::then<s42>::then<s43>::then<s44>::then<s45>::then<s46>::then<s47>::then<s48>::then<s49>::then<s50>::to<value>;
 static_assert(pb::valid<pipeline>);
+static_assert(pb::pipeline_size_v<pipeline> == 50);
+static_assert(std::same_as<pb::pipeline_input_t<pipeline>, value>);
+static_assert(std::same_as<pb::pipeline_output_t<pipeline>, value>);
+static_assert(pb::descriptor_view<pipeline>().stage_records().size() == 50);
+static_assert(pb::descriptor_view<pipeline>().edge_records().size() == 49);
 int main() { return 0; }

@@ -53,12 +53,16 @@ Benchmark targets are intentionally opt-in so the default developer presets stay
 ```bash
 cmake --preset clang-dev-ninja -DPB_BUILD_BENCHMARKS=ON
 cmake --build --preset clang-dev-ninja --target pb_bench_include_pipeline
+cmake --build --preset clang-dev-ninja --target pb_bench_compile_chain_5
+cmake --build --preset clang-dev-ninja --target pb_bench_compile_chain_50
 cmake --build --preset clang-dev-ninja --target pb_bench_sequential_5_stage
 ./build/clang-dev-ninja/bench/pb_bench_include_pipeline
+./build/clang-dev-ninja/bench/pb_bench_compile_chain_5
+./build/clang-dev-ninja/bench/pb_bench_compile_chain_50
 ./build/clang-dev-ninja/bench/pb_bench_sequential_5_stage
 ```
 
-Use `pb_bench_include_pipeline` as a guard for the public-header include surface. Use `pb_bench_sequential_5_stage` as a smoke check that the runtime benchmark scaffold still exercises the sequential executor. These targets are not pass/fail performance gates yet; record timings alongside compiler, build type, and preset before comparing results across machines.
+Use `pb_bench_include_pipeline` as a guard for the public-header include surface. Use `pb_bench_compile_chain_5` and `pb_bench_compile_chain_50` as the small and larger compile-time chain baselines; both instantiate the linear chain, public metadata aliases, and descriptor view for the requested stage count. Use `pb_bench_sequential_5_stage` as a smoke check that the runtime benchmark scaffold still exercises the sequential executor. These targets are not pass/fail performance gates yet; record timings alongside compiler, build type, and preset before comparing results across machines.
 
 ### Recording benchmark results
 
@@ -86,7 +90,8 @@ For compile-time profiling, build the same translation units with the Clang time
 ```bash
 cmake --preset clang-time-trace -DPB_BUILD_BENCHMARKS=ON
 cmake --build --preset clang-time-trace --target pb_bench_include_pipeline
-cmake --build --preset clang-time-trace --target pb_bench_sequential_5_stage
+cmake --build --preset clang-time-trace --target pb_bench_compile_chain_5
+cmake --build --preset clang-time-trace --target pb_bench_compile_chain_50
 find build/clang-time-trace -name '*.json' -path '*CMakeFiles*' -print
 ```
 
