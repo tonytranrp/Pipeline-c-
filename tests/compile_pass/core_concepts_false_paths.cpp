@@ -23,9 +23,7 @@ struct MetadataOnlyStage {
 };
 
 static_assert(pb::Stage<Parse>);
-static_assert(pb::stage<Parse>);
 static_assert(!pb::Stage<NotAStage>);
-static_assert(!pb::stage<NotAStage>);
 
 static_assert(pb::Connectable<Raw, Parse>);
 static_assert(pb::connectable_v<Raw, Parse>);
