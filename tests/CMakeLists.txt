@@ -361,6 +361,17 @@ add_test(NAME pb_compile_fail_pipeline_stage_key_non_pipeline_misuse
 )
 set_tests_properties(pb_compile_fail_pipeline_stage_key_non_pipeline_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata")
 
+add_test(NAME pb_compile_fail_pipeline_stage_name_non_pipeline_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_stage_name_non_pipeline_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=ValidPipeline
+    -DEXPECTED_DIAGNOSTICS=stage_name
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_stage_name_non_pipeline_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
 add_test(NAME pb_compile_fail_pipeline_edge_index_oob
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_edge_index_oob.cpp
@@ -393,6 +404,28 @@ add_test(NAME pb_compile_fail_pipeline_edge_from_key_non_pipeline_misuse
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_pipeline_edge_from_key_non_pipeline_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
+add_test(NAME pb_compile_fail_pipeline_edge_to_key_non_pipeline_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_edge_to_key_non_pipeline_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=ValidPipeline
+    -DEXPECTED_DIAGNOSTICS=edge_to_key
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_edge_to_key_non_pipeline_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
+add_test(NAME pb_compile_fail_pipeline_edge_to_name_non_pipeline_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_edge_to_name_non_pipeline_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=ValidPipeline
+    -DEXPECTED_DIAGNOSTICS=edge_to_name
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_edge_to_name_non_pipeline_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata")
 
 add_test(NAME pb_compile_fail_pipeline_has_stage_v_misuse
   COMMAND ${CMAKE_COMMAND}
