@@ -84,6 +84,10 @@ struct parse_functor {
   static constexpr auto value = "parse_functor";
 };
 
+struct parse_functor_move_only_diagnostic {
+  static constexpr auto value = "parse_functor_move_only_diagnostic";
+};
+
 struct parse_opaque {
   static constexpr auto value = "parse_opaque";
 };
@@ -166,6 +170,19 @@ struct FunctorParser {
   }
 };
 
+struct FunctorMoveOnlyDiagnosticParser {
+  external_expected<Parsed, move_only_diagnostic_error> operator()(Input input) const {
+    if (input.value < 0) {
+      return {.ok = false,
+              .error_ = {.diagnostic = {.stage = {.key = "functor.external", .name = "FunctorExternal"},
+                                        .category = pb::runtime::error_category::stage_failure,
+                                        .message = "move-only functor diagnostic failed"},
+                         .token = std::make_unique<int>(23)}};
+    }
+    return {.ok = true, .value_ = {input.value + 13}};
+  }
+};
+
 external_expected<Parsed, opaque_error> parse_opaque_error(Input input) {
   if (input.value < 0) {
     return {.ok = false, .error_ = {.code = 42}};
@@ -219,6 +236,9 @@ using UnnamedDirectMemberAdapter =
 using ExpectedFunctorAdapter =
     pb::adapt<pb::name<adapter_stage_names::parse_functor>, pb::functor<FunctorParser>, pb::in<Input>,
               pb::out<Parsed>>;
+using FunctorMoveOnlyDiagnosticAdapter =
+    pb::adapt<pb::name<adapter_stage_names::parse_functor_move_only_diagnostic>,
+              pb::functor<FunctorMoveOnlyDiagnosticParser>, pb::in<Input>, pb::out<Parsed>>;
 using OpaqueErrorAdapter =
     pb::adapt<pb::name<adapter_stage_names::parse_opaque>, pb::fn<parse_opaque_error>, pb::in<Input>,
               pb::out<Parsed>>;
@@ -265,6 +285,8 @@ using DirectMemberMoveOnlyDiagnosticPipeline =
     pb::from<Input>::then<DirectMemberMoveOnlyDiagnosticAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using ExpectedFunctorPipeline =
     pb::from<Input>::then<ExpectedFunctorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
+using FunctorMoveOnlyDiagnosticPipeline =
+    pb::from<Input>::then<FunctorMoveOnlyDiagnosticAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using OpaqueErrorPipeline =
     pb::from<Input>::then<OpaqueErrorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using DiagnosticErrorPipeline =
@@ -280,6 +302,7 @@ static_assert(pb::adapted_stage<NamedDirectExpectedMemberAdapter>);
 static_assert(pb::adapted_stage<DirectMemberMoveOnlyDiagnosticAdapter>);
 static_assert(pb::adapted_stage<UnnamedDirectMemberAdapter>);
 static_assert(pb::adapted_stage<ExpectedFunctorAdapter>);
+static_assert(pb::adapted_stage<FunctorMoveOnlyDiagnosticAdapter>);
 static_assert(pb::adapted_stage<OpaqueErrorAdapter>);
 static_assert(pb::adapted_stage<DiagnosticErrorAdapter>);
 static_assert(pb::adapted_stage<VoidExpectedAdapter>);
@@ -292,6 +315,7 @@ static_assert(pb::valid<DirectMemberPipeline>);
 static_assert(pb::valid<DirectExpectedMemberPipeline>);
 static_assert(pb::valid<DirectMemberMoveOnlyDiagnosticPipeline>);
 static_assert(pb::valid<ExpectedFunctorPipeline>);
+static_assert(pb::valid<FunctorMoveOnlyDiagnosticPipeline>);
 static_assert(pb::valid<OpaqueErrorPipeline>);
 static_assert(pb::valid<DiagnosticErrorPipeline>);
 static_assert(pb::valid<VoidExpectedPipeline>);
@@ -400,6 +424,37 @@ int main() {
                                          "failure:parse_functor/parse_functor:expected_error at parse_functor: "
                                          "functor parse failed",
                                      }));
+
+  auto functor_move_only_diagnostic_engine =
+      pb::compile<FunctorMoveOnlyDiagnosticPipeline>(pb::runtime::sequential{});
+  recording_observer functor_move_only_diagnostic_observer{};
+  functor_move_only_diagnostic_engine.set_observer(&functor_move_only_diagnostic_observer);
+
+  auto functor_move_only_diagnostic_failed = functor_move_only_diagnostic_engine.try_run(Input{-5});
+  assert(!functor_move_only_diagnostic_failed.has_value());
+  assert(functor_move_only_diagnostic_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(functor_move_only_diagnostic_failed.error().stage.key == "parse_functor_move_only_diagnostic");
+  assert(functor_move_only_diagnostic_failed.error().stage.name == "parse_functor_move_only_diagnostic");
+  assert(functor_move_only_diagnostic_failed.error().message == "move-only functor diagnostic failed");
+  assert(pb::runtime::describe(functor_move_only_diagnostic_failed.error()) ==
+         "expected_error at parse_functor_move_only_diagnostic: move-only functor diagnostic failed");
+  assert((functor_move_only_diagnostic_observer.events ==
+          std::vector<std::string>{
+              "start:parse_functor_move_only_diagnostic/parse_functor_move_only_diagnostic",
+              "failure:parse_functor_move_only_diagnostic/parse_functor_move_only_diagnostic:"
+              "expected_error at parse_functor_move_only_diagnostic: move-only functor diagnostic failed",
+          }));
+
+  auto functor_move_only_diagnostic_raw_failed = functor_move_only_diagnostic_engine.run(Input{-5});
+  assert(!functor_move_only_diagnostic_raw_failed.has_value());
+  assert(functor_move_only_diagnostic_raw_failed.error().category ==
+         pb::runtime::error_category::expected_error);
+  assert(functor_move_only_diagnostic_raw_failed.error().stage.key ==
+         "parse_functor_move_only_diagnostic");
+  assert(functor_move_only_diagnostic_raw_failed.error().stage.name ==
+         "parse_functor_move_only_diagnostic");
+  assert(functor_move_only_diagnostic_raw_failed.error().message ==
+         "move-only functor diagnostic failed");
 
   auto opaque_error_engine = pb::compile<OpaqueErrorPipeline>(pb::runtime::sequential{});
   recording_observer opaque_observer{};
