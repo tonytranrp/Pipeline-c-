@@ -48,14 +48,18 @@ These are RTK/SigMap/Repomix context-saving files, not pipeline feature changes.
 
 ## Latest team-batch checkpoint (2026-05-16)
 
-Docs-lane monitoring observed current integration head `7a483b7` after the core/runtime/adapter/docs hardening batch:
+Docs-lane monitoring observed current integration head `b293a65` after the core/runtime/adapter/docs hardening batch:
 
+- `b293a65` added sequential observer accessor coverage in the runtime path.
+- `8a6ea8a` validated branch predicate marker shape while keeping branch execution unsupported.
+- `4722296` added branch marker aliases and an explicit unsupported-topology compile-fail boundary.
+- `8b5fda6` strengthened descriptor alias symmetry for the current linear introspection helpers.
 - `7a483b7` added adapter/member hardening in `include/pb/adapt/fn.hpp`.
 - `ee412f7` added public-header coverage for core `stage_traits` aliases and tightened related diagnostic misuse cases.
 - `3b1a231` / `23f1d60` hardened runtime `error_or(...)` fallback selection for expected-like/result normalization boundaries.
 - `ec45eae` / `62820ed` / merge `caa43ee` carried sequential observer replacement/accessor coverage into the integrated history.
 
-Release-facing wording should stay narrow: these commits strengthen the current linear/sequential MVP, but they do not complete branch/join, graph export, stable observer ABI/event schema, optional backend execution, runtime descriptor export, or release-grade benchmark budgets. Use `docs/current-release-summary.md` as the compact PR/release note seed for this batch.
+Release-facing wording should stay narrow: these commits strengthen the current linear/sequential MVP and add branch marker diagnostics for an unsupported boundary, but they do not complete branch output validation, join validation, branch execution, graph export, stable observer ABI/event schema, optional backend execution, runtime descriptor export, or release-grade benchmark budgets. Use `docs/current-release-summary.md` and `docs/research-verification-matrix.md` as compact PR/release note seeds for this batch.
 
 ## What is done from the research plan
 
@@ -71,7 +75,7 @@ Treat these as shipped MVP support unless a future regression proves otherwise:
 
 Do not claim these as supported until code, tests, examples, and docs land together:
 
-- Branch/join topology and non-linear validation.
+- Executable branch/join topology and non-linear validation beyond marker-only unsupported-boundary diagnostics.
 - Graph export (`DOT`, JSON, or stable graph schema).
 - Stable runtime descriptor/export contract.
 - Optional Taskflow/oneTBB/stdexec backends.
@@ -115,8 +119,8 @@ Owns: `README.md`, `docs/*`, `examples/*`, checkpoint notes, PR/release summarie
 
 Next safe queue:
 
-1. Keep docs aligned with Worker 1/2 changes and current preset/test names.
-2. Refresh `docs/roadmap-gap-map.md`, `docs/production-readiness.md`, and release evidence notes when new behavior lands.
+1. Keep docs aligned with Worker 1/2 changes and current preset/test names, especially branch marker diagnostics and runtime descriptor/observer seams.
+2. Refresh `docs/roadmap-gap-map.md`, `docs/production-readiness.md`, `docs/research-verification-matrix.md`, and release evidence notes when new behavior lands.
 3. Monitor `git status`, branch divergence, and GitHub readiness. Push/pull only when explicitly authorized for the concrete action.
 4. Prepare a compact PR summary with changed files, tests, risks, and remaining roadmap gaps.
 

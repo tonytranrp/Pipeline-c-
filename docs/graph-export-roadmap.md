@@ -17,7 +17,7 @@ Today the repository does **not** support:
 - graph-export examples, tests, or benchmark coverage
 - branch/join graph lowering required for richer non-linear export surfaces
 
-Keep examples and release notes aligned with that boundary. Do not present graph export as partially shipped just because the research plan already names the feature.
+Keep examples and release notes aligned with that boundary. Branch marker aliases and descriptor alias symmetry do not provide graph-export formats, emitters, or schema guarantees.
 
 ## Why this remains roadmap-only
 

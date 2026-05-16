@@ -9,15 +9,16 @@ Today the repository supports:
 - linear compile-time pipeline validation through `pb::from<T>::then<S>::to<U>`
 - compile-time metadata/introspection through `describe()` and stage records
 - sequential runtime execution for validated linear pipelines
+- branch marker aliases (`case_`, `branch_case`, `branch_node`) that lock the current unsupported boundary and predicate marker requirements from research lines 468-479, 583-591, and 989-997
 
 Today the repository does **not** support:
 
 - public `branch`, `fork`, `select`, or `join` pipeline builders
 - multi-output lowering into labeled branch paths
 - multi-input join validation or execution
-- branch/join examples, tests, benchmarks, or executor coverage
+- supported branch/join examples, benchmarks, or executor coverage
 
-Keep release notes and examples aligned with that boundary. Do not present branch/join as partially shipped just because the research plan already sketches the feature.
+Keep release notes and examples aligned with that boundary. The marker/diagnostic slice is evidence for the unsupported boundary only; do not present branch/join execution or graph topology as shipped just because the research plan already sketches the feature.
 
 ## Why branch/join matters
 
@@ -69,7 +70,7 @@ Before branch/join can move from roadmap to supported behavior, the repo needs:
 
 ## Verification status today
 
-The current verification evidence covers the existing pipeline core, not branch/join behavior:
+The current verification evidence covers the existing linear pipeline core plus marker-only branch/join boundary diagnostics, not executable branch/join behavior:
 
 - compile-pass coverage
 - compile-fail diagnostic coverage
@@ -77,13 +78,13 @@ The current verification evidence covers the existing pipeline core, not branch/
 - package-consumer smoke coverage
 - benchmark smoke scaffolding
 
-There is currently no branch/join-specific implementation or verification target under `tests/`, `examples/`, or `bench/`.
+Current branch/join-specific verification is limited to compile-pass public marker aliases and compile-fail diagnostics for unsupported topology and predicate marker misuse. There are still no supported branch/join examples, benchmarks, join-validation tests, or executor tests.
 
 ## Release guidance
 
 Until implementation and tests land, release notes and docs should describe branch/join support as:
 
-> roadmap work only; unimplemented and unverified in the current tree
+> marker-only unsupported-boundary diagnostics exist; executable branch/join topology remains roadmap work
 
 If a future slice adds branch/join support, update this page together with:
 
