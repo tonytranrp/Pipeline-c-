@@ -7,7 +7,7 @@ Diagnostics are **partially supported today**, but richer diagnostics are still 
 Today the repository supports:
 
 - compile-time validation failures with expected diagnostic text checked by `tests/run_compile_fail.cmake`
-- intentional compile-fail coverage for linear pipeline edge/type mismatches under `tests/CMakeLists.txt`
+- intentional compile-fail coverage for linear pipeline edge/type mismatches plus branch-marker misuse cases, including branch-output marker misuse, under `tests/CMakeLists.txt`
 - a public runtime diagnostic surface in `pb::runtime::error`, `error_category`, `category_name(...)`, and `describe(...)`
 - a runtime diagnostic smoke test in `tests/runtime/error_diagnostic_smoke.cpp`
 - a user-facing compile-fail example in `examples/error_diagnostic.cpp`
@@ -16,7 +16,7 @@ Today the repository supports:
 Today the repository does **not** support:
 
 - a documented guarantee that exact diagnostic wording is permanently frozen across releases
-- broader structured diagnostics for graph-shaped pipelines, branch/join validation, or descriptor/export tooling
+- broader structured diagnostics for graph-shaped pipelines, branch/join routing/compatibility validation, graph export, or descriptor/export tooling
 - source-location-rich diagnostic payloads, diagnostic schema/versioning, or stable machine-readable diagnostic output
 - observer-driven diagnostic reporting or richer error-category policy beyond the current sequential runtime helpers
 - a complete golden-test matrix that proves diagnostic behavior across every planned roadmap slice
@@ -79,11 +79,12 @@ The current verification evidence supports the existing linear-pipeline diagnost
 
 - compile-fail tests check for expected diagnostic text through `tests/run_compile_fail.cmake`
 - `pb_runtime_error_diagnostic_smoke` validates runtime category/stage/message formatting helpers and the `error_record` / `to_record(...)` diagnostic projection
+- branch-marker compile-fail tests cover unsupported topology, branch source/predicate misuse, invalid join-stage markers, and branch-output marker misuse without claiming executable branch/join support
 - `pb_runtime_sequential_observer_accessor_smoke` keeps the linear descriptor stage identity aligned with observer failure callbacks and the `try_run()` error envelope
 - `examples/error_diagnostic.cpp` documents the intentional compile-fail path for users
 - `docs/examples.md` explains how to run the diagnostic example and the compile-fail smoke target
 
-That evidence is enough to document the current diagnostic baseline, including a narrow value-level runtime error record and linear descriptor/observer/error identity consistency. It is **not** enough to claim richer roadmap items such as graph-aware diagnostics, schema-stable exported artifacts, or fully hardened wording guarantees.
+That evidence is enough to document the current diagnostic baseline, including branch-marker misuse diagnostics, a narrow value-level runtime error record, and linear descriptor/observer/error identity consistency. It is **not** enough to claim richer roadmap items such as graph-aware diagnostics, branch output routing/join compatibility, schema-stable exported artifacts, or fully hardened wording guarantees.
 
 ## Release guidance
 
