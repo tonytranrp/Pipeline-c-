@@ -104,6 +104,10 @@ struct parse_diagnostic {
   static constexpr auto value = "parse_diagnostic";
 };
 
+struct parse_result_move_only_error {
+  static constexpr auto value = "parse_result_move_only_error";
+};
+
 struct parse_member_move_only_diagnostic {
   static constexpr auto value = "parse_member_move_only_diagnostic";
 };
@@ -227,6 +231,17 @@ external_expected<Parsed, diagnostic_error> parse_diagnostic_error(Input input) 
   return {.ok = true, .value_ = {input.value + 9}};
 }
 
+pb::runtime::result<Parsed, move_only_diagnostic_error> parse_result_move_only_error(Input input) {
+  if (input.value < 0) {
+    return move_only_diagnostic_error{
+        .diagnostic = {.stage = {.key = "external.result", .name = "ExternalResult"},
+                       .category = pb::runtime::error_category::stage_failure,
+                       .message = "move-only result diagnostic failed"},
+        .token = std::make_unique<int>(31)};
+  }
+  return Parsed{input.value + 15};
+}
+
 external_void_expected<opaque_error> consume_void_expected(Input input) {
   if (input.value < 0) {
     return {.ok = false, .error_ = {.code = 7}};
@@ -278,6 +293,9 @@ using OpaqueErrorAdapter =
 using DiagnosticErrorAdapter =
     pb::adapt<pb::name<adapter_stage_names::parse_diagnostic>, pb::fn<parse_diagnostic_error>, pb::in<Input>,
               pb::out<Parsed>>;
+using ResultMoveOnlyErrorAdapter =
+    pb::adapt<pb::name<adapter_stage_names::parse_result_move_only_error>, pb::fn<parse_result_move_only_error>,
+              pb::in<Input>, pb::out<Parsed>>;
 using VoidExpectedAdapter =
     pb::adapt<pb::name<adapter_stage_names::consume_void>, pb::fn<consume_void_expected>, pb::in<Input>,
               pb::out<void>>;
@@ -328,6 +346,8 @@ using OpaqueErrorPipeline =
     pb::from<Input>::then<OpaqueErrorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using DiagnosticErrorPipeline =
     pb::from<Input>::then<DiagnosticErrorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
+using ResultMoveOnlyErrorPipeline =
+    pb::from<Input>::then<ResultMoveOnlyErrorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using VoidExpectedPipeline = pb::from<Input>::then<VoidExpectedAdapter>::to<void>;
 using VoidMoveOnlyExpectedPipeline = pb::from<Input>::then<VoidMoveOnlyExpectedAdapter>::to<void>;
 using DirectMemberVoidExpectedPipeline = pb::from<Input>::then<DirectMemberVoidExpectedAdapter>::to<void>;
@@ -344,6 +364,7 @@ static_assert(pb::adapted_stage<ExpectedFunctorAdapter>);
 static_assert(pb::adapted_stage<FunctorMoveOnlyDiagnosticAdapter>);
 static_assert(pb::adapted_stage<OpaqueErrorAdapter>);
 static_assert(pb::adapted_stage<DiagnosticErrorAdapter>);
+static_assert(pb::adapted_stage<ResultMoveOnlyErrorAdapter>);
 static_assert(pb::adapted_stage<VoidExpectedAdapter>);
 static_assert(pb::adapted_stage<VoidMoveOnlyExpectedAdapter>);
 static_assert(pb::adapted_stage<DirectMemberVoidExpectedAdapter>);
@@ -359,6 +380,7 @@ static_assert(pb::valid<ExpectedFunctorPipeline>);
 static_assert(pb::valid<FunctorMoveOnlyDiagnosticPipeline>);
 static_assert(pb::valid<OpaqueErrorPipeline>);
 static_assert(pb::valid<DiagnosticErrorPipeline>);
+static_assert(pb::valid<ResultMoveOnlyErrorPipeline>);
 static_assert(pb::valid<VoidExpectedPipeline>);
 static_assert(pb::valid<VoidMoveOnlyExpectedPipeline>);
 static_assert(pb::valid<DirectMemberVoidExpectedPipeline>);
@@ -599,6 +621,35 @@ int main() {
                                                "failure:parse_diagnostic/parse_diagnostic:expected_error at "
                                                "parse_diagnostic: diagnostic parse failed",
                                            }));
+
+  auto result_move_only_error_engine = pb::compile<ResultMoveOnlyErrorPipeline>(pb::runtime::sequential{});
+  recording_observer result_move_only_error_observer{};
+  result_move_only_error_engine.set_observer(&result_move_only_error_observer);
+
+  auto result_move_only_error_try_failed = result_move_only_error_engine.try_run(Input{-5});
+  assert(!result_move_only_error_try_failed.has_value());
+  assert(result_move_only_error_try_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(result_move_only_error_try_failed.error().stage.key == "parse_result_move_only_error");
+  assert(result_move_only_error_try_failed.error().stage.name == "parse_result_move_only_error");
+  assert(result_move_only_error_try_failed.error().message == "move-only result diagnostic failed");
+  assert(pb::runtime::describe(result_move_only_error_try_failed.error()) ==
+         "expected_error at parse_result_move_only_error: move-only result diagnostic failed");
+  assert((result_move_only_error_observer.events ==
+          std::vector<std::string>{
+              "start:parse_result_move_only_error/parse_result_move_only_error",
+              "failure:parse_result_move_only_error/parse_result_move_only_error:"
+              "expected_error at parse_result_move_only_error: move-only result diagnostic failed",
+          }));
+
+  auto result_move_only_error_raw_failed = result_move_only_error_engine.run(Input{-5});
+  assert(!result_move_only_error_raw_failed.has_value());
+  assert(result_move_only_error_raw_failed.error().diagnostic.stage.key == "external.result");
+  assert(result_move_only_error_raw_failed.error().diagnostic.stage.name == "ExternalResult");
+  assert(result_move_only_error_raw_failed.error().diagnostic.category ==
+         pb::runtime::error_category::stage_failure);
+  assert(result_move_only_error_raw_failed.error().diagnostic.message == "move-only result diagnostic failed");
+  assert(result_move_only_error_raw_failed.error().token != nullptr);
+  assert(*result_move_only_error_raw_failed.error().token == 31);
 
   auto void_expected_engine = pb::compile<VoidExpectedPipeline>(pb::runtime::sequential{});
   recording_observer void_observer{};
