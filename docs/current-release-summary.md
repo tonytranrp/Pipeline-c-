@@ -4,15 +4,16 @@ Status snapshot for the current long-horizon team batch. Use this page as a comp
 
 ## Candidate snapshot
 
-- Candidate commit observed by the docs lane: `caa43ee` (`main`, `origin/main`).
-- Recent runtime hardening commits observed in this worktree:
-  - `9de8902` — hardened `pb::runtime::result<T>::error_or(...)` fallback selection.
-  - `ec45eae` — locked sequential observer replacement/accessor behavior with runtime smoke coverage.
-  - `62820ed` / merge `caa43ee` — checkpointed the sequential observer accessor changes into `main`.
+- Candidate commit observed by the docs lane: `73fc85f` (detached worker integration head).
+- Recent integrated hardening commits observed in this worktree:
+  - `ee412f7` — added public-header coverage for core `stage_traits` aliases and tightened related diagnostic misuse cases.
+  - `3b1a231` / `23f1d60` — integrated runtime `pb::runtime::result<T>::error_or(...)` fallback selection hardening.
+  - `ec45eae` / `62820ed` / merge `caa43ee` — locked sequential observer replacement/accessor behavior with runtime smoke coverage.
 - Docs-lane scope for this note: release summary/checkpoint alignment only; no core/runtime/test implementation.
 
 ## PR summary draft
 
+- Core stage-traits public-header coverage now exercises the alias/metadata surface used by diagnostics and docs.
 - Runtime result normalization now has stronger coverage around fallback/error conversion boundaries.
 - Sequential observer registration now has smoke coverage for replacing and clearing the observer sink through the public accessor path.
 - Roadmap-facing docs should continue to describe observer hooks as partial sequential-runtime support: the current callback path is supported, but ABI, event schema, cross-executor semantics, examples, and benchmark/cost evidence remain follow-on work.
