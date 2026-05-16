@@ -8,10 +8,25 @@
 
 namespace pb::core {
 
-template <class Predicate, class Stage>
+namespace detail {
+template <class Predicate, bool IsPredicateStage = Stage<Predicate>>
+struct branch_predicate_output_bool : std::false_type {};
+
+template <class Predicate>
+struct branch_predicate_output_bool<Predicate, true>
+    : std::bool_constant<std::convertible_to<stage_output_t<Predicate>, bool>> {};
+} // namespace detail
+
+template <class Predicate, class BranchStage>
 struct branch_case {
+  static_assert(Stage<Predicate>,
+                "Branch predicate is invalid: define input_type and bool-like output_type");
+  static_assert(detail::branch_predicate_output_bool<Predicate>::value,
+                "Branch predicate stage must produce a bool-like output_type");
+  static_assert(Stage<BranchStage>, "Branch case target stage is invalid: define input_type and output_type");
+
   using predicate_type = Predicate;
-  using stage_type = Stage;
+  using stage_type = BranchStage;
 };
 
 template <class Predicate>
