@@ -17,7 +17,7 @@ Today the repository does **not** support:
 - descriptor-backed DOT/JSON export support
 - descriptor-specific examples, tests, or compatibility guarantees
 
-Keep release notes and examples aligned with that boundary. Do not present the current compile-time descriptor helpers as if they already satisfy the roadmap-level runtime descriptor contract.
+Keep release notes and examples aligned with that boundary. Descriptor alias symmetry strengthens the current linear introspection helpers, but it does not create a stable runtime descriptor/export schema or runtime graph view.
 
 ## Why an exportable runtime descriptor matters
 
