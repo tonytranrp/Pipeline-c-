@@ -17,6 +17,10 @@ struct Output {
 
 struct PipelineError {
   std::string message{};
+
+  PipelineError() = default;
+  PipelineError(std::string value) : message{std::move(value)} {}
+  PipelineError(pb::runtime::error diagnostic) : message{std::move(diagnostic.message)} {}
 };
 
 struct CheckedAddOne {
