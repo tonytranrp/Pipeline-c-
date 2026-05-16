@@ -36,3 +36,7 @@ build/
 out/
 # Ad-hoc local/worker CMake build trees
 build-*/
+
+# Local AI context/cache outputs
+.context/
+repomix-output.*
