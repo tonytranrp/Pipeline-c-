@@ -40,6 +40,42 @@ struct branch_case_output_impl<Case, true> {
   using case_type = Case;
   using output_type = stage_output_t<typename Case::stage_type>;
 };
+
+template <class... Cases>
+struct branch_cases_valid : std::bool_constant<(is_branch_case<Cases>::value && ...)> {};
+
+template <bool AllCasesValid, class... Cases>
+struct branch_cases_same_input_impl : std::false_type {};
+
+template <class... Cases>
+struct branch_cases_same_input_impl<true, Cases...> : std::true_type {};
+
+template <class First, class... Rest>
+struct branch_cases_same_input_impl<true, First, Rest...>
+    : std::bool_constant<(std::same_as<typename First::input_type, typename Rest::input_type> && ...)> {};
+
+template <class... Cases>
+struct branch_cases_same_input
+    : branch_cases_same_input_impl<branch_cases_valid<Cases...>::value, Cases...> {};
+
+template <bool IsBranchCase, class Case>
+struct branch_case_input_or_void {
+  using type = void;
+};
+
+template <class Case>
+struct branch_case_input_or_void<true, Case> {
+  using type = typename Case::input_type;
+};
+
+template <class... Cases>
+struct branch_node_input {
+  using type = void;
+};
+
+template <class First, class... Rest>
+struct branch_node_input<First, Rest...>
+    : branch_case_input_or_void<is_branch_case<First>::value, First> {};
 } // namespace detail
 
 template <class Predicate, class BranchStage>
@@ -68,7 +104,14 @@ struct case_ {
 
 template <class... Cases>
 struct branch_node {
+  static_assert(sizeof...(Cases) > 0, "Branch node requires at least one pb::case_<Predicate>::then<Stage>");
+  static_assert(detail::branch_cases_valid<Cases...>::value,
+                "Branch node requires pb::case_<Predicate>::then<Stage> cases");
+  static_assert(detail::branch_cases_same_input<Cases...>::value,
+                "Branch node source mismatch: all branch cases must share input_type");
+
   using cases = meta::type_list<Cases...>;
+  using input_type = typename detail::branch_node_input<Cases...>::type;
   using output_types = meta::type_list<typename branch_case_output<Cases>::output_type...>;
   static constexpr std::size_t case_count = sizeof...(Cases);
 };

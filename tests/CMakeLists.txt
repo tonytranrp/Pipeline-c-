@@ -265,6 +265,17 @@ add_test(NAME pb_compile_fail_branch_case_output_non_case_misuse
 )
 set_tests_properties(pb_compile_fail_branch_case_output_non_case_misuse PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 
+add_test(NAME pb_compile_fail_branch_node_case_input_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_node_case_input_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Branch\ node\ source\ mismatch
+    -DEXPECTED_DIAGNOSTICS=branch_node;input_type
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_branch_node_case_input_mismatch PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+
 add_test(NAME pb_compile_fail_join_node_invalid_stage_misuse
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/join_node_invalid_stage_misuse.cpp
