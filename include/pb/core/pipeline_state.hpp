@@ -24,9 +24,12 @@ struct branch_case {
   static_assert(detail::branch_predicate_output_bool<Predicate>::value,
                 "Branch predicate stage must produce a bool-like output_type");
   static_assert(Stage<BranchStage>, "Branch case target stage is invalid: define input_type and output_type");
+  static_assert(std::same_as<stage_input_t<Predicate>, stage_input_t<BranchStage>>,
+                "Branch case source mismatch: predicate input_type must match branch target stage input_type");
 
   using predicate_type = Predicate;
   using stage_type = BranchStage;
+  using input_type = stage_input_t<Predicate>;
 };
 
 template <class Predicate>
