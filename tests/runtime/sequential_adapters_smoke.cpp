@@ -150,7 +150,7 @@ struct recording_observer final : pb::runtime::observer {
   }
 
   void on_stage_failure(const pb::runtime::stage_id& stage, const pb::runtime::error& error) override {
-    events.push_back("failure:" + stage.name + "/" + stage.key + ":" + error.message);
+    events.push_back("failure:" + stage.name + "/" + stage.key + ":" + pb::runtime::describe(error));
   }
 };
 
@@ -165,6 +165,23 @@ int main() {
   auto direct_member_output = direct_member_engine.run(Input{5});
   assert(direct_member_output.value == 12);
 
+  auto direct_expected_member_engine = pb::compile<DirectExpectedMemberPipeline>(pb::runtime::sequential{});
+  recording_observer expected_observer{};
+  direct_expected_member_engine.set_observer(&expected_observer);
+
+  auto direct_expected_failed = direct_expected_member_engine.try_run(Input{-5});
+  assert(!direct_expected_failed.has_value());
+  assert(direct_expected_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(direct_expected_failed.error().stage.key == "parse_member");
+  assert(direct_expected_failed.error().stage.name == "parse_member");
+  assert(direct_expected_failed.error().message == "member parse failed");
+  assert(pb::runtime::describe(direct_expected_failed.error()) ==
+         "expected_error at parse_member: member parse failed");
+  assert((expected_observer.events == std::vector<std::string>{
+                                          "start:parse_member/parse_member",
+                                          "failure:parse_member/parse_member:expected_error at parse_member: "
+                                          "member parse failed",
+                                      }));
 
   auto failed = engine.run(Input{-2});
   assert(!failed.has_value());
