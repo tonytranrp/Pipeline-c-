@@ -6,6 +6,7 @@ This directory holds quickstart notes, diagnostic examples, benchmark guidance, 
 - [Benchmark and Compile-Time Profiling Workflow](benchmark-workflow.md)
 - [Package Consumer Walkthrough](package-consumer-walkthrough.md)
 - [Release Evidence Template](release-evidence-template.md)
+- [Research Verification Matrix](research-verification-matrix.md)
 - [Current PR / Release Summary](current-release-summary.md)
 - [Diagnostic Example Walkthrough](diagnostic-example-walkthrough.md)
 - [Runtime Error Model Tutorial](error-model-tutorial.md)
