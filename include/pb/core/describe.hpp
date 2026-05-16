@@ -254,12 +254,12 @@ struct pipeline_descriptor {
 };
 
 template <ValidPipeline Pipeline>
-[[nodiscard]] constexpr auto describe() noexcept -> pipeline_descriptor<Pipeline> {
-  return {};
+[[nodiscard]] constexpr auto describe() noexcept {
+  return pipeline_descriptor<Pipeline>{};
 }
 
 template <ValidPipeline Pipeline>
-[[nodiscard]] constexpr auto descriptor_view() noexcept -> typename pipeline_descriptor<Pipeline>::view_type {
+[[nodiscard]] constexpr auto descriptor_view() noexcept {
   return pipeline_descriptor<Pipeline>::view();
 }
 
