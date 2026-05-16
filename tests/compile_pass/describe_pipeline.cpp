@@ -51,6 +51,8 @@ static_assert(std::same_as<pb::pipeline_stages_t<EmptyPipeline>, pb::meta::type_
 static_assert(pb::pipeline_has_stage_v<Pipeline, Parse>);
 static_assert(pb::pipeline_has_stage_v<Pipeline, Finish>);
 static_assert(!pb::pipeline_has_stage_v<Pipeline, Raw>);
+static_assert(!pb::pipeline_has_stage_v<EmptyPipeline, Raw>);
+static_assert(!pb::pipeline_has_stage_v<EmptyPipeline, Parse>);
 static_assert(std::same_as<Traits::stage_type<0>, Parse>);
 static_assert(std::same_as<pb::pipeline_stage_t<Pipeline, 0>, Parse>);
 static_assert(std::same_as<pb::pipeline_stage_descriptor_t<Pipeline, 1>, Traits::stage<1>>);
