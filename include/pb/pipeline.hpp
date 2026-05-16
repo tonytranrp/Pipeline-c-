@@ -24,6 +24,7 @@ using core::branch_case;
 using core::branch_node;
 using core::case_;
 using core::connectable_v;
+using core::join_node;
 using core::describe;
 using core::fixed_string;
 using core::from;

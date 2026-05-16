@@ -44,6 +44,15 @@ struct branch_node {
   static constexpr std::size_t case_count = sizeof...(Cases);
 };
 
+template <class JoinStage>
+struct join_node {
+  static_assert(Stage<JoinStage>, "Join stage is invalid: define input_type and output_type");
+
+  using stage_type = JoinStage;
+  using input_type = stage_input_t<JoinStage>;
+  using output_type = stage_output_t<JoinStage>;
+};
+
 template <class Input, class Output, class StageList>
 struct pipeline {
   using input_type = Input;
