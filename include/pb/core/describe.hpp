@@ -65,6 +65,68 @@ struct stage_descriptor {
   }
 };
 
+template <std::size_t Index, class FromStageType, class ToStageType>
+struct edge_descriptor {
+  using from_stage_type = FromStageType;
+  using to_stage_type = ToStageType;
+  using from_output_type = stage_output_t<FromStageType>;
+  using to_input_type = stage_input_t<ToStageType>;
+
+  static constexpr std::size_t index = Index;
+  static constexpr std::size_t from_stage_index = Index;
+  static constexpr std::size_t to_stage_index = Index + 1;
+
+  [[nodiscard]] static constexpr std::string_view from_name() noexcept {
+    return stage_traits<FromStageType>::name();
+  }
+
+  [[nodiscard]] static constexpr std::string_view from_key() noexcept {
+    return stage_traits<FromStageType>::key();
+  }
+
+  [[nodiscard]] static constexpr std::string_view to_name() noexcept {
+    return stage_traits<ToStageType>::name();
+  }
+
+  [[nodiscard]] static constexpr std::string_view to_key() noexcept {
+    return stage_traits<ToStageType>::key();
+  }
+};
+
+namespace detail {
+template <class StageList, std::size_t Index, std::size_t StageCount, bool InRange = (Index < StageCount)>
+struct pipeline_stage_type_at;
+
+template <class StageList, std::size_t Index, std::size_t StageCount>
+struct pipeline_stage_type_at<StageList, Index, StageCount, true> {
+  using type = meta::at_t<StageList, Index>;
+};
+
+template <class StageList, std::size_t Index, std::size_t StageCount>
+struct pipeline_stage_type_at<StageList, Index, StageCount, false> {
+  static_assert(Index < StageCount,
+                "Pipeline stage metadata index out of range: Index must be less than pipeline stage_count");
+  using type = void;
+};
+
+template <class StageList, std::size_t Index, std::size_t EdgeCount, bool InRange = (Index < EdgeCount)>
+struct pipeline_edge_descriptor_at;
+
+template <class... Stages, std::size_t Index, std::size_t EdgeCount>
+struct pipeline_edge_descriptor_at<meta::type_list<Stages...>, Index, EdgeCount, true> {
+  using from_stage = meta::at_t<meta::type_list<Stages...>, Index>;
+  using to_stage = meta::at_t<meta::type_list<Stages...>, Index + 1>;
+  using type = edge_descriptor<Index, from_stage, to_stage>;
+};
+
+template <class StageList, std::size_t Index, std::size_t EdgeCount>
+struct pipeline_edge_descriptor_at<StageList, Index, EdgeCount, false> {
+  static_assert(Index < EdgeCount,
+                "Pipeline edge metadata index out of range: Index must be less than pipeline edge_count");
+  using type = void;
+};
+} // namespace detail
+
 template <class Pipeline>
 struct pipeline_traits;
 
@@ -75,13 +137,17 @@ struct pipeline_traits<pipeline<Input, Output, meta::type_list<Stages...>>> {
   using stages = meta::type_list<Stages...>;
 
   static constexpr std::size_t stage_count = sizeof...(Stages);
+  static constexpr std::size_t edge_count = stage_count > 0 ? stage_count - 1 : 0;
   static constexpr bool empty = stage_count == 0;
 
   template <std::size_t Index>
-  using stage_type = meta::at_t<stages, Index>;
+  using stage_type = typename detail::pipeline_stage_type_at<stages, Index, stage_count>::type;
 
   template <std::size_t Index>
   using stage = stage_descriptor<Index, stage_type<Index>>;
+
+  template <std::size_t Index>
+  using edge = typename detail::pipeline_edge_descriptor_at<stages, Index, edge_count>::type;
 
   template <class Stage>
   static constexpr bool has_stage_v = meta::contains<stages, Stage>::value;
@@ -142,7 +208,7 @@ struct pipeline_descriptor {
   using stages = typename traits::stages;
 
   static constexpr std::size_t stage_count = traits::stage_count;
-  static constexpr std::size_t edge_count = stage_count > 0 ? stage_count - 1 : 0;
+  static constexpr std::size_t edge_count = traits::edge_count;
   static constexpr bool empty = traits::empty;
 
   using view_type = pipeline_descriptor_view<stage_count>;
@@ -152,6 +218,9 @@ struct pipeline_descriptor {
 
   template <std::size_t Index>
   using stage_type = typename traits::template stage_type<Index>;
+
+  template <std::size_t Index>
+  using edge = typename traits::template edge<Index>;
 
   template <std::size_t Index>
   [[nodiscard]] static constexpr std::string_view stage_name() noexcept {
@@ -198,6 +267,9 @@ template <ValidPipeline Pipeline>
 inline constexpr std::size_t pipeline_size_v = pipeline_traits<Pipeline>::stage_count;
 
 template <ValidPipeline Pipeline>
+inline constexpr std::size_t pipeline_edge_count_v = pipeline_traits<Pipeline>::edge_count;
+
+template <ValidPipeline Pipeline>
 inline constexpr bool pipeline_empty_v = pipeline_traits<Pipeline>::empty;
 
 template <ValidPipeline Pipeline>
@@ -219,6 +291,15 @@ template <ValidPipeline Pipeline, std::size_t Index>
 using pipeline_stage_error_t = typename pipeline_stage_descriptor_t<Pipeline, Index>::error_type;
 
 template <ValidPipeline Pipeline, std::size_t Index>
+using pipeline_edge_descriptor_t = typename pipeline_traits<Pipeline>::template edge<Index>;
+
+template <ValidPipeline Pipeline, std::size_t Index>
+using pipeline_edge_from_stage_t = typename pipeline_edge_descriptor_t<Pipeline, Index>::from_stage_type;
+
+template <ValidPipeline Pipeline, std::size_t Index>
+using pipeline_edge_to_stage_t = typename pipeline_edge_descriptor_t<Pipeline, Index>::to_stage_type;
+
+template <ValidPipeline Pipeline, std::size_t Index>
 [[nodiscard]] constexpr auto stage_key() noexcept -> std::string_view {
   return pipeline_stage_descriptor_t<Pipeline, Index>::key();
 }
@@ -226,6 +307,26 @@ template <ValidPipeline Pipeline, std::size_t Index>
 template <ValidPipeline Pipeline, std::size_t Index>
 [[nodiscard]] constexpr auto stage_name() noexcept -> std::string_view {
   return pipeline_stage_descriptor_t<Pipeline, Index>::name();
+}
+
+template <ValidPipeline Pipeline, std::size_t Index>
+[[nodiscard]] constexpr auto edge_from_key() noexcept -> std::string_view {
+  return pipeline_edge_descriptor_t<Pipeline, Index>::from_key();
+}
+
+template <ValidPipeline Pipeline, std::size_t Index>
+[[nodiscard]] constexpr auto edge_from_name() noexcept -> std::string_view {
+  return pipeline_edge_descriptor_t<Pipeline, Index>::from_name();
+}
+
+template <ValidPipeline Pipeline, std::size_t Index>
+[[nodiscard]] constexpr auto edge_to_key() noexcept -> std::string_view {
+  return pipeline_edge_descriptor_t<Pipeline, Index>::to_key();
+}
+
+template <ValidPipeline Pipeline, std::size_t Index>
+[[nodiscard]] constexpr auto edge_to_name() noexcept -> std::string_view {
+  return pipeline_edge_descriptor_t<Pipeline, Index>::to_name();
 }
 
 template <ValidPipeline Pipeline, class Stage>
