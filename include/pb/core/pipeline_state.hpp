@@ -268,6 +268,9 @@ template <class Input, class Current, class... Stages, class... Cases>
 struct unsupported_branch<pipeline_state<Input, Current, Stages...>, Cases...> {
   using requested_node = branch_node<Cases...>;
 
+  static_assert(std::same_as<Current, typename requested_node::input_type>,
+                "Branch builder source mismatch: current pipeline output_type must match branch case input_type "
+                "before pb::from<...>::branch<...>");
   static_assert(always_false_v<requested_node>,
                 "Branch/join topology is not implemented yet: Phase 5 currently exposes only "
                 "pb::case_/pb::branch_node marker types, while pb::from<...>::branch<...> remains an "

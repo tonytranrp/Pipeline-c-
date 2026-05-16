@@ -225,6 +225,17 @@ add_test(NAME pb_compile_fail_branch_topology_unsupported_boundary
 )
 set_tests_properties(pb_compile_fail_branch_topology_unsupported_boundary PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 
+add_test(NAME pb_compile_fail_branch_builder_source_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_builder_source_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Branch\ builder\ source\ mismatch
+    -DEXPECTED_DIAGNOSTICS=current\ pipeline\ output_type;branch\ case\ input_type
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_branch_builder_source_mismatch PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+
 add_test(NAME pb_compile_fail_branch_case_invalid_predicate_misuse
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_case_invalid_predicate_misuse.cpp
