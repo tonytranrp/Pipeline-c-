@@ -12,7 +12,6 @@
 #include "pb/runtime/error.hpp"
 #include "pb/runtime/observer.hpp"
 #include "pb/runtime/result.hpp"
-#include "pb/export/dot.hpp"
 #include "pb/runtime/sequential.hpp"
 
 namespace pb {
@@ -86,5 +85,4 @@ using runtime::observer;
 using runtime::result;
 using runtime::stage_id;
 using runtime::to_result;
-using runtime::to_dot;
 } // namespace pb
