@@ -64,12 +64,31 @@ struct MoveDoubleValue {
 using MoveOnlyPipeline = pb::from<MoveInput>::then<MoveAddOne>::then<MoveDoubleValue>::to<MoveOutput>;
 static_assert(pb::valid<MoveOnlyPipeline>);
 
+struct StatefulInput { int value{}; };
+struct StatefulOutput { int value{}; };
+
+struct CountingStage {
+  using input_type = StatefulInput;
+  using output_type = StatefulOutput;
+
+  int calls{};
+
+  StatefulOutput operator()(StatefulInput input) {
+    ++calls;
+    return {input.value + calls};
+  }
+};
+
+using StatefulPipeline = pb::from<StatefulInput>::then<CountingStage>::to<StatefulOutput>;
+static_assert(pb::valid<StatefulPipeline>);
+
 int main() {
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
   using Engine = decltype(engine);
   static_assert(std::is_same_v<typename Engine::pipeline_type, Pipeline>);
   static_assert(std::is_same_v<typename Engine::input_type, Input>);
   static_assert(std::is_same_v<typename Engine::output_type, Output>);
+  static_assert(std::is_same_v<typename Engine::stage_storage_policy, pb::runtime::construct_stages_per_run>);
   static_assert(std::is_same_v<typename Engine::try_result_type, pb::runtime::result<Output>>);
   static_assert(Engine::stage_count == 2);
 
@@ -97,6 +116,24 @@ int main() {
   auto safe_move_output = move_engine.try_run(MoveInput{std::make_unique<int>(21)});
   assert(safe_move_output.has_value());
   assert(*safe_move_output.value().value == 44);
+
+  auto per_run_engine = pb::compile<StatefulPipeline>(pb::runtime::sequential{});
+  const auto per_run_first = per_run_engine.run(StatefulInput{10});
+  const auto per_run_second = per_run_engine.run(StatefulInput{10});
+  if (per_run_first.value != 11 || per_run_second.value != 11) {
+    return 1;
+  }
+
+  auto stateful_engine = pb::compile<StatefulPipeline>(pb::runtime::stateful_sequential{});
+  using StatefulEngine = decltype(stateful_engine);
+  static_assert(std::is_same_v<typename StatefulEngine::stage_storage_policy, pb::runtime::store_stages_in_engine>);
+  const auto stateful_first = stateful_engine.run(StatefulInput{10});
+  const auto stateful_second = stateful_engine.run(StatefulInput{10});
+  auto stateful_third = stateful_engine.try_run(StatefulInput{10});
+  assert(stateful_third.has_value());
+  if (stateful_first.value != 11 || stateful_second.value != 12 || stateful_third.value().value != 13) {
+    return 1;
+  }
 
   return 0;
 }

@@ -73,6 +73,7 @@ using core::stage_output_t;
 using core::stage_traits;
 using core::valid;
 using runtime::category_name;
+using runtime::construct_stages_per_run;
 using runtime::describe;
 using runtime::expected_like;
 using runtime::error;
@@ -84,6 +85,9 @@ using runtime::is_result_v;
 using runtime::make_result;
 using runtime::observer;
 using runtime::result;
+using runtime::sequential_policy;
 using runtime::stage_id;
+using runtime::stateful_sequential;
+using runtime::store_stages_in_engine;
 using runtime::to_result;
 } // namespace pb

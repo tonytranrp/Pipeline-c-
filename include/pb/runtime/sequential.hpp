@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <tuple>
 #include <utility>
 
 #include "pb/core/meta.hpp"
@@ -15,9 +16,33 @@
 
 namespace pb::runtime {
 
-struct sequential {};
+struct construct_stages_per_run {};
+struct store_stages_in_engine {};
+
+template <class StageStoragePolicy>
+struct sequential_policy {
+  using stage_storage_policy = StageStoragePolicy;
+};
+
+struct sequential : sequential_policy<construct_stages_per_run> {};
+
+using stateful_sequential = sequential_policy<store_stages_in_engine>;
 
 namespace detail {
+struct no_stage_storage {};
+
+template <class StageStoragePolicy>
+inline constexpr bool stores_stages_in_engine_v = std::same_as<StageStoragePolicy, store_stages_in_engine>;
+
+template <class Stage, std::size_t StageIndex, class StageStorage, class Input>
+[[nodiscard]] decltype(auto) invoke_stage(StageStorage* storage, Input&& input) {
+  if constexpr (std::same_as<std::remove_cvref_t<StageStorage>, no_stage_storage>) {
+    return Stage{}(std::forward<Input>(input));
+  } else {
+    return std::get<StageIndex>(*storage)(std::forward<Input>(input));
+  }
+}
+
 template <class T>
 struct is_result_type : std::false_type {};
 
@@ -180,24 +205,19 @@ template <class Stage, class StageResult>
   return normalize_stage_error<Stage>(0, std::move(stage_result));
 }
 
-template <class FinalOutput, class Input>
-[[nodiscard]] auto try_run_after_result(std::size_t, observer*, Input&& input) -> result<FinalOutput> {
-  return result<FinalOutput>{std::forward<Input>(input)};
-}
-
-template <class FinalOutput, class Input, class Stage, class... Rest>
-[[nodiscard]] auto try_run_after_result(std::size_t stage_index, observer* sink, Input&& input) -> result<FinalOutput> {
+template <std::size_t StageIndex, class FinalOutput, class StageStorage, class Input, class Stage, class... Rest>
+[[nodiscard]] auto try_run_after_result(observer* sink, StageStorage* storage, Input&& input) -> result<FinalOutput> {
   try {
-    notify_stage_start<Stage>(sink, stage_index);
-    auto stage_result = Stage{}(std::forward<Input>(input));
+    notify_stage_start<Stage>(sink, StageIndex);
+    auto stage_result = invoke_stage<Stage, StageIndex>(storage, std::forward<Input>(input));
     if constexpr (expected_like<decltype(stage_result)>) {
       auto normalized_result = to_result(std::move(stage_result));
       if (!normalized_result.has_value()) {
-        auto normalized_error = normalize_stage_error<Stage>(stage_index, std::move(normalized_result));
-        notify_stage_failure<Stage>(sink, stage_index, normalized_error);
+        auto normalized_error = normalize_stage_error<Stage>(StageIndex, std::move(normalized_result));
+        notify_stage_failure<Stage>(sink, StageIndex, normalized_error);
         return result<FinalOutput>{std::move(normalized_error)};
       }
-      notify_stage_success<Stage>(sink, stage_index);
+      notify_stage_success<Stage>(sink, StageIndex);
       if constexpr (sizeof...(Rest) == 0) {
         if constexpr (std::is_void_v<FinalOutput>) {
           return result<FinalOutput>{};
@@ -205,47 +225,49 @@ template <class FinalOutput, class Input, class Stage, class... Rest>
           return result<FinalOutput>{std::move(normalized_result).value()};
         }
       } else {
-        return try_run_after_result<FinalOutput, decltype(std::move(normalized_result).value()), Rest...>(
-            stage_index + 1, sink, std::move(normalized_result).value());
+        return try_run_after_result<StageIndex + 1, FinalOutput, StageStorage,
+                                    decltype(std::move(normalized_result).value()), Rest...>(
+            sink, storage, std::move(normalized_result).value());
       }
     } else if constexpr (sizeof...(Rest) == 0) {
-      notify_stage_success<Stage>(sink, stage_index);
+      notify_stage_success<Stage>(sink, StageIndex);
       return result<FinalOutput>{std::move(stage_result)};
     } else {
-      notify_stage_success<Stage>(sink, stage_index);
-      return try_run_after_result<FinalOutput, decltype(stage_result), Rest...>(
-          stage_index + 1, sink, std::move(stage_result));
+      notify_stage_success<Stage>(sink, StageIndex);
+      return try_run_after_result<StageIndex + 1, FinalOutput, StageStorage, decltype(stage_result), Rest...>(
+          sink, storage, std::move(stage_result));
     }
   } catch (const std::exception& exception) {
-    auto stage_error = exception_error<Stage>(stage_index, exception);
-    notify_stage_exception<Stage>(sink, stage_index, stage_error);
+    auto stage_error = exception_error<Stage>(StageIndex, exception);
+    notify_stage_exception<Stage>(sink, StageIndex, stage_error);
     return result<FinalOutput>{std::move(stage_error)};
   } catch (...) {
-    auto stage_error = unknown_exception_error<Stage>(stage_index);
-    notify_stage_exception<Stage>(sink, stage_index, stage_error);
+    auto stage_error = unknown_exception_error<Stage>(StageIndex);
+    notify_stage_exception<Stage>(sink, StageIndex, stage_error);
     return result<FinalOutput>{std::move(stage_error)};
   }
 }
 
-template <class FinalOutput, class Input, class Stage, class... Rest>
-[[nodiscard]] auto try_run_after_result(observer* sink, Input&& input) -> result<FinalOutput> {
-  return try_run_after_result<FinalOutput, Input, Stage, Rest...>(0, sink, std::forward<Input>(input));
+template <class FinalOutput, class StageStorage, class Input, class Stage, class... Rest>
+[[nodiscard]] auto try_run_after_result(observer* sink, StageStorage* storage, Input&& input) -> result<FinalOutput> {
+  return try_run_after_result<0, FinalOutput, StageStorage, Input, Stage, Rest...>(sink, storage,
+                                                                                  std::forward<Input>(input));
 }
 
-template <class FinalOutput, class Error, class Input, class Stage, class... Rest>
-[[nodiscard]] auto run_after_result(std::size_t stage_index, observer* sink, Input&& input) -> result<FinalOutput, Error> {
+template <std::size_t StageIndex, class FinalOutput, class Error, class StageStorage, class Input, class Stage, class... Rest>
+[[nodiscard]] auto run_after_result(observer* sink, StageStorage* storage, Input&& input) -> result<FinalOutput, Error> {
   try {
-    notify_stage_start<Stage>(sink, stage_index);
-    auto stage_result = Stage{}(std::forward<Input>(input));
+    notify_stage_start<Stage>(sink, StageIndex);
+    auto stage_result = invoke_stage<Stage, StageIndex>(storage, std::forward<Input>(input));
     if constexpr (expected_like<decltype(stage_result)>) {
       auto normalized_result = to_result(std::move(stage_result));
       if (!normalized_result.has_value()) {
         auto normalized_error =
-            convert_error<Error>(annotate_stage_error<Stage>(stage_index, std::move(normalized_result).error()));
-        notify_stage_failure<Stage>(sink, stage_index, normalized_error);
+            convert_error<Error>(annotate_stage_error<Stage>(StageIndex, std::move(normalized_result).error()));
+        notify_stage_failure<Stage>(sink, StageIndex, normalized_error);
         return result<FinalOutput, Error>{std::move(normalized_error)};
       }
-      notify_stage_success<Stage>(sink, stage_index);
+      notify_stage_success<Stage>(sink, StageIndex);
       if constexpr (sizeof...(Rest) == 0) {
         if constexpr (std::is_void_v<FinalOutput>) {
           return result<FinalOutput, Error>{};
@@ -253,28 +275,29 @@ template <class FinalOutput, class Error, class Input, class Stage, class... Res
           return result<FinalOutput, Error>{std::move(normalized_result).value()};
         }
       } else {
-        return run_after_result<FinalOutput, Error, decltype(std::move(normalized_result).value()), Rest...>(
-            stage_index + 1, sink, std::move(normalized_result).value());
+        return run_after_result<StageIndex + 1, FinalOutput, Error, StageStorage,
+                                decltype(std::move(normalized_result).value()), Rest...>(
+            sink, storage, std::move(normalized_result).value());
       }
     } else if constexpr (sizeof...(Rest) == 0) {
-      notify_stage_success<Stage>(sink, stage_index);
+      notify_stage_success<Stage>(sink, StageIndex);
       return result<FinalOutput, Error>{std::move(stage_result)};
     } else {
-      notify_stage_success<Stage>(sink, stage_index);
-      return run_after_result<FinalOutput, Error, decltype(stage_result), Rest...>(
-          stage_index + 1, sink, std::move(stage_result));
+      notify_stage_success<Stage>(sink, StageIndex);
+      return run_after_result<StageIndex + 1, FinalOutput, Error, StageStorage, decltype(stage_result), Rest...>(
+          sink, storage, std::move(stage_result));
     }
   } catch (const std::exception& exception) {
-    auto stage_error = exception_error<Stage>(stage_index, exception);
-    notify_stage_exception<Stage>(sink, stage_index, stage_error);
+    auto stage_error = exception_error<Stage>(StageIndex, exception);
+    notify_stage_exception<Stage>(sink, StageIndex, stage_error);
     if constexpr (std::constructible_from<Error, decltype(stage_error)>) {
       return result<FinalOutput, Error>{Error{std::move(stage_error)}};
     } else {
       throw;
     }
   } catch (...) {
-    auto stage_error = unknown_exception_error<Stage>(stage_index);
-    notify_stage_exception<Stage>(sink, stage_index, stage_error);
+    auto stage_error = unknown_exception_error<Stage>(StageIndex);
+    notify_stage_exception<Stage>(sink, StageIndex, stage_error);
     if constexpr (std::constructible_from<Error, decltype(stage_error)>) {
       return result<FinalOutput, Error>{Error{std::move(stage_error)}};
     } else {
@@ -283,29 +306,25 @@ template <class FinalOutput, class Error, class Input, class Stage, class... Res
   }
 }
 
-template <class FinalOutput, class Error, class Input, class Stage, class... Rest>
-[[nodiscard]] auto run_after_result(observer* sink, Input&& input) -> result<FinalOutput, Error> {
-  return run_after_result<FinalOutput, Error, Input, Stage, Rest...>(0, sink, std::forward<Input>(input));
+template <class FinalOutput, class Error, class StageStorage, class Input, class Stage, class... Rest>
+[[nodiscard]] auto run_after_result(observer* sink, StageStorage* storage, Input&& input) -> result<FinalOutput, Error> {
+  return run_after_result<0, FinalOutput, Error, StageStorage, Input, Stage, Rest...>(sink, storage,
+                                                                                     std::forward<Input>(input));
 }
 
-template <class FinalOutput, class Input>
-[[nodiscard]] auto run_stages(std::size_t, observer*, Input&& input) {
-  return std::forward<Input>(input);
-}
-
-template <class FinalOutput, class Input, class Stage, class... Rest>
-[[nodiscard]] auto run_stages(std::size_t stage_index, observer* sink, Input&& input) {
+template <std::size_t StageIndex, class FinalOutput, class StageStorage, class Input, class Stage, class... Rest>
+[[nodiscard]] auto run_stages(observer* sink, StageStorage* storage, Input&& input) {
   auto stage_result = [&] {
     try {
-      notify_stage_start<Stage>(sink, stage_index);
-      return Stage{}(std::forward<Input>(input));
+      notify_stage_start<Stage>(sink, StageIndex);
+      return invoke_stage<Stage, StageIndex>(storage, std::forward<Input>(input));
     } catch (const std::exception& exception) {
-      auto stage_error = exception_error<Stage>(stage_index, exception);
-      notify_stage_exception<Stage>(sink, stage_index, stage_error);
+      auto stage_error = exception_error<Stage>(StageIndex, exception);
+      notify_stage_exception<Stage>(sink, StageIndex, stage_error);
       throw;
     } catch (...) {
-      auto stage_error = unknown_exception_error<Stage>(stage_index);
-      notify_stage_exception<Stage>(sink, stage_index, stage_error);
+      auto stage_error = unknown_exception_error<Stage>(StageIndex);
+      notify_stage_exception<Stage>(sink, StageIndex, stage_error);
       throw;
     }
   }();
@@ -315,11 +334,11 @@ template <class FinalOutput, class Input, class Stage, class... Rest>
     using StageResult = std::remove_cvref_t<decltype(normalized_result)>;
     using Error = typename StageResult::error_type;
     if (!normalized_result.has_value()) {
-      auto stage_error = annotate_stage_error<Stage>(stage_index, std::move(normalized_result).error());
-      notify_stage_failure<Stage>(sink, stage_index, stage_error);
+      auto stage_error = annotate_stage_error<Stage>(StageIndex, std::move(normalized_result).error());
+      notify_stage_failure<Stage>(sink, StageIndex, stage_error);
       return result<FinalOutput, Error>{std::move(stage_error)};
     }
-    notify_stage_success<Stage>(sink, stage_index);
+    notify_stage_success<Stage>(sink, StageIndex);
     if constexpr (sizeof...(Rest) == 0) {
       if constexpr (std::is_void_v<FinalOutput>) {
         return result<FinalOutput, Error>{};
@@ -327,35 +346,40 @@ template <class FinalOutput, class Input, class Stage, class... Rest>
         return result<FinalOutput, Error>{std::move(normalized_result).value()};
       }
     } else {
-      return run_after_result<FinalOutput, Error, decltype(std::move(normalized_result).value()), Rest...>(
-          stage_index + 1, sink, std::move(normalized_result).value());
+      return run_after_result<StageIndex + 1, FinalOutput, Error, StageStorage,
+                              decltype(std::move(normalized_result).value()), Rest...>(
+          sink, storage, std::move(normalized_result).value());
     }
   } else if constexpr (sizeof...(Rest) == 0) {
-    notify_stage_success<Stage>(sink, stage_index);
+    notify_stage_success<Stage>(sink, StageIndex);
     return stage_result;
   } else {
-    notify_stage_success<Stage>(sink, stage_index);
-    return run_stages<FinalOutput, decltype(stage_result), Rest...>(stage_index + 1, sink, std::move(stage_result));
+    notify_stage_success<Stage>(sink, StageIndex);
+    return run_stages<StageIndex + 1, FinalOutput, StageStorage, decltype(stage_result), Rest...>(
+        sink, storage, std::move(stage_result));
   }
 }
 
-template <class FinalOutput, class Input, class Stage, class... Rest>
-[[nodiscard]] auto run_stages(observer* sink, Input&& input) -> decltype(auto) {
-  return run_stages<FinalOutput, Input, Stage, Rest...>(0, sink, std::forward<Input>(input));
+template <class FinalOutput, class StageStorage, class Input, class Stage, class... Rest>
+[[nodiscard]] auto run_stages(observer* sink, StageStorage* storage, Input&& input) -> decltype(auto) {
+  return run_stages<0, FinalOutput, StageStorage, Input, Stage, Rest...>(sink, storage, std::forward<Input>(input));
 }
 
-template <class Pipeline>
+template <class Pipeline, class StageStoragePolicy>
 class sequential_engine;
 
-template <class Input, class Output, class... Stages>
-class sequential_engine<pb::core::pipeline<Input, Output, pb::meta::type_list<Stages...>>> {
+template <class Input, class Output, class... Stages, class StageStoragePolicy>
+class sequential_engine<pb::core::pipeline<Input, Output, pb::meta::type_list<Stages...>>, StageStoragePolicy> {
 public:
   using pipeline_type = pb::core::pipeline<Input, Output, pb::meta::type_list<Stages...>>;
   using input_type = Input;
   using output_type = Output;
   using stages = pb::meta::type_list<Stages...>;
+  using stage_storage_policy = StageStoragePolicy;
   using try_result_type = result<Output>;
   using descriptor_type = std::array<stage_id, sizeof...(Stages)>;
+  using stage_storage_type =
+      std::conditional_t<stores_stages_in_engine_v<StageStoragePolicy>, std::tuple<Stages...>, no_stage_storage>;
 
   static constexpr auto stage_count = sizeof...(Stages);
 
@@ -370,15 +394,16 @@ public:
       return input;
     } else if constexpr (
         [] {
-          using RunStagesResult = decltype(detail::run_stages<Output, Input, Stages...>(nullptr, std::declval<Input>()));
+          using RunStagesResult = decltype(detail::run_stages<Output, stage_storage_type, Input, Stages...>(
+              nullptr, std::declval<stage_storage_type*>(), std::declval<Input>()));
           return detail::is_result_type<RunStagesResult>::value;
         }()) {
-      using RunStagesResult =
-          decltype(detail::run_stages<Output, Input, Stages...>(std::declval<observer*>(), std::declval<Input>()));
-      return detail::run_after_result<Output, typename detail::is_result_type<RunStagesResult>::error_type, Input, Stages...>(
-          observer_, std::move(input));
+      using RunStagesResult = decltype(detail::run_stages<Output, stage_storage_type, Input, Stages...>(
+          std::declval<observer*>(), std::declval<stage_storage_type*>(), std::declval<Input>()));
+      return detail::run_after_result<Output, typename detail::is_result_type<RunStagesResult>::error_type,
+                                      stage_storage_type, Input, Stages...>(observer_, &stages_, std::move(input));
     } else {
-      return run_stages<Output, Input, Stages...>(observer_, std::move(input));
+      return run_stages<Output, stage_storage_type, Input, Stages...>(observer_, &stages_, std::move(input));
     }
   }
 
@@ -386,19 +411,22 @@ public:
     if constexpr (sizeof...(Stages) == 0) {
       return result<Output>{std::move(input)};
     } else {
-      return try_run_after_result<Output, Input, Stages...>(observer_, std::move(input));
+      return try_run_after_result<Output, stage_storage_type, Input, Stages...>(observer_, &stages_, std::move(input));
     }
   }
 
 private:
   observer* observer_{nullptr};
+  mutable stage_storage_type stages_{};
 };
 
 } // namespace detail
 
-template <pb::core::ValidPipeline Pipeline>
-[[nodiscard]] constexpr auto compile(sequential) {
-  return detail::sequential_engine<Pipeline>{};
+template <pb::core::ValidPipeline Pipeline, class SequentialPolicy>
+  requires requires { typename SequentialPolicy::stage_storage_policy; }
+[[nodiscard]] constexpr auto compile(SequentialPolicy) {
+  using StageStoragePolicy = typename SequentialPolicy::stage_storage_policy;
+  return detail::sequential_engine<Pipeline, StageStoragePolicy>{};
 }
 
 } // namespace pb::runtime

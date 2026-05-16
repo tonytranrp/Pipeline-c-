@@ -22,6 +22,16 @@ cmake --build --preset clang-dev-ninja --target pb_basic_order_pipeline
 
 A zero exit code means the sequential executor preserved the order id through the adapted parse stage, adapted validate stage, and explicit persist stage.
 
+## Stateful stage storage
+
+`pb::runtime::sequential{}` keeps the default policy explicit: stage objects are constructed for each run, so mutable stage members are not preserved between calls. When a pipeline intentionally needs stage-local state to live with the compiled engine, compile it with the stateful storage policy:
+
+```cpp
+auto engine = pb::compile<MyPipeline>(pb::runtime::stateful_sequential{});
+```
+
+`pb::runtime::stateful_sequential` stores the pipeline stage objects inside the engine and reuses them for `run()` and `try_run()`. Use it only for stages whose mutable state is part of the intended runtime contract; keep the default `pb::runtime::sequential{}` for stateless or per-run-isolated stages.
+
 ## Runtime result and diagnostics quick check
 
 For a stage that can fail and return `pb::runtime::result<T>`:
