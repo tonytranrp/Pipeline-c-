@@ -70,24 +70,24 @@ Each theme below records four things:
 
 ### 5. Branch/join topology
 
-- **Current repository evidence:** Marker-only branch/join aliases and `branch_case_output` / `branch_outputs` metadata compile today, with compile-fail diagnostics for unsupported topology, branch-node case-input mismatch, and marker misuse, while the docs still mark non-linear execution and routing as unimplemented roadmap work.
-- **Current support level:** **Roadmap-only gap.**
+- **Current repository evidence:** Marker-only branch/join aliases and `branch_case_output` / `branch_outputs` metadata compile today, with accepted evidence for branch output compatibility validation, join consumption validation, unsupported topology, branch-node case-input mismatch, and marker misuse diagnostics. Non-linear execution and branch routing remain unimplemented roadmap work.
+- **Current support level:** **Validation support only; executable branch/join topology remains roadmap-only.**
 - **Proof points:**
   - `docs/branch-join-roadmap.md`
   - known-gap references in `docs/production-readiness.md`
   - research-plan branch/join themes
-- **Safe next slice:** keep follow-on work isolated to marker diagnostics/status docs until branch output routing, join consumption validation, graph export, execution, and tests exist.
-
+- **Safe next slice:** keep follow-on work isolated to sequential branch execution planning/tests until validation commits are integrated on the release branch with fresh evidence.
+- **Coordination note:** branch-output validation and join-validation are accepted as validation-only slices. Do not promote sequential branch execution until runtime tests, examples, docs, and candidate-branch verification land.
 ### 6. Graph export
 
-- **Current repository evidence:** Graph export is documented as roadmap-only and not a supported current surface.
-- **Current support level:** **Roadmap-only gap.**
+- **Current repository evidence:** A narrow linear DOT export/helper slice is accepted in the coordination lane, but full graph export remains roadmap-only.
+- **Current support level:** **Linear DOT helper only when final candidate evidence includes it; full graph export remains roadmap-only.**
 - **Proof points:**
   - `docs/graph-export-roadmap.md`
   - `docs/production-readiness.md`
   - research-plan export themes
-- **Safe next slice:** only claim export support after descriptor/export APIs, tests, and examples land together.
-
+- **Safe next slice:** only claim broad export support after descriptor/export APIs, tests, and examples land together.
+- **Coordination note:** the accepted linear DOT/helper API is narrower than full graph export. Release notes must distinguish it from branch/join graph export, JSON export, and stable graph schema support.
 ### 7. Observer hooks
 
 - **Current repository evidence:** Runtime observer callbacks are shipped for the sequential executor (`set_observer`, `observer`) with runtime smoke tests.
@@ -130,7 +130,24 @@ Each theme below records four things:
   - `docs/release-readiness-checklist.md`
 - **Safe next slice:** collect reproducible benchmark evidence with context, but keep thresholds/regression budgets labeled as future work until explicitly established.
 
-## Current support summary
+## Active missing-feature priority queue
+
+This queue is the durable docs-lane view of the current missing-feature push. It is not a release claim: move an item to “supported” only after the implementation commit is integrated, tests pass on the candidate branch, and release-facing docs/examples are updated.
+
+| Priority | Missing feature / evidence gap | Current docs-lane status | Promotion gate |
+| --- | --- | --- | --- |
+| 1 | `run()` / `try_run()` error-policy hardening and exception behavior evidence | Runtime lane in progress; current docs still describe split behavior. | Targeted runtime tests plus updated error-model docs proving the chosen policy. |
+| 2 | `std::expected` / expected-like result policy evidence | Expected-like support exists, but direct standard-library matrix coverage remains a release-hardening gap. | Compile/runtime tests on the supported compiler/library matrix, or explicit fallback wording when `std::expected` is unavailable. |
+| 3 | Compile-time benchmark baselines for 5-stage and 50-stage chains | Benchmark smoke scaffolding exists; baseline evidence and thresholds remain separate. | Recorded baseline artifacts with preset/compiler/commit context. |
+| 4 | Explicit stateful stage storage policy | Not a current public guarantee. | API decision, tests, and docs describing ownership/lifetime behavior. |
+| 5 | Branch output compatibility/routing validation | Accepted validation evidence exists; keep the claim scoped to compile-time compatibility validation until final candidate logs are attached. | Candidate branch includes branch-output validation implementation plus compatible/incompatible compile-pass/compile-fail tests. |
+| 6 | Join consumption/compatibility validation | Accepted validation evidence exists; keep the claim scoped to join consumption/compatibility validation, not runtime execution. | Candidate branch includes join validation implementation plus misuse/mismatch compile-fail tests. |
+| 7 | Sequential branch execution | Promoted for careful planning after validation-gate worker reports; not a support claim yet. | Tests-first minimal linear lowering plan, then integrated runtime branch execution tests, examples, and docs. |
+| 8 | Runtime descriptor/export contract | Compile-time/diagnostic metadata exists; stable runtime export remains roadmap. | Versioned schema, ownership rules, and tests for the public descriptor/export surface. |
+| 9 | DOT/graph export | Narrow linear DOT helper is accepted; full graph export remains roadmap-only. | Candidate DOT evidence plus clear distinction between linear export and graph-shaped branch/join export, JSON export, and stable schemas. |
+| 10 | Backend feature matrix | Documented in `docs/optional-backends-roadmap.md`; backend support remains roadmap-only beyond sequential. | Keep the matrix current before any backend implementation/support claim. |
+| 11 | Full release compiler matrix | Documented in `docs/release-readiness-checklist.md`; C++20 preset rows are concrete, while C++23/MSVC/C++26 rows remain evidence gaps until logs exist. | Capture fresh compiler ID/version plus configure/build/test/package evidence on the candidate SHA. |
+| 12 | Release/package evidence on candidate SHA | Package smoke scaffolding exists; release readiness requires fresh candidate evidence. | Package-release configure/build/CTest/package logs and archive path recorded for the exact candidate commit. |## Current support summary
 
 The current repository can safely claim:
 
@@ -143,7 +160,7 @@ The current repository can safely claim:
 The current repository should **not** claim:
 
 - production-complete topology or execution coverage
-- branch/join, graph export, fully stabilized observer contracts, optional backend execution, or a stable runtime descriptor
+- sequential branch execution, full branch/join graph export, JSON export, fully stabilized observer contracts, optional backend execution, or a stable runtime descriptor
 - exception-policy parity between `run()` and `try_run()` as a fully harmonized runtime guarantee
 - benchmark thresholds or CI-enforced performance budgets
 - fully frozen diagnostics across all future slices
@@ -167,4 +184,4 @@ Use these as the first finite batches when the next 3-agent team resumes:
 2. **Runtime / adapters:** harden one small result/error/observer/adapter edge case, then add targeted runtime coverage.
 3. **Updater / docs:** keep docs, examples, release notes, and this map aligned with the coding batches without promoting roadmap-only features.
 
-The next safe work should continue from shipped MVP surfaces. Branch/join and graph export remain separate design/implementation phases, not opportunistic follow-ups inside a routine hardening batch.
+The next safe work should continue from shipped MVP surfaces. Sequential branch execution and full graph export remain separate design/implementation phases, not opportunistic follow-ups inside a routine hardening batch.

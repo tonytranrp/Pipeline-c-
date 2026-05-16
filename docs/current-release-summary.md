@@ -18,12 +18,17 @@ Status snapshot for the current long-horizon team batch. Use this page as a comp
   - `ee412f7` — added public-header coverage for core `stage_traits` aliases and tightened related diagnostic misuse cases.
   - `3b1a231` / `23f1d60` — integrated runtime `pb::runtime::result<T>::error_or(...)` fallback selection hardening.
   - `ec45eae` / `62820ed` / merge `caa43ee` — locked sequential observer replacement/accessor behavior with runtime smoke coverage.
+- Additional leader-accepted lane evidence after this snapshot:
+  - branch output compatibility validation and join consumption validation exist as compile-time validation slices; keep them separate from executable branch/join support.
+  - DOT export evidence is scoped to a narrow linear helper; keep JSON, branch/join graph export, and stable graph schema claims out of release text.
+  - sequential branch execution is promoted for tests-first planning only and is not shipped until code/tests/examples/docs integrate.
 - Docs-lane scope for this note: release summary/checkpoint alignment only; no core/runtime/test implementation.
 
 ## PR summary draft
 
 - Runtime diagnostic records and linear descriptor/observer/error identity checks, including custom expected-like failure and exception stage identity, now strengthen the current sequential diagnostic story; release notes should avoid calling this a stable exported diagnostic schema or runtime descriptor contract.
-- Branch/join marker diagnostics now cover source compatibility, predicate shape, homogeneous branch-node case inputs, unsupported topology, invalid join-stage markers, and branch-output marker misuse; release notes must still label branch output routing/compatibility, join consumption, graph export, and executable branch/join topology as roadmap.
+- Branch/join marker diagnostics now cover source compatibility, predicate shape, homogeneous branch-node case inputs, unsupported topology, branch output compatibility validation, join consumption validation, invalid join-stage markers, and branch-output marker misuse; release notes must still label sequential branch execution and executable branch/join topology as roadmap.
+- Linear DOT export/helper evidence may be mentioned only as linear DOT support on a verified candidate; release notes must still label JSON export, branch/join graph export, stable graph schemas, and broad graph export as roadmap.
 - Adapter/member hardening landed in the public adapter surface; release notes should keep this as incremental adapter ergonomics/hardening, not a new backend claim.
 - Core stage-traits public-header coverage now exercises the alias/metadata surface used by diagnostics and docs.
 - Runtime result normalization now has stronger coverage around fallback/error conversion boundaries.
