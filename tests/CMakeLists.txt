@@ -26,6 +26,12 @@ pb_apply_project_options(pb_stage_info_compile_pass PRIVATE)
 add_test(NAME pb_stage_info_compile_pass COMMAND pb_stage_info_compile_pass)
 set_tests_properties(pb_stage_info_compile_pass PROPERTIES LABELS "compile-pass;metadata")
 
+add_executable(pb_stage_naming_descriptor_compile_pass compile_pass/stage_naming_descriptor.cpp)
+target_link_libraries(pb_stage_naming_descriptor_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_stage_naming_descriptor_compile_pass PRIVATE)
+add_test(NAME pb_stage_naming_descriptor_compile_pass COMMAND pb_stage_naming_descriptor_compile_pass)
+set_tests_properties(pb_stage_naming_descriptor_compile_pass PROPERTIES LABELS "compile-pass;metadata")
+
 add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers.cpp
   compile_pass/public_headers/adapt_fn.cpp
