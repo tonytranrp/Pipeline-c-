@@ -56,9 +56,9 @@ Before cutting a release candidate, collect evidence for:
 
 ## Known gaps before a stable release
 
-- Branch, join, graph export, observer hooks, optional backend execution, and a stable runtime descriptor are roadmap items, not current guarantees. See [Branch / Join Roadmap / Status](branch-join-roadmap.md), [Graph Export Roadmap / Status](graph-export-roadmap.md), [Observer Hooks Roadmap / Status](observer-hooks-roadmap.md), [Optional Backends Roadmap / Status](optional-backends-roadmap.md), and [Runtime Descriptor Roadmap / Status](runtime-descriptor-roadmap.md) for the current roadmap-only boundaries and planned follow-on work.
+- Branch, join, graph export, and a stable runtime descriptor are roadmap items, not current guarantees. See [Branch / Join Roadmap / Status](branch-join-roadmap.md), [Graph Export Roadmap / Status](graph-export-roadmap.md), [Observer Hooks Roadmap / Status](observer-hooks-roadmap.md), [Optional Backends Roadmap / Status](optional-backends-roadmap.md), and [Runtime Descriptor Roadmap / Status](runtime-descriptor-roadmap.md) for current boundaries.
 - Public diagnostics are covered by compile-fail smoke tests, but the exact diagnostic wording is still being hardened. See [Diagnostics Roadmap / Status](diagnostics-roadmap.md) for the current supported boundary versus the richer roadmap.
-- Runtime error propagation exists for the current sequential path; richer exception policies, `std::expected` integration, and observer/error-category APIs are future slices.
+- Runtime error propagation and observer callbacks exist for the current sequential path; richer exception policies, `std::expected` integration, and fully stable observer contracts are future slices.
 - Sequential `run()` and `try_run()` are currently split in error-handling behavior: `try_run()` captures stage exceptions, while `run()` does not. Harmonizing this path is a queued runtime hardening item.
 - Benchmark scaffolding can prove the targets build and run, but release thresholds and CI regression budgets are not established.
 - Cross-compiler validation beyond the local configured toolchain remains a release gate.

@@ -1,6 +1,6 @@
 # Observer Hooks Roadmap / Status
 
-Observer hooks are **not** a supported feature in the current tree. Treat this page as a roadmap/status note for planned runtime observation and tracing hooks, not as public API documentation.
+Observer hooks are **partially** supported in the current tree for the sequential runtime path. Treat this page as a roadmap/status note for contract hardening and future cross-runtime semantics.
 
 ## Current status
 
@@ -10,14 +10,14 @@ Today the repository supports:
 - compile-time metadata/introspection through `describe()` and stage records
 - sequential runtime execution with the current result/error plumbing
 
-Today the repository does **not** support:
+Today the repository supports:
 
-- a public observer interface or callback registration API
-- runtime `set_observer(...)` hooks on the shipped execution surface
-- structured start/finish/error/value tracing events
-- observer-hook examples, tests, or benchmark coverage
+- a public observer interface and callback registration API
+- runtime `set_observer(...)` hooks on the shipped sequential execution surface
+- structured start/success/failure/exception event hooks
+- runtime observer coverage in existing smoke tests
 
-Keep release notes and examples aligned with that boundary. Do not present observer hooks as partially shipped just because the research plan already sketches the feature.
+Keep release notes and examples aligned with that boundary: sequential observer hooks are supported, while event schema and long-term ABI/lifecycle guarantees are not yet finalized.
 
 ## Why observer hooks matter
 
@@ -32,14 +32,14 @@ For this project, observer hooks would eventually help with:
 
 ## Intended scope relative to the research plan
 
-The research plan treats observer hooks as planned work, not current behavior:
+The research plan treats observer hooks as planned work, while the core sequential callback path is now implemented and tested:
 
 - it explicitly calls for observer hooks alongside graph export and test harness improvements
 - it sketches a future runtime surface that includes `set_observer(pb::observer*)`
-- it lists runtime tests for observer hooks as future verification work
+- it lists runtime tests for broader observer contracts as future verification work
 - it tracks follow-on trace/export work and cost measurement as separate slices
 
-In other words, the current repo documents the intent, but it does not yet ship the API or validation needed to claim support.
+In other words, the current repo ships an operational observer hook surface on the sequential runtime path; it does not yet claim full contract completeness for ABI stability, event schema, cross-executor behavior, or documented long-horizon policy.
 
 ## Non-goals for the current MVP
 
@@ -54,12 +54,12 @@ Those decisions belong to a later implementation slice with tests, examples, and
 
 ## What would be required before claiming support
 
-Before observer hooks can move from roadmap to supported behavior, the repo needs:
+Before observer hooks can move from partial support to fully stable support, the repo needs:
 
-1. **A defined public API surface**  
+1. **A defined public API contract**  
    Stable type names, lifetime/ownership rules, event semantics, and enable/disable behavior.
 2. **Runtime implementation coverage**  
-   Sequential executor integration that proves hooks actually observe stage start, completion, and failure paths.
+   Cross-executor behavior and lifecycle coverage beyond existing sequential smoke paths.
 3. **Targeted tests**  
    Positive runtime tests plus boundary/negative tests for invalid sinks, disabled tracing paths, or unsupported event flows.
 4. **Documentation and examples**  
@@ -69,21 +69,21 @@ Before observer hooks can move from roadmap to supported behavior, the repo need
 
 ## Verification status today
 
-The current verification evidence covers the existing pipeline core, not observer hooks:
+The current verification evidence includes:
 
 - compile-pass coverage
 - compile-fail diagnostic coverage
-- runtime smoke coverage
+- runtime smoke coverage (including observer callback behavior on the sequential engine)
 - package-consumer smoke coverage
 - benchmark smoke scaffolding
 
-There is currently no observer-hook-specific implementation or verification target under `tests/`, `examples/`, or `bench/`.
+There is currently no observer example or observer benchmark lane; current coverage is runtime-smoke-centric.
 
 ## Release guidance
 
-Until implementation and tests land, release notes and docs should describe observer hooks as:
+Until contract-hardening work lands, release notes and docs should describe observer hooks as:
 
-> roadmap work only; unimplemented and unverified in the current tree
+> partial sequential support; ABI and cross-executor observer contracts remain roadmap
 
 If a future slice adds observer hooks, update this page together with:
 

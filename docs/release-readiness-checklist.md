@@ -14,7 +14,7 @@ A release candidate can only claim the currently shipped MVP surface:
 - compile-pass, compile-fail, runtime, example, package-consumer, and benchmark **smoke** scaffolding
 - the intentional compile-fail diagnostic example and the package-consumer contract described in the current docs
 
-Do **not** treat roadmap pages as if they are already releaseable features. Branch/join, graph export, observer hooks, optional backend execution, a stable runtime descriptor, and richer diagnostics remain separate follow-on slices.
+Do **not** treat roadmap pages as if they are already releaseable features. Branch/join, graph export, fully stabilized observer contracts, optional backend execution, a stable runtime descriptor, and richer diagnostics remain separate follow-on slices.
 
 ## Release evidence to collect before tagging
 
@@ -98,8 +98,9 @@ Before tagging, confirm the release notes and docs still describe these as **not
 
 - branch/join topology support
 - graph export
-- observer hooks
+- observer callbacks in the sequential runtime (ABI/stability hardening remains a follow-on)
 - optional backend execution beyond the sequential MVP path
+- fully stable observer contracts beyond current sequential runtime
 - a stable runtime descriptor/export contract
 - fully hardened diagnostic wording or broader machine-readable diagnostic schemas
 - cross-compiler validation beyond the toolchains that were actually exercised for the candidate

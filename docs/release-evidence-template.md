@@ -95,6 +95,7 @@ sequential_runtime_execution=<supported|blocked>
 compile_pass_fail_runtime_example_package_benchmark_smoke=<supported|blocked>
 branch_join_topology=<roadmap-only|supported-with-evidence>
 graph_export=<roadmap-only|supported-with-evidence>
+observer_callbacks=<supported|roadmap-only>
 optional_backends=<roadmap-only|experimental|supported-with-evidence>
 benchmark_thresholds=<roadmap-only|supported-with-policy>
 cross_compiler_package_manager_validation=<not-run|blocked|supported-with-evidence>

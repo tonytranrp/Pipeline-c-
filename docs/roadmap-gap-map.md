@@ -80,12 +80,15 @@ Each theme below records four things:
 
 ### 7. Observer hooks
 
-- **Current repository evidence:** Observer hooks are documented as future instrumentation/inspection work, not as a shipped API.
-- **Current support level:** **Roadmap-only gap.**
+- **Current repository evidence:** Runtime observer callbacks are shipped for the sequential executor (`set_observer`, `observer`) with runtime smoke tests.
+- **Current support level:** **Partially shipped MVP support (sequential runtime).**
 - **Proof points:**
   - `docs/observer-hooks-roadmap.md`
-  - `docs/production-readiness.md`
-- **Safe next slice:** continue roadmap/status documentation until there is a concrete observer surface plus runtime validation.
+  - `tests/runtime/sequential_observer_smoke.cpp`
+  - `tests/runtime/sequential_observer_accessor_smoke.cpp`
+  - `tests/runtime/sequential_observer_try_run_exception_smoke.cpp`
+  - `tests/runtime/sequential_custom_error_observer_smoke.cpp`
+- **Safe next slice:** harden public observer contract details (ABI/stability, lifecycle, ordering) and cross-runtime semantics before claiming full support.
 
 ### 8. Optional backends
 
@@ -130,7 +133,7 @@ The current repository can safely claim:
 The current repository should **not** claim:
 
 - production-complete topology or execution coverage
-- branch/join, graph export, observer hooks, optional backend execution, or a stable runtime descriptor
+- branch/join, graph export, fully stabilized observer contracts, optional backend execution, or a stable runtime descriptor
 - benchmark thresholds or CI-enforced performance budgets
 - fully frozen diagnostics across all future slices
 
