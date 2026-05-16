@@ -19,6 +19,10 @@ struct Output {
   int value{};
 };
 
+struct opaque_error {
+  int code{};
+};
+
 template <class T, class E>
 struct external_expected {
   using value_type = T;
@@ -50,6 +54,10 @@ struct parse_member {
 
 struct parse_functor {
   static constexpr auto value = "parse_functor";
+};
+
+struct parse_opaque {
+  static constexpr auto value = "parse_opaque";
 };
 } // namespace adapter_stage_names
 
@@ -92,6 +100,13 @@ struct FunctorParser {
   }
 };
 
+external_expected<Parsed, opaque_error> parse_opaque_error(Input input) {
+  if (input.value < 0) {
+    return {.ok = false, .error_ = {.code = 42}};
+  }
+  return {.ok = true, .value_ = {input.value + 7}};
+}
+
 using ParsedAdapter = pb::adapt<pb::name<adapter_stage_names::parse_input>, pb::fn<parse_input_fn>,
                                  pb::in<Input>, pb::out<Parsed>>;
 using ThrowingParsedAdapter =
@@ -110,6 +125,9 @@ using UnnamedDirectMemberAdapter =
     pb::adapt<pb::member<&MemberEmitter::emit>, pb::in<Parsed>, pb::out<Output>>;
 using ExpectedFunctorAdapter =
     pb::adapt<pb::name<adapter_stage_names::parse_functor>, pb::functor<FunctorParser>, pb::in<Input>,
+              pb::out<Parsed>>;
+using OpaqueErrorAdapter =
+    pb::adapt<pb::name<adapter_stage_names::parse_opaque>, pb::fn<parse_opaque_error>, pb::in<Input>,
               pb::out<Parsed>>;
 
 struct Emit {
@@ -140,6 +158,8 @@ using DirectExpectedMemberPipeline =
     pb::from<Input>::then<NamedDirectExpectedMemberAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 using ExpectedFunctorPipeline =
     pb::from<Input>::then<ExpectedFunctorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
+using OpaqueErrorPipeline =
+    pb::from<Input>::then<OpaqueErrorAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 
 static_assert(pb::adapted_stage<ParsedAdapter>);
 static_assert(pb::adapted_stage<MultiplierAdapter>);
@@ -147,12 +167,14 @@ static_assert(pb::adapted_stage<NamedDirectMemberAdapter>);
 static_assert(pb::adapted_stage<NamedDirectExpectedMemberAdapter>);
 static_assert(pb::adapted_stage<UnnamedDirectMemberAdapter>);
 static_assert(pb::adapted_stage<ExpectedFunctorAdapter>);
+static_assert(pb::adapted_stage<OpaqueErrorAdapter>);
 static_assert(pb::valid<Pipeline>);
 static_assert(pb::valid<ThrowingPipeline>);
 static_assert(pb::valid<ThrowingPipelineRaw>);
 static_assert(pb::valid<DirectMemberPipeline>);
 static_assert(pb::valid<DirectExpectedMemberPipeline>);
 static_assert(pb::valid<ExpectedFunctorPipeline>);
+static_assert(pb::valid<OpaqueErrorPipeline>);
 
 struct recording_observer final : pb::runtime::observer {
   std::vector<std::string> events{};
@@ -220,6 +242,24 @@ int main() {
                                          "failure:parse_functor/parse_functor:expected_error at parse_functor: "
                                          "functor parse failed",
                                      }));
+
+  auto opaque_error_engine = pb::compile<OpaqueErrorPipeline>(pb::runtime::sequential{});
+  recording_observer opaque_observer{};
+  opaque_error_engine.set_observer(&opaque_observer);
+
+  auto opaque_failed = opaque_error_engine.try_run(Input{-5});
+  assert(!opaque_failed.has_value());
+  assert(opaque_failed.error().category == pb::runtime::error_category::expected_error);
+  assert(opaque_failed.error().stage.key == "parse_opaque");
+  assert(opaque_failed.error().stage.name == "parse_opaque");
+  assert(opaque_failed.error().message == "expected-like object reported an error");
+  assert(pb::runtime::describe(opaque_failed.error()) ==
+         "expected_error at parse_opaque: expected-like object reported an error");
+  assert((opaque_observer.events == std::vector<std::string>{
+                                           "start:parse_opaque/parse_opaque",
+                                           "failure:parse_opaque/parse_opaque:expected_error at parse_opaque: "
+                                           "expected-like object reported an error",
+                                       }));
 
   auto failed = engine.run(Input{-2});
   assert(!failed.has_value());
