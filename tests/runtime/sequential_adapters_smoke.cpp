@@ -638,7 +638,7 @@ int main() {
           std::vector<std::string>{
               "start:parse_result_move_only_error/parse_result_move_only_error",
               "failure:parse_result_move_only_error/parse_result_move_only_error:"
-              "stage_failure at ExternalResult: move-only result diagnostic failed",
+              "expected_error at parse_result_move_only_error: move-only result diagnostic failed",
           }));
 
   auto result_move_only_error_raw_failed = result_move_only_error_engine.run(Input{-5});
