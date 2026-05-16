@@ -19,7 +19,7 @@ struct manual_review {
   using output_type = reviewed;
 };
 struct join {
-  using input_type = parsed;
+  using input_type = pb::core::meta::type_list<parsed, reviewed>;
   using output_type = parsed;
 };
 
@@ -30,6 +30,7 @@ using public_branch_node = pb::branch_node<public_branch_case, public_review_bra
 using public_branch_outputs = pb::branch_outputs<public_branch_case, public_review_branch_case>;
 using public_join_node = pb::join_node<join>;
 using public_join_output = pb::join_output<public_join_node>;
+using public_join_validation = pb::join_validation<public_branch_outputs, public_join_node>;
 } // namespace
 
 static_assert(std::is_same_v<public_branch_case::predicate_type, predicate>);
@@ -42,11 +43,15 @@ static_assert(std::is_same_v<public_branch_node::input_type, raw>);
 static_assert(public_branch_outputs::output_count == 2);
 static_assert(std::is_same_v<public_branch_outputs::input_type, raw>);
 static_assert(std::is_same_v<public_join_node::stage_type, join>);
-static_assert(std::is_same_v<public_join_node::input_type, parsed>);
+static_assert(std::is_same_v<public_join_node::input_type, pb::core::meta::type_list<parsed, reviewed>>);
 static_assert(std::is_same_v<public_join_node::output_type, parsed>);
 static_assert(std::is_same_v<public_join_output::join_type, public_join_node>);
 static_assert(std::is_same_v<public_join_output::stage_type, join>);
-static_assert(std::is_same_v<public_join_output::input_type, parsed>);
+static_assert(std::is_same_v<public_join_output::input_type, pb::core::meta::type_list<parsed, reviewed>>);
 static_assert(std::is_same_v<public_join_output::output_type, parsed>);
+static_assert(std::is_same_v<public_join_validation::branch_outputs_type, public_branch_outputs>);
+static_assert(std::is_same_v<public_join_validation::join_type, public_join_node>);
+static_assert(std::is_same_v<public_join_validation::input_type, pb::core::meta::type_list<parsed, reviewed>>);
+static_assert(std::is_same_v<public_join_validation::output_type, parsed>);
 
 int pb_public_header_pipeline() { return 0; }
