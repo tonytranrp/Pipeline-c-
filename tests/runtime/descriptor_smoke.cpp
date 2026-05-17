@@ -15,6 +15,8 @@ struct Output {
   int value{};
 };
 
+using EmptyPipeline = pb::from<Input>::to<Input>;
+
 struct Parse {
   using input_type = Input;
   using output_type = Parsed;
@@ -59,6 +61,15 @@ int main() {
   assert(runtime_descriptor.edge_records().size() == 1);
   assert(runtime_descriptor.stage_records()[0].name == "parse");
   assert(runtime_descriptor.edge_records()[0].to_name == "finish");
+  static_assert(std::same_as<decltype(runtime_descriptor), const pb::runtime::descriptor_view<2>>);
+
+  auto empty_engine = pb::compile<EmptyPipeline>(pb::runtime::sequential{});
+  const auto empty_runtime_descriptor = empty_engine.descriptor();
+  static_assert(decltype(empty_runtime_descriptor)::stage_count == 0);
+  static_assert(decltype(empty_runtime_descriptor)::edge_count == 0);
+  static_assert(decltype(empty_runtime_descriptor)::empty);
+  assert(empty_runtime_descriptor.stage_records().empty());
+  assert(empty_runtime_descriptor.edge_records().empty());
 
   auto result = engine.run(Input{20});
   assert(result.value == 42);

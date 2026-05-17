@@ -83,7 +83,7 @@ template <std::size_t StageCount, std::size_t... StageIndexes, std::size_t... Ed
 } // namespace detail
 
 template <pb::core::ValidPipeline Pipeline>
-[[nodiscard]] constexpr auto make_descriptor() noexcept -> descriptor_view<pb::core::pipeline_size_v<Pipeline>> {
+[[nodiscard]] constexpr auto make_descriptor() noexcept {
   constexpr auto stage_count = pb::core::pipeline_size_v<Pipeline>;
   constexpr auto edge_count = pb::core::pipeline_edge_count_v<Pipeline>;
   return detail::make_runtime_descriptor(pb::core::descriptor_view<Pipeline>(),
