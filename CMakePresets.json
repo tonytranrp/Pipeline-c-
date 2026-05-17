@@ -242,8 +242,8 @@
         "outputOnFailure": true
       },
       "filter": {
-        "label": {
-          "include": "package"
+        "include": {
+          "label": "package"
         }
       }
     },
@@ -261,8 +261,8 @@
         "outputOnFailure": true
       },
       "filter": {
-        "label": {
-          "include": "package"
+        "include": {
+          "label": "package"
         }
       }
     },
