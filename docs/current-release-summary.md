@@ -49,9 +49,9 @@ Fresh package-release evidence was also collected on the current worktree:
 - `cmake --preset package-release-clang-ninja` — passed on a clean reconfigure.
 - `cmake --build --preset package-release-clang-ninja --target package` — passed.
 - `ctest --preset package-release-clang-ninja --output-on-failure -R pb_package_config_smoke` — passed on rerun after rebuilding the tree.
-- Full `ctest --preset package-release-clang-ninja --output-on-failure` still fails on `pb_compile_fail_branch_builder_empty_cases_unsupported` because the expected diagnostic text is stale relative to `include/pb/core/pipeline_state.hpp`.
+- Full `ctest --preset package-release-clang-ninja --output-on-failure` — passed after aligning `tests/CMakeLists.txt` with the current `include/pb/core/pipeline_state.hpp` diagnostic wording.
 
-This is now fresh package-release evidence on the current worktree, but the full package-release CTest lane still has one stale compile-fail expectation to reconcile before release tagging.
+This is now fresh package-release evidence on the current worktree, and the full package-release CTest lane is green after the compile-fail expectation alignment.
 
 ## Verification to attach before release tagging
 
