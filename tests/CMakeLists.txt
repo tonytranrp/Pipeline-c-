@@ -64,11 +64,16 @@ add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers/core_validate.cpp
   compile_pass/public_headers/pipeline.cpp
   compile_pass/public_headers/runtime_descriptor.cpp
+  compile_pass/public_headers/runtime_backend.cpp
   compile_pass/public_headers/runtime_error.cpp
   compile_pass/public_headers/runtime_result.cpp
+  compile_pass/public_headers/runtime_routing.cpp
   compile_pass/public_headers/runtime_sequential.cpp
   compile_pass/public_headers/runtime_observer.cpp
+  compile_pass/public_headers/runtime_trace.cpp
   compile_pass/public_headers/export_dot.cpp
+  compile_pass/public_headers/export_json.cpp
+  compile_pass/branch_selection_compile_pass.cpp
 )
 target_link_libraries(pb_public_headers_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_public_headers_compile_pass PRIVATE)
@@ -88,6 +93,30 @@ target_link_libraries(pb_runtime_descriptor_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_descriptor_smoke PRIVATE)
 add_test(NAME pb_runtime_descriptor_smoke COMMAND pb_runtime_descriptor_smoke)
 set_tests_properties(pb_runtime_descriptor_smoke PROPERTIES LABELS "runtime;metadata")
+
+add_executable(pb_runtime_backend_feature_matrix_smoke runtime/backend_feature_matrix_smoke.cpp)
+target_link_libraries(pb_runtime_backend_feature_matrix_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_backend_feature_matrix_smoke PRIVATE)
+add_test(NAME pb_runtime_backend_feature_matrix_smoke COMMAND pb_runtime_backend_feature_matrix_smoke)
+set_tests_properties(pb_runtime_backend_feature_matrix_smoke PROPERTIES LABELS "runtime;metadata;backend")
+
+add_executable(pb_runtime_sequential_policy_dsl_smoke runtime/sequential_policy_dsl_smoke.cpp)
+target_link_libraries(pb_runtime_sequential_policy_dsl_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_sequential_policy_dsl_smoke PRIVATE)
+add_test(NAME pb_runtime_sequential_policy_dsl_smoke COMMAND pb_runtime_sequential_policy_dsl_smoke)
+set_tests_properties(pb_runtime_sequential_policy_dsl_smoke PROPERTIES LABELS "runtime;policy;smoke")
+
+add_executable(pb_runtime_stateful_storage_policy_smoke runtime/stateful_storage_policy_smoke.cpp)
+target_link_libraries(pb_runtime_stateful_storage_policy_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_stateful_storage_policy_smoke PRIVATE)
+add_test(NAME pb_runtime_stateful_storage_policy_smoke COMMAND pb_runtime_stateful_storage_policy_smoke)
+set_tests_properties(pb_runtime_stateful_storage_policy_smoke PROPERTIES LABELS "runtime;policy;stateful")
+
+add_executable(pb_runtime_routing_descriptor_smoke runtime/routing_descriptor_smoke.cpp)
+target_link_libraries(pb_runtime_routing_descriptor_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_routing_descriptor_smoke PRIVATE)
+add_test(NAME pb_runtime_routing_descriptor_smoke COMMAND pb_runtime_routing_descriptor_smoke)
+set_tests_properties(pb_runtime_routing_descriptor_smoke PROPERTIES LABELS "runtime;routing;metadata")
 
 add_executable(pb_runtime_result_smoke runtime/result_smoke.cpp)
 target_link_libraries(pb_runtime_result_smoke PRIVATE pb::pipeline)
@@ -187,17 +216,36 @@ pb_apply_project_options(pb_runtime_sequential_observer_accessor_smoke PRIVATE)
 add_test(NAME pb_runtime_sequential_observer_accessor_smoke COMMAND pb_runtime_sequential_observer_accessor_smoke)
 set_tests_properties(pb_runtime_sequential_observer_accessor_smoke PROPERTIES LABELS "runtime;observer")
 
+add_executable(pb_runtime_sequential_branch_smoke runtime/sequential_branch_smoke.cpp)
+target_link_libraries(pb_runtime_sequential_branch_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_sequential_branch_smoke PRIVATE)
+add_test(NAME pb_runtime_sequential_branch_smoke COMMAND pb_runtime_sequential_branch_smoke)
+set_tests_properties(pb_runtime_sequential_branch_smoke PROPERTIES LABELS "runtime;branch;observer;result")
+
 add_executable(pb_runtime_sequential_adapters_smoke runtime/sequential_adapters_smoke.cpp)
 target_link_libraries(pb_runtime_sequential_adapters_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_sequential_adapters_smoke PRIVATE)
 add_test(NAME pb_runtime_sequential_adapters_smoke COMMAND pb_runtime_sequential_adapters_smoke)
 set_tests_properties(pb_runtime_sequential_adapters_smoke PROPERTIES LABELS "runtime;adapter")
 
+add_executable(pb_runtime_sequential_adapters_value_category_smoke runtime/sequential_adapters_value_category_smoke.cpp)
+target_link_libraries(pb_runtime_sequential_adapters_value_category_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_sequential_adapters_value_category_smoke PRIVATE)
+add_test(NAME pb_runtime_sequential_adapters_value_category_smoke
+  COMMAND pb_runtime_sequential_adapters_value_category_smoke)
+set_tests_properties(pb_runtime_sequential_adapters_value_category_smoke PROPERTIES LABELS "runtime;adapter")
+
 add_executable(pb_export_dot_compile_pass compile_pass/export_dot.cpp)
 target_link_libraries(pb_export_dot_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_export_dot_compile_pass PRIVATE)
 add_test(NAME pb_export_dot_compile_pass COMMAND pb_export_dot_compile_pass)
 set_tests_properties(pb_export_dot_compile_pass PROPERTIES LABELS "compile-pass;export;dot")
+
+add_executable(pb_export_json_compile_pass compile_pass/export_json.cpp)
+target_link_libraries(pb_export_json_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_export_json_compile_pass PRIVATE)
+add_test(NAME pb_export_json_compile_pass COMMAND pb_export_json_compile_pass)
+set_tests_properties(pb_export_json_compile_pass PROPERTIES LABELS "compile-pass;export;json;branch")
 
 add_test(NAME pb_compile_fail_edge_mismatch
   COMMAND ${CMAKE_COMMAND}
@@ -226,11 +274,28 @@ add_test(NAME pb_compile_fail_branch_topology_unsupported_boundary
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_topology_unsupported_boundary.cpp
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
-    -DEXPECT_DIAGNOSTIC=Branch/join\ topology\ is\ not\ implemented\ yet
-    -DEXPECTED_DIAGNOSTICS=pb::case_;pb::branch_node;unsupported\ boundary
+    -DEXPECT_DIAGNOSTIC=Branch\ output\ validation\ mismatch
+    -DEXPECTED_DIAGNOSTICS=branch_output_validation
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_branch_topology_unsupported_boundary PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+
+add_test(NAME pb_compile_fail_branch_join_execution_unsupported
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_join_execution_unsupported.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Branch\ output\ validation\ mismatch
+    -DEXPECTED_DIAGNOSTICS=branch_output_validation
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_branch_join_execution_unsupported PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+
+add_executable(pb_runtime_sequential_branch_execution_smoke runtime/sequential_branch_execution_smoke.cpp)
+target_link_libraries(pb_runtime_sequential_branch_execution_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_sequential_branch_execution_smoke PRIVATE)
+add_test(NAME pb_runtime_sequential_branch_execution_smoke COMMAND pb_runtime_sequential_branch_execution_smoke)
+set_tests_properties(pb_runtime_sequential_branch_execution_smoke PROPERTIES LABELS "runtime;observer;branch")
 
 add_test(NAME pb_compile_fail_branch_builder_source_mismatch
   COMMAND ${CMAKE_COMMAND}
@@ -243,16 +308,6 @@ add_test(NAME pb_compile_fail_branch_builder_source_mismatch
 )
 set_tests_properties(pb_compile_fail_branch_builder_source_mismatch PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 
-add_test(NAME pb_compile_fail_branch_join_execution_unsupported
-  COMMAND ${CMAKE_COMMAND}
-    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_join_execution_unsupported.cpp
-    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
-    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
-    -DEXPECT_DIAGNOSTIC=Branch/join\ topology\ is\ not\ implemented\ yet
-    -DEXPECTED_DIAGNOSTICS=pb::case_;pb::branch_node;unsupported\ boundary
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
-)
-set_tests_properties(pb_compile_fail_branch_join_execution_unsupported PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 
 add_test(NAME pb_compile_fail_branch_builder_empty_cases_unsupported
   COMMAND ${CMAKE_COMMAND}
@@ -260,7 +315,7 @@ add_test(NAME pb_compile_fail_branch_builder_empty_cases_unsupported
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
     -DEXPECT_DIAGNOSTIC=Branch\ node\ requires\ at\ least\ one
-    -DEXPECTED_DIAGNOSTICS=at\ least\ one;unsupported\ boundary
+    -DEXPECTED_DIAGNOSTICS=at\ least\ one;case_
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_branch_builder_empty_cases_unsupported PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")

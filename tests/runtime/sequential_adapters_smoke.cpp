@@ -131,6 +131,14 @@ struct direct_member_consume_void {
 struct direct_member_emit_move_only {
   static constexpr auto value = "direct_member_emit_move_only";
 };
+
+struct parse_lvalue_ref_member {
+  static constexpr auto value = "parse_lvalue_ref_member";
+};
+
+struct parse_noexcept_lvalue_ref_member {
+  static constexpr auto value = "parse_noexcept_lvalue_ref_member";
+};
 } // namespace adapter_stage_names
 
 Parsed parse_input_fn(Input input) {
@@ -182,6 +190,10 @@ struct MemberParser {
     }
     return {.ok = true};
   }
+
+  Parsed parse_lvalue_ref(Input input) & { return Parsed{input.value + 19}; }
+
+  Parsed parse_noexcept_lvalue_ref(Input input) & noexcept { return Parsed{input.value + 21}; }
 };
 
 struct MemberEmitter {
@@ -309,6 +321,12 @@ using VoidMoveOnlyExpectedAdapter =
 using DirectMemberVoidExpectedAdapter =
     pb::adapt<pb::name<adapter_stage_names::direct_member_consume_void>, pb::member<&MemberParser::consume_checked>,
               pb::in<Input>, pb::out<void>>;
+using LvalueRefQualifiedMemberAdapter =
+    pb::adapt<pb::name<adapter_stage_names::parse_lvalue_ref_member>,
+              pb::member<&MemberParser::parse_lvalue_ref>, pb::in<Input>, pb::out<Parsed>>;
+using NoexceptLvalueRefQualifiedMemberAdapter =
+    pb::adapt<pb::name<adapter_stage_names::parse_noexcept_lvalue_ref_member>,
+              pb::member<&MemberParser::parse_noexcept_lvalue_ref>, pb::in<Input>, pb::out<Parsed>>;
 
 struct Emit {
   using input_type = Parsed;
@@ -355,6 +373,10 @@ using ResultMoveOnlyErrorPipeline =
 using VoidExpectedPipeline = pb::from<Input>::then<VoidExpectedAdapter>::to<void>;
 using VoidMoveOnlyExpectedPipeline = pb::from<Input>::then<VoidMoveOnlyExpectedAdapter>::to<void>;
 using DirectMemberVoidExpectedPipeline = pb::from<Input>::then<DirectMemberVoidExpectedAdapter>::to<void>;
+using LvalueRefQualifiedMemberPipeline =
+    pb::from<Input>::then<LvalueRefQualifiedMemberAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
+using NoexceptLvalueRefQualifiedMemberPipeline =
+    pb::from<Input>::then<NoexceptLvalueRefQualifiedMemberAdapter>::then<UnnamedDirectMemberAdapter>::to<Output>;
 
 static_assert(pb::adapted_stage<ParsedAdapter>);
 static_assert(pb::adapted_stage<MultiplierAdapter>);
@@ -373,6 +395,10 @@ static_assert(pb::adapted_stage<ResultMoveOnlyErrorAdapter>);
 static_assert(pb::adapted_stage<VoidExpectedAdapter>);
 static_assert(pb::adapted_stage<VoidMoveOnlyExpectedAdapter>);
 static_assert(pb::adapted_stage<DirectMemberVoidExpectedAdapter>);
+static_assert(pb::adapted_stage<LvalueRefQualifiedMemberAdapter>);
+static_assert(pb::adapted_stage<NoexceptLvalueRefQualifiedMemberAdapter>);
+static_assert(!noexcept(LvalueRefQualifiedMemberAdapter{}(Input{1})));
+static_assert(noexcept(NoexceptLvalueRefQualifiedMemberAdapter{}(Input{1})));
 static_assert(pb::valid<Pipeline>);
 static_assert(pb::valid<ThrowingPipeline>);
 static_assert(pb::valid<ThrowingPipelineRaw>);
@@ -389,6 +415,8 @@ static_assert(pb::valid<ResultMoveOnlyErrorPipeline>);
 static_assert(pb::valid<VoidExpectedPipeline>);
 static_assert(pb::valid<VoidMoveOnlyExpectedPipeline>);
 static_assert(pb::valid<DirectMemberVoidExpectedPipeline>);
+static_assert(pb::valid<LvalueRefQualifiedMemberPipeline>);
+static_assert(pb::valid<NoexceptLvalueRefQualifiedMemberPipeline>);
 
 struct recording_observer final : pb::runtime::observer {
   std::vector<std::string> events{};
@@ -423,6 +451,15 @@ int main() {
 
   auto noexcept_member_output = NoexceptDirectMemberAdapter{}(Parsed{5});
   assert(noexcept_member_output.value == 11);
+
+  auto lvalue_ref_member_engine = pb::compile<LvalueRefQualifiedMemberPipeline>(pb::runtime::sequential{});
+  auto lvalue_ref_member_output = lvalue_ref_member_engine.run(Input{5});
+  assert(lvalue_ref_member_output.value == 28);
+
+  auto noexcept_lvalue_ref_member_engine =
+      pb::compile<NoexceptLvalueRefQualifiedMemberPipeline>(pb::runtime::sequential{});
+  auto noexcept_lvalue_ref_member_output = noexcept_lvalue_ref_member_engine.run(Input{5});
+  assert(noexcept_lvalue_ref_member_output.value == 30);
 
   auto direct_expected_member_engine = pb::compile<DirectExpectedMemberPipeline>(pb::runtime::sequential{});
   recording_observer expected_observer{};
@@ -466,6 +503,7 @@ int main() {
               "expected_error at parse_member_move_only_diagnostic: move-only member diagnostic failed",
           }));
 
+  direct_member_move_only_diagnostic_observer.events.clear();
   auto direct_member_move_only_diagnostic_raw_failed =
       direct_member_move_only_diagnostic_engine.run(Input{-5});
   assert(!direct_member_move_only_diagnostic_raw_failed.has_value());
@@ -477,6 +515,14 @@ int main() {
          "parse_member_move_only_diagnostic");
   assert(direct_member_move_only_diagnostic_raw_failed.error().message ==
          "move-only member diagnostic failed");
+  assert(pb::runtime::describe(direct_member_move_only_diagnostic_raw_failed.error()) ==
+         "expected_error at parse_member_move_only_diagnostic: move-only member diagnostic failed");
+  assert((direct_member_move_only_diagnostic_observer.events ==
+          std::vector<std::string>{
+              "start:parse_member_move_only_diagnostic/parse_member_move_only_diagnostic",
+              "failure:parse_member_move_only_diagnostic/parse_member_move_only_diagnostic:"
+              "expected_error at parse_member_move_only_diagnostic: move-only member diagnostic failed",
+          }));
 
   auto direct_member_move_only_value_engine = pb::compile<DirectMemberMoveOnlyValuePipeline>(pb::runtime::sequential{});
   recording_observer direct_member_move_only_value_observer{};

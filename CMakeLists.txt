@@ -30,6 +30,14 @@ option(PB_BACKEND_TASKFLOW "Enable optional Taskflow backend integration" OFF)
 option(PB_BACKEND_TBB "Enable optional oneTBB backend integration" OFF)
 option(PB_BACKEND_STDEXEC "Enable experimental stdexec backend integration" OFF)
 
+if(PB_BACKEND_TASKFLOW OR PB_BACKEND_TBB OR PB_BACKEND_STDEXEC)
+  message(FATAL_ERROR
+    "Optional external backend adapters are reserved but not implemented in this release. "
+    "Keep PB_BACKEND_TASKFLOW, PB_BACKEND_TBB, and PB_BACKEND_STDEXEC OFF; "
+    "the supported runtime backend is the standard-library sequential runtime."
+  )
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)

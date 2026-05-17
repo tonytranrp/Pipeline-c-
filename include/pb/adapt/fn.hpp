@@ -143,9 +143,50 @@ template <class Callable, class Input, class Output>
 concept invocable_as_output = std::invocable<Callable, Input> &&
                               returns_declared_output<std::invoke_result_t<Callable, Input>, Output>;
 
+template <class Callable, class ObjectExpr, class Input, class Output>
+concept member_invocable_expr_as_output = std::invocable<Callable, ObjectExpr, Input> &&
+                                          returns_declared_output<std::invoke_result_t<Callable, ObjectExpr, Input>, Output>;
+
 template <class Callable, class Object, class Input, class Output>
-concept member_invocable_as_output = std::invocable<Callable, Object, Input> &&
-                                     returns_declared_output<std::invoke_result_t<Callable, Object, Input>, Output>;
+concept member_invocable_as_output =
+    member_invocable_expr_as_output<Callable, Object&, Input, Output> ||
+    member_invocable_expr_as_output<Callable, const Object&, Input, Output> ||
+    member_invocable_expr_as_output<Callable, volatile Object&, Input, Output> ||
+    member_invocable_expr_as_output<Callable, const volatile Object&, Input, Output> ||
+    member_invocable_expr_as_output<Callable, Object, Input, Output>;
+
+template <auto Function, class Object, class Input>
+constexpr bool member_invoke_is_noexcept() {
+  using Callable = decltype(Function);
+  if constexpr (std::invocable<Callable, Object&, Input>) {
+    return noexcept(std::invoke(Function, std::declval<Object&>(), std::declval<Input>()));
+  } else if constexpr (std::invocable<Callable, const Object&, Input>) {
+    return noexcept(std::invoke(Function, std::declval<const Object&>(), std::declval<Input>()));
+  } else if constexpr (std::invocable<Callable, volatile Object&, Input>) {
+    return noexcept(std::invoke(Function, std::declval<volatile Object&>(), std::declval<Input>()));
+  } else if constexpr (std::invocable<Callable, const volatile Object&, Input>) {
+    return noexcept(std::invoke(Function, std::declval<const volatile Object&>(), std::declval<Input>()));
+  } else {
+    return noexcept(std::invoke(Function, std::declval<Object>(), std::declval<Input>()));
+  }
+}
+
+template <auto Function, class Object, class Input>
+constexpr decltype(auto) invoke_member(Object& object, Input&& input)
+    noexcept(member_invoke_is_noexcept<Function, Object, Input>()) {
+  using Callable = decltype(Function);
+  if constexpr (std::invocable<Callable, Object&, Input>) {
+    return std::invoke(Function, object, std::forward<Input>(input));
+  } else if constexpr (std::invocable<Callable, const Object&, Input>) {
+    return std::invoke(Function, static_cast<const Object&>(object), std::forward<Input>(input));
+  } else if constexpr (std::invocable<Callable, volatile Object&, Input>) {
+    return std::invoke(Function, static_cast<volatile Object&>(object), std::forward<Input>(input));
+  } else if constexpr (std::invocable<Callable, const volatile Object&, Input>) {
+    return std::invoke(Function, static_cast<const volatile Object&>(object), std::forward<Input>(input));
+  } else {
+    return std::invoke(Function, std::move(object), std::forward<Input>(input));
+  }
+}
 } // namespace adapt_detail
 
 template <class Tag>
@@ -246,11 +287,12 @@ struct adapt<name<NameTag>, member<Function>, in<Input>, out<Output>, err<Error>
   static constexpr std::string_view stage_name() noexcept { return name; }
 
   constexpr decltype(auto) operator()(input_type input) const
-      noexcept(noexcept(std::invoke(Function, member_type{}, std::move(input))))
+      noexcept(adapt_detail::member_invoke_is_noexcept<Function, member_type, input_type>())
       requires std::default_initializable<member_type> &&
                adapt_detail::member_invocable_as_output<function_type, member_type, input_type, output_type>
   {
-    return std::invoke(Function, member_type{}, std::move(input));
+    member_type object{};
+    return adapt_detail::invoke_member<Function, member_type>(object, std::move(input));
   }
 };
 

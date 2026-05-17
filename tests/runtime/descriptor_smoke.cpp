@@ -99,9 +99,13 @@ int main() {
 
   auto empty_engine = pb::compile<EmptyPipeline>(pb::runtime::sequential{});
   const auto empty_runtime_descriptor = empty_engine.descriptor();
+  constexpr auto empty_descriptor = pb::make_descriptor<EmptyPipeline>();
   static_assert(decltype(empty_runtime_descriptor)::stage_count == 0);
   static_assert(decltype(empty_runtime_descriptor)::edge_count == 0);
   static_assert(decltype(empty_runtime_descriptor)::empty);
+  static_assert(empty_descriptor.schema_version == pb::runtime::descriptor_schema_version);
+  assert(empty_runtime_descriptor.schema_version == empty_descriptor.schema_version);
+  assert(empty_runtime_descriptor.topology == empty_descriptor.topology);
   assert(empty_runtime_descriptor.stage_records().empty());
   assert(empty_runtime_descriptor.edge_records().empty());
 

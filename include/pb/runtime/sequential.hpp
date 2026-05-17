@@ -29,15 +29,33 @@ struct sequential : sequential_policy<construct_stages_per_run> {};
 
 using stateful_sequential = sequential_policy<store_stages_in_engine>;
 
+namespace policy {
+namespace storage {
+using construct_per_run = construct_stages_per_run;
+using store_in_engine = store_stages_in_engine;
+} // namespace storage
+
+template <class StageStoragePolicy>
+using sequential = sequential_policy<StageStoragePolicy>;
+
+using sequential_per_run = sequential<storage::construct_per_run>;
+using sequential_stateful = sequential<storage::store_in_engine>;
+} // namespace policy
+
 namespace detail {
 struct no_stage_storage {};
 
 template <class StageStoragePolicy>
 inline constexpr bool stores_stages_in_engine_v = std::same_as<StageStoragePolicy, store_stages_in_engine>;
 
+template <class BranchNode, std::size_t StageIndex, class Input>
+[[nodiscard]] auto run_selected_branch(observer* sink, Input&& input) -> result<typename BranchNode::output_type>;
+
 template <class Stage, std::size_t StageIndex, class StageStorage, class Input>
-[[nodiscard]] decltype(auto) invoke_stage(StageStorage* storage, Input&& input) {
-  if constexpr (std::same_as<std::remove_cvref_t<StageStorage>, no_stage_storage>) {
+[[nodiscard]] decltype(auto) invoke_stage(StageStorage* storage, observer* sink, Input&& input) {
+  if constexpr (pb::core::detail::is_selected_branch_node<Stage>::value) {
+    return run_selected_branch<Stage, StageIndex>(sink, std::forward<Input>(input));
+  } else if constexpr (std::same_as<std::remove_cvref_t<StageStorage>, no_stage_storage>) {
     return Stage{}(std::forward<Input>(input));
   } else {
     return std::get<StageIndex>(*storage)(std::forward<Input>(input));
@@ -206,11 +224,108 @@ template <class Stage, class StageResult>
   return normalize_stage_error<Stage>(0, std::move(stage_result));
 }
 
+
+template <class Predicate, std::size_t StageIndex, class Input>
+[[nodiscard]] auto evaluate_branch_predicate(observer* sink, const Input& input) -> result<bool> {
+  try {
+    notify_stage_start<Predicate>(sink, StageIndex);
+    auto predicate_result = Predicate{}(input);
+    if constexpr (expected_like<decltype(predicate_result)>) {
+      auto normalized_result = to_result(std::move(predicate_result));
+      if (!normalized_result.has_value()) {
+        auto predicate_error = normalize_stage_error<Predicate>(StageIndex, std::move(normalized_result));
+        notify_stage_failure<Predicate>(sink, StageIndex, predicate_error);
+        return result<bool>{std::move(predicate_error)};
+      }
+      notify_stage_success<Predicate>(sink, StageIndex);
+      return result<bool>{static_cast<bool>(std::move(normalized_result).value())};
+    } else {
+      notify_stage_success<Predicate>(sink, StageIndex);
+      return result<bool>{static_cast<bool>(predicate_result)};
+    }
+  } catch (const std::exception& exception) {
+    auto predicate_error = exception_error<Predicate>(StageIndex, exception);
+    notify_stage_exception<Predicate>(sink, StageIndex, predicate_error);
+    return result<bool>{std::move(predicate_error)};
+  } catch (...) {
+    auto predicate_error = unknown_exception_error<Predicate>(StageIndex);
+    notify_stage_exception<Predicate>(sink, StageIndex, predicate_error);
+    return result<bool>{std::move(predicate_error)};
+  }
+}
+
+template <class BranchStage, std::size_t StageIndex, class BranchOutput, class Input>
+[[nodiscard]] auto run_branch_stage(observer* sink, const Input& input) -> result<BranchOutput> {
+  try {
+    notify_stage_start<BranchStage>(sink, StageIndex);
+    auto branch_result = BranchStage{}(input);
+    if constexpr (expected_like<decltype(branch_result)>) {
+      auto normalized_result = to_result(std::move(branch_result));
+      if (!normalized_result.has_value()) {
+        auto branch_error = normalize_stage_error<BranchStage>(StageIndex, std::move(normalized_result));
+        notify_stage_failure<BranchStage>(sink, StageIndex, branch_error);
+        return result<BranchOutput>{std::move(branch_error)};
+      }
+      notify_stage_success<BranchStage>(sink, StageIndex);
+      return result<BranchOutput>{std::move(normalized_result).value()};
+    } else {
+      notify_stage_success<BranchStage>(sink, StageIndex);
+      return result<BranchOutput>{std::move(branch_result)};
+    }
+  } catch (const std::exception& exception) {
+    auto branch_error = exception_error<BranchStage>(StageIndex, exception);
+    notify_stage_exception<BranchStage>(sink, StageIndex, branch_error);
+    return result<BranchOutput>{std::move(branch_error)};
+  } catch (...) {
+    auto branch_error = unknown_exception_error<BranchStage>(StageIndex);
+    notify_stage_exception<BranchStage>(sink, StageIndex, branch_error);
+    return result<BranchOutput>{std::move(branch_error)};
+  }
+}
+
+template <class BranchNode, std::size_t StageIndex, class Input>
+[[nodiscard]] auto unselected_branch_error() -> result<typename BranchNode::output_type> {
+  return result<typename BranchNode::output_type>{
+      error{.stage = stage_id_for<BranchNode>(StageIndex),
+            .category = error_category::contract_violation,
+            .message = "no branch predicate selected a case"}};
+}
+
+template <class BranchNode, std::size_t StageIndex, class Input, class Case, class... Rest>
+[[nodiscard]] auto run_selected_branch_cases(observer* sink, const Input& input) -> result<typename BranchNode::output_type> {
+  using Predicate = typename Case::predicate_type;
+  using BranchStage = typename Case::stage_type;
+
+  auto predicate_result = evaluate_branch_predicate<Predicate, StageIndex>(sink, input);
+  if (!predicate_result.has_value()) {
+    return result<typename BranchNode::output_type>{std::move(predicate_result).error()};
+  }
+  if (predicate_result.value()) {
+    return run_branch_stage<BranchStage, StageIndex, typename BranchNode::output_type>(sink, input);
+  }
+  if constexpr (sizeof...(Rest) == 0) {
+    return unselected_branch_error<BranchNode, StageIndex, Input>();
+  } else {
+    return run_selected_branch_cases<BranchNode, StageIndex, Input, Rest...>(sink, input);
+  }
+}
+
+template <class BranchNode, std::size_t StageIndex, class Input, class... Cases>
+[[nodiscard]] auto run_selected_branch(observer* sink, const Input& input, pb::meta::type_list<Cases...>)
+    -> result<typename BranchNode::output_type> {
+  return run_selected_branch_cases<BranchNode, StageIndex, Input, Cases...>(sink, input);
+}
+
+template <class BranchNode, std::size_t StageIndex, class Input>
+[[nodiscard]] auto run_selected_branch(observer* sink, Input&& input) -> result<typename BranchNode::output_type> {
+  return run_selected_branch<BranchNode, StageIndex>(sink, input, typename BranchNode::cases{});
+}
+
 template <std::size_t StageIndex, class FinalOutput, class StageStorage, class Input, class Stage, class... Rest>
 [[nodiscard]] auto try_run_after_result(observer* sink, StageStorage* storage, Input&& input) -> result<FinalOutput> {
   try {
     notify_stage_start<Stage>(sink, StageIndex);
-    auto stage_result = invoke_stage<Stage, StageIndex>(storage, std::forward<Input>(input));
+    auto stage_result = invoke_stage<Stage, StageIndex>(storage, sink, std::forward<Input>(input));
     if constexpr (expected_like<decltype(stage_result)>) {
       auto normalized_result = to_result(std::move(stage_result));
       if (!normalized_result.has_value()) {
@@ -259,7 +374,7 @@ template <std::size_t StageIndex, class FinalOutput, class Error, class StageSto
 [[nodiscard]] auto run_after_result(observer* sink, StageStorage* storage, Input&& input) -> result<FinalOutput, Error> {
   try {
     notify_stage_start<Stage>(sink, StageIndex);
-    auto stage_result = invoke_stage<Stage, StageIndex>(storage, std::forward<Input>(input));
+    auto stage_result = invoke_stage<Stage, StageIndex>(storage, sink, std::forward<Input>(input));
     if constexpr (expected_like<decltype(stage_result)>) {
       auto normalized_result = to_result(std::move(stage_result));
       if (!normalized_result.has_value()) {
@@ -318,7 +433,7 @@ template <std::size_t StageIndex, class FinalOutput, class StageStorage, class I
   auto stage_result = [&] {
     try {
       notify_stage_start<Stage>(sink, StageIndex);
-      return invoke_stage<Stage, StageIndex>(storage, std::forward<Input>(input));
+      return invoke_stage<Stage, StageIndex>(storage, sink, std::forward<Input>(input));
     } catch (const std::exception& exception) {
       auto stage_error = exception_error<Stage>(StageIndex, exception);
       notify_stage_exception<Stage>(sink, StageIndex, stage_error);
@@ -439,4 +554,5 @@ template <pb::core::ValidPipeline Pipeline, class SequentialPolicy>
 
 namespace pb {
 using runtime::compile;
+namespace policy = runtime::policy;
 } // namespace pb

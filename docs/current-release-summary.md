@@ -28,7 +28,7 @@ Status snapshot for the current long-horizon team batch. Use this page as a comp
 
 - Runtime diagnostic records and linear descriptor/observer/error identity checks, including custom expected-like failure and exception stage identity, now strengthen the current sequential diagnostic story; release notes should avoid calling this a stable exported diagnostic schema or runtime descriptor contract.
 - Branch/join marker diagnostics now cover source compatibility, predicate shape, homogeneous branch-node case inputs, unsupported topology, branch output compatibility validation, join consumption validation, invalid join-stage markers, and branch-output marker misuse; release notes must still label sequential branch execution and executable branch/join topology as roadmap.
-- Linear DOT export/helper evidence may be mentioned only as linear DOT support on a verified candidate; release notes must still label JSON export, branch/join graph export, stable graph schemas, and broad graph export as roadmap.
+- Linear DOT export/helper evidence may be mentioned only as linear DOT support on a verified candidate; release notes must label the current JSON export as a narrow descriptor/metadata helper and keep branch/join graph export, stable graph schemas, and broad graph export as roadmap.
 - Adapter/member hardening landed in the public adapter surface; release notes should keep this as incremental adapter ergonomics/hardening, not a new backend claim.
 - Core stage-traits public-header coverage now exercises the alias/metadata surface used by diagnostics and docs.
 - Runtime result normalization now has stronger coverage around fallback/error conversion boundaries.
@@ -42,7 +42,7 @@ For this docs/checkpoint update, the worker refreshed local developer evidence o
 
 - `cmake --preset clang-dev-ninja` — passed.
 - `cmake --build --preset clang-dev-ninja` — passed.
-- `ctest --preset clang-dev-ninja --output-on-failure` — passed, `83/83` tests.
+- `ctest --preset clang-dev-ninja --output-on-failure` — passed, `116/116` tests on the current candidate.
 
 Fresh package-release evidence was also collected on the current worktree:
 

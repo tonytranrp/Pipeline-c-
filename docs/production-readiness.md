@@ -68,7 +68,8 @@ Before cutting a release candidate, collect evidence for:
 - Runtime error propagation, `error_record` / `to_record(...)` diagnostic projection, observer callbacks, custom expected-like diagnostic stage identity, and linear descriptor/observer/error identity checks exist for the current sequential path; richer exception policies, `std::expected` integration, exported diagnostic artifacts, and fully stable observer contracts are future slices. Zero-stage identity pipelines have no stage callbacks because no stage executes.
 - Sequential `run()` and `try_run()` currently have tested result/expected-like exception capture paths, while the broader exception-policy DSL remains future work.
 - A narrow linear DOT/export helper is accepted only as linear export evidence. Full graph export remains roadmap-only until branch/join graph shapes, JSON/schema decisions, examples, and tests land.
-- Optional backend support requires a backend feature matrix before implementation claims; the current supported execution backend remains the standard-library sequential runtime.- Benchmark scaffolding can prove the targets build and run, but release thresholds and CI regression budgets are not established.
+- Optional backend support requires a backend feature matrix before implementation claims; the current supported execution backend remains the standard-library sequential runtime.
+- Benchmark scaffolding can prove the targets build and run, but release thresholds and CI regression budgets are not established.
 - Cross-compiler validation beyond the local configured toolchain remains a release gate.
 
 ## Small production-readiness slice (safe, immediate)

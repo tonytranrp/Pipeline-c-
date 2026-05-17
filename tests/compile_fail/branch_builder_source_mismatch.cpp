@@ -2,7 +2,6 @@
 
 struct Raw {};
 struct Parsed {};
-struct Reviewed {};
 
 struct IsRaw {
   using input_type = Raw;
@@ -16,7 +15,7 @@ struct Parse {
 
 struct ManualReview {
   using input_type = Raw;
-  using output_type = Reviewed;
+  using output_type = Parsed;
 };
 
 // The eventual public ::branch builder must start from the same source type

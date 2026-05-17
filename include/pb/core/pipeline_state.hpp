@@ -60,6 +60,16 @@ template <class Output, class... Cases>
 struct branch_outputs_match_output
     : std::bool_constant<(std::same_as<typename branch_case_output<Cases>::output_type, Output> && ...)> {};
 
+template <class... Cases>
+struct first_branch_output {
+  using type = void;
+};
+
+template <class First, class... Rest>
+struct first_branch_output<First, Rest...> {
+  using type = typename branch_case_output<First>::output_type;
+};
+
 template <class Case, bool IsBranchCase = is_branch_case<Case>::value>
 struct branch_case_output_impl {
   static_assert(always_false_v<Case>,
@@ -177,6 +187,15 @@ struct branch_node_input {
 template <class First, class... Rest>
 struct branch_node_input<First, Rest...>
     : branch_case_input_or_void<is_branch_case<First>::value, First> {};
+
+template <class... Cases>
+struct selected_branch_node;
+
+template <class>
+struct is_selected_branch_node : std::false_type {};
+
+template <class... Cases>
+struct is_selected_branch_node<selected_branch_node<Cases...>> : std::true_type {};
 } // namespace detail
 
 template <class Predicate, class BranchStage>
@@ -230,6 +249,25 @@ struct branch_outputs {
   using output_types = meta::type_list<typename branch_case_output<Cases>::output_type...>;
   static constexpr std::size_t output_count = sizeof...(Cases);
 };
+
+namespace detail {
+template <class... Cases>
+struct selected_branch_node {
+  using validation = branch_output_validation<branch_outputs<Cases...>, typename first_branch_output<Cases...>::type>;
+  using cases = meta::type_list<Cases...>;
+  using input_type = typename validation::input_type;
+  using output_type = typename validation::output_type;
+  using output_types = typename validation::output_types;
+  static constexpr std::size_t case_count = sizeof...(Cases);
+
+  static_assert(std::copy_constructible<input_type>,
+                "Sequential branch execution requires a copy-constructible branch input_type so predicates and the "
+                "selected branch case can inspect the same value");
+
+  [[nodiscard]] static constexpr auto stage_name() noexcept { return "branch"; }
+  [[nodiscard]] static constexpr auto stage_key() noexcept { return "branch"; }
+};
+} // namespace detail
 
 template <class Outputs, class Output>
 struct branch_output_validation : detail::branch_output_validation_impl<Outputs, Output> {};
@@ -289,20 +327,24 @@ struct finalize_pipeline<pipeline_state<Input, Current, Stages...>, Output> {
 };
 
 template <class State, class... Cases>
-struct unsupported_branch;
+struct append_branch;
+
+template <class Input, class Current, class... Stages>
+struct append_branch<pipeline_state<Input, Current, Stages...>> {
+  static_assert(always_false_v<pipeline_state<Input, Current, Stages...>>,
+                "Branch node requires at least one pb::case_<Predicate>::then<Stage>");
+};
 
 template <class Input, class Current, class... Stages, class... Cases>
-struct unsupported_branch<pipeline_state<Input, Current, Stages...>, Cases...> {
-  using requested_node = branch_node<Cases...>;
+struct append_branch<pipeline_state<Input, Current, Stages...>, Cases...> {
+  using branch_input = typename branch_node_input<Cases...>::type;
 
-  static_assert(std::same_as<Current, typename requested_node::input_type>,
+  static_assert(std::same_as<Current, branch_input>,
                 "Branch builder source mismatch: current pipeline output_type must match branch case input_type "
                 "before pb::from<...>::branch<...>");
-  static_assert(always_false_v<requested_node>,
-                "Branch/join topology is not implemented yet: Phase 5 currently exposes only "
-                "pb::case_/pb::branch_node marker types, while pb::from<...>::branch<...> remains an "
-                "unsupported boundary");
-  using type = void;
+
+  using branch_stage = selected_branch_node<Cases...>;
+  using type = pipeline_state<Input, typename branch_stage::output_type, Stages..., branch_stage>;
 };
 
 } // namespace detail
@@ -316,11 +358,14 @@ struct pipeline_state {
   template <class StageType>
   using then = typename detail::append_stage<pipeline_state, StageType>::type;
 
+  template <class StageType>
+  using join = typename detail::append_stage<pipeline_state, StageType>::type;
+
   template <class Output>
   using to = typename detail::finalize_pipeline<pipeline_state, Output>::type;
 
   template <class... Cases>
-  using branch = typename detail::unsupported_branch<pipeline_state, Cases...>::type;
+  using branch = typename detail::append_branch<pipeline_state, Cases...>::type;
 };
 
 template <class Input>

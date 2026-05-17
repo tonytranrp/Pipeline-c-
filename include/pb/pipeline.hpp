@@ -5,15 +5,19 @@
 #include "pb/core/describe.hpp"
 #include "pb/core/fixed_string.hpp"
 #include "pb/core/export_dot.hpp"
+#include "pb/core/export_json.hpp"
 #include "pb/core/meta.hpp"
 #include "pb/core/pipeline_state.hpp"
 #include "pb/core/stage_traits.hpp"
 #include "pb/core/validate.hpp"
 #include "pb/runtime/descriptor.hpp"
+#include "pb/runtime/backend.hpp"
 #include "pb/runtime/error.hpp"
 #include "pb/runtime/observer.hpp"
 #include "pb/runtime/result.hpp"
+#include "pb/runtime/routing.hpp"
 #include "pb/runtime/sequential.hpp"
+#include "pb/runtime/trace.hpp"
 
 namespace pb {
 using core::AdjacentStages;
@@ -35,6 +39,7 @@ using core::join_output;
 using core::join_validation;
 using core::describe;
 using core::to_dot;
+using core::to_json;
 using core::fixed_string;
 using core::from;
 using core::is_pipeline_v;
@@ -75,6 +80,12 @@ using core::stage_output_t;
 using core::stage_traits;
 using core::valid;
 using runtime::category_name;
+using runtime::backend_execution_model;
+using runtime::backend_feature;
+using runtime::backend_feature_matrix;
+using runtime::backend_features;
+using runtime::backend_support;
+using runtime::backend_supported;
 using runtime::construct_stages_per_run;
 using runtime::describe;
 using runtime::descriptor_edge_record;
@@ -92,9 +103,22 @@ using runtime::is_result_v;
 using runtime::make_result;
 using runtime::observer;
 using runtime::result;
+using runtime::make_route_descriptor;
+using runtime::route_case_record;
+using runtime::route_descriptor;
+using runtime::route_descriptor_schema_version;
+using runtime::route_selection;
+using runtime::select_route;
 using runtime::sequential_policy;
 using runtime::stage_id;
 using runtime::stateful_sequential;
 using runtime::store_stages_in_engine;
 using runtime::to_result;
+using runtime::trace_event;
+using runtime::trace_event_kind;
+using runtime::trace_event_kind_name;
+using runtime::trace_observer;
+using runtime::trace_recorder;
+using runtime::trace_schema_version;
+using runtime::trace_sink;
 } // namespace pb

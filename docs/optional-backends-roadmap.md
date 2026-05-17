@@ -9,7 +9,8 @@ Today the repository supports:
 - a standard-library-only core/runtime surface for the shipped MVP
 - linear compile-time pipeline validation through `pb::from<T>::then<S>::to<U>`
 - sequential runtime execution for validated linear pipelines
-- build-time feature flags that reserve space for future backend experiments
+- a public backend feature matrix that identifies supported versus roadmap/experimental backends
+- build-time feature flags that reserve space for future backend experiments and fail fast if enabled before an adapter exists
 
 Today the repository does **not** support:
 
@@ -19,6 +20,18 @@ Today the repository does **not** support:
 - stable async/parallel execution semantics across multiple executors
 
 Keep release notes and examples aligned with that boundary. Do not present optional backends as partially shipped just because CMake options or roadmap notes already exist.
+
+The current matrix is exposed through `pb::runtime::backend_features()` / `pb::backend_features()`:
+
+| Backend | Status | Default build | External dependency | Execution model |
+| --- | --- | --- | --- | --- |
+| `sequential` | supported | yes | no | deterministic linear sequential runtime |
+| `thread_pool` | roadmap | no | no | future standard-library worker-pool adapter |
+| `taskflow` | roadmap | no | yes | future task-graph adapter |
+| `oneTBB` | roadmap | no | yes | future filter-pipeline adapter |
+| `stdexec` | experimental | no | yes | future sender/receiver adapter |
+
+`PB_BACKEND_TASKFLOW`, `PB_BACKEND_TBB`, and `PB_BACKEND_STDEXEC` intentionally stop configuration with a clear error today rather than silently producing a build without backend support.
 
 ## Why optional backends matter
 
@@ -59,7 +72,7 @@ Those decisions belong to later slices with explicit adapter targets, tests, and
 Before optional backends can move from roadmap to supported behavior, the repo needs:
 
 1. **A defined backend adapter surface**  
-   Stable target names, feature-gate behavior, dependency rules, and error/ownership expectations.
+   Stable target names, feature-gate behavior, dependency rules, and error/ownership expectations. The current feature matrix and fail-fast CMake flags define the status-reporting and feature-gate boundary, but not execution adapters.
 2. **Implementation coverage for each backend**  
    A real adapter path for the chosen backend, not just a CMake option placeholder.
 3. **Targeted tests and examples**  

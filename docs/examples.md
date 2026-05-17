@@ -32,6 +32,19 @@ auto engine = pb::compile<MyPipeline>(pb::runtime::stateful_sequential{});
 
 `pb::runtime::stateful_sequential` stores the pipeline stage objects inside the engine and reuses them for `run()` and `try_run()`. Use it only for stages whose mutable state is part of the intended runtime contract; keep the default `pb::runtime::sequential{}` for stateless or per-run-isolated stages.
 
+The same storage choice is available through the narrow policy namespace when code wants policy names rather than runtime aliases:
+
+```cpp
+auto per_run = pb::compile<MyPipeline>(
+    pb::policy::sequential<pb::policy::storage::construct_per_run>{});
+auto stateful = pb::compile<MyPipeline>(
+    pb::policy::sequential<pb::policy::storage::store_in_engine>{});
+```
+
+This policy seam currently covers sequential stage storage only; broader error, exception, reference-lifetime, and executor-capability policies remain roadmap work.
+
+The supported stateful storage guarantee is intentionally narrow: stage objects must still be default-initializable, but they may own non-copyable state such as `std::unique_ptr` members. With `pb::runtime::sequential{}` those stage objects are reconstructed for each call, while `pb::runtime::stateful_sequential{}` / `pb::policy::storage::store_in_engine` keeps the same stage instances in the compiled engine for both `run()` and `try_run()`.
+
 ## Runtime result and diagnostics quick check
 
 For a stage that can fail and return `pb::runtime::result<T>`:
