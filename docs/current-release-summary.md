@@ -44,15 +44,14 @@ For this docs/checkpoint update, the worker refreshed local developer evidence o
 - `cmake --build --preset clang-dev-ninja` — passed.
 - `ctest --preset clang-dev-ninja --output-on-failure` — passed, `83/83` tests.
 
-The current release/package evidence was also refreshed on this worktree:
+Fresh package-release evidence was also collected on the current worktree:
 
-- `cmake --preset package-release-clang-ninja` — passed.
-- `cmake --build --preset package-release-clang-ninja --parallel` — passed after rerun on a clean package-release tree.
-- `ctest --preset package-release-clang-ninja --output-on-failure` — passed, `107/107` tests after clearing stale package-smoke staging.
-- `ctest --preset package-release-clang-ninja --output-on-failure -R '^pb_package_config_smoke$'` — passed.
-- `cmake --build --preset package-release-clang-ninja --target package` — passed, archive created at `build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz`.
+- `cmake --preset package-release-clang-ninja` — passed on a clean reconfigure.
+- `cmake --build --preset package-release-clang-ninja --target package` — passed.
+- `ctest --preset package-release-clang-ninja --output-on-failure -R pb_package_config_smoke` — passed on rerun after rebuilding the tree.
+- Full `ctest --preset package-release-clang-ninja --output-on-failure` still fails on `pb_compile_fail_branch_builder_empty_cases_unsupported` because the expected diagnostic text is stale relative to `include/pb/core/pipeline_state.hpp`.
 
-Developer-preset and package-release evidence are both current on this worktree, but the final release candidate still needs fresh evidence on the candidate SHA before tagging.
+This is now fresh package-release evidence on the current worktree, but the full package-release CTest lane still has one stale compile-fail expectation to reconcile before release tagging.
 
 ## Verification to attach before release tagging
 
