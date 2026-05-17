@@ -36,13 +36,17 @@ cmake --preset bench-dev-ninja
 cmake --build --preset bench-dev-ninja
 ctest --preset bench-dev-ninja -R '^pb_bench_' --output-on-failure
 
+cmake --preset package-dev-ninja
+cmake --build --preset package-dev-ninja
+ctest --preset package-dev-ninja --output-on-failure
+
 cmake --preset package-release-clang-ninja
 cmake --build --preset package-release-clang-ninja
 ctest --preset package-release-clang-ninja --output-on-failure
 cmake --build --preset package-release-clang-ninja --target package
 ```
 
-In that release package lane, `pb_package_config_smoke` installs the build into a temporary prefix, checks that `find_package(pipebuilder CONFIG REQUIRED)` defines `pb::core`, `pb::runtime`, and `pb::pipeline`, builds and runs separate consumers against each imported target, invokes CPack with TGZ output, and verifies that the archive contains the key public header, package config, targets file, and runtime library entries. Treat a failing `pb_package_config_smoke` result as a packaging verification blocker, not as passing package evidence.
+In the package lanes, `pb_package_config_smoke` installs the build into a temporary prefix, checks that `find_package(pipebuilder CONFIG REQUIRED)` defines `pb::core`, `pb::runtime`, and `pb::pipeline`, builds and runs separate consumers against each imported target, invokes CPack with TGZ output, and verifies that the archive contains the key public header, package config, targets file, and runtime library entries. Use `package-dev-ninja` for a fast local install/export smoke and `package-release-clang-ninja` for the release-readiness gate. Treat a failing `pb_package_config_smoke` result as a packaging verification blocker, not as passing package evidence.
 
 `PB_ENABLE_CLANG_TIME_TRACE=ON` is available through the `clang-time-trace` preset for compile-time profiling. Optional backend flags are present but intentionally off in the base scaffold.
 
