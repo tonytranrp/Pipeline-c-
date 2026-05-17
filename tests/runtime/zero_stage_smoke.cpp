@@ -36,11 +36,22 @@ static_assert(std::same_as<pb::pipeline_output_t<Pipeline>, Input>);
 static_assert(std::same_as<pb::pipeline_stages_t<Pipeline>, pb::meta::type_list<>>);
 static_assert(pb::describe<Pipeline>().stage_names().empty());
 static_assert(pb::describe<Pipeline>().stage_records().empty());
+static_assert(pb::make_descriptor<Pipeline>().empty);
+static_assert(pb::make_descriptor<Pipeline>().stage_records().empty());
+static_assert(pb::make_descriptor<Pipeline>().edge_records().empty());
 
 int main() {
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
   counting_observer observer{};
   engine.set_observer(&observer);
+
+  const auto runtime_descriptor = engine.descriptor();
+  if (!runtime_descriptor.empty || runtime_descriptor.stage_count != 0 || runtime_descriptor.edge_count != 0) {
+    return 1;
+  }
+  if (!runtime_descriptor.stage_records().empty() || !runtime_descriptor.edge_records().empty()) {
+    return 1;
+  }
 
   auto output = engine.run(Input{17});
   if (output.value != 17) {

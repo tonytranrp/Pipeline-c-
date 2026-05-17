@@ -112,13 +112,16 @@ Each theme below records four things:
 
 ### 9. Stable runtime descriptor
 
-- **Current repository evidence:** Compile-time introspection and linear runtime diagnostic stage-identity checks exist today, but a stable runtime-facing descriptor/export contract does not.
-- **Current support level:** **Roadmap-only gap.**
+- **Current repository evidence:** A narrow linear runtime-descriptor helper exists today (`pb::make_descriptor<Pipeline>()` and `engine.descriptor()`), alongside compile-time introspection and runtime diagnostic stage-identity checks, but a stable runtime-facing descriptor/export contract does not.
+- **Current support level:** **Partially shipped linear metadata support; stable export/compatibility contract remains roadmap-only.**
 - **Proof points:**
   - `docs/runtime-descriptor-roadmap.md`
   - `docs/production-readiness.md`
   - `include/pb/core/describe.hpp`
-- **Safe next slice:** keep compile-time metadata documentation separate from any future runtime descriptor claim until a stable public contract is defined and tested.
+  - `include/pb/runtime/descriptor.hpp`
+  - `tests/compile_pass/public_headers/runtime_descriptor.cpp`
+  - `tests/runtime/descriptor_smoke.cpp`
+- **Safe next slice:** keep the current linear helper documented and tested at its real boundary while leaving broader export/versioning guarantees roadmap-only until a stable public contract is defined.
 
 ### 10. Benchmark evidence and performance budgets
 
