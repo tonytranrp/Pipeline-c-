@@ -253,6 +253,17 @@ add_test(NAME pb_compile_fail_branch_join_execution_unsupported
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_branch_join_execution_unsupported PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+
+add_test(NAME pb_compile_fail_branch_builder_empty_cases_unsupported
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_builder_empty_cases_unsupported.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Branch\ node\ requires\ at\ least\ one
+    -DEXPECTED_DIAGNOSTICS=at\ least\ one;unsupported\ boundary
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_branch_builder_empty_cases_unsupported PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 add_test(NAME pb_compile_fail_branch_case_invalid_predicate_misuse
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_case_invalid_predicate_misuse.cpp
