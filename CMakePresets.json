@@ -236,10 +236,34 @@
       }
     },
     {
+      "name": "package-dev-smoke",
+      "configurePreset": "package-dev-ninja",
+      "output": {
+        "outputOnFailure": true
+      },
+      "filter": {
+        "label": {
+          "include": "package"
+        }
+      }
+    },
+    {
       "name": "package-release-clang-ninja",
       "configurePreset": "package-release-clang-ninja",
       "output": {
         "outputOnFailure": true
+      }
+    },
+    {
+      "name": "package-release-clang-smoke",
+      "configurePreset": "package-release-clang-ninja",
+      "output": {
+        "outputOnFailure": true
+      },
+      "filter": {
+        "label": {
+          "include": "package"
+        }
       }
     },
     {

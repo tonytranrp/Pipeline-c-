@@ -42,6 +42,17 @@ static_assert(pb::valid<Pipeline>);
 int main() {
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
 
+  auto run_ok = engine.run(Input{20});
+  assert(run_ok.has_value());
+  assert(run_ok.value().value == 42);
+
+  auto run_failed = engine.run(Input{-1});
+  assert(!run_failed.has_value());
+  assert(run_failed.error().category == pb::runtime::error_category::stage_failure);
+  assert(run_failed.error().stage.key == "checked_double");
+  assert(run_failed.error().stage.name == "checked_double");
+  assert(run_failed.error().message == "zero middle");
+
   auto ok = engine.try_run(Input{20});
   assert(ok.has_value());
   assert(ok.value().value == 42);
@@ -49,6 +60,7 @@ int main() {
   auto failed = engine.try_run(Input{-1});
   assert(!failed.has_value());
   assert(failed.error().category == pb::runtime::error_category::stage_failure);
+  assert(failed.error().stage.key == "checked_double");
   assert(failed.error().stage.name == "checked_double");
   assert(failed.error().message == "zero middle");
 
