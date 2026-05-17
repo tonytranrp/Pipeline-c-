@@ -49,7 +49,7 @@ static_assert(descriptor.stage_records()[0].key == std::string_view{"runtime.par
 static_assert(descriptor.stage_records()[1].name == std::string_view{"finish"});
 static_assert(descriptor.edge_records()[0].from_key == std::string_view{"runtime.parse"});
 static_assert(descriptor.edge_records()[0].to_name == std::string_view{"finish"});
-static_assert(std::same_as<decltype(descriptor), pb::runtime::descriptor_view<2>>);
+static_assert(std::same_as<decltype(descriptor), const pb::runtime::descriptor_view<2>>);
 
 constexpr auto empty_descriptor = pb::make_descriptor<EmptyPipeline>();
 static_assert(decltype(empty_descriptor)::stage_count == 0);
