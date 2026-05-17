@@ -249,7 +249,7 @@ add_test(NAME pb_compile_fail_branch_join_execution_unsupported
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
     -DEXPECT_DIAGNOSTIC=Branch/join\ topology\ is\ not\ implemented\ yet
-    -DEXPECTED_DIAGNOSTICS=pb::branch_node;unsupported\ boundary
+    -DEXPECTED_DIAGNOSTICS=pb::case_;pb::branch_node;unsupported\ boundary
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_branch_join_execution_unsupported PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
