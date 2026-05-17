@@ -42,11 +42,14 @@ static_assert(pb::valid<Pipeline>);
 
 int main() {
   constexpr auto descriptor = pb::make_descriptor<Pipeline>();
+  constexpr auto core_descriptor = pb::descriptor_view<Pipeline>();
   static_assert(decltype(descriptor)::schema_version == std::string_view{"pb.runtime.descriptor.v1"});
   static_assert(decltype(descriptor)::topology == pb::descriptor_topology::linear);
   static_assert(decltype(descriptor)::stage_count == 2);
   static_assert(decltype(descriptor)::edge_count == 1);
   static_assert(!decltype(descriptor)::empty);
+  static_assert(decltype(core_descriptor)::stage_count == decltype(descriptor)::stage_count);
+  static_assert(decltype(core_descriptor)::edge_count == decltype(descriptor)::edge_count);
   static_assert(descriptor.stage_records()[0].index == 0);
   static_assert(descriptor.stage_records()[0].key == std::string_view{"order.parse"});
   static_assert(descriptor.stage_records()[1].name == std::string_view{"finish"});
@@ -54,11 +57,42 @@ int main() {
   static_assert(descriptor.edge_records()[0].to_stage_index == 1);
   static_assert(descriptor.edge_records()[0].from_key == std::string_view{"order.parse"});
   static_assert(descriptor.edge_records()[0].to_key == std::string_view{"order.finish"});
+  static_assert(core_descriptor.stage_records()[0].index == descriptor.stage_records()[0].index);
+  static_assert(core_descriptor.stage_records()[0].key == descriptor.stage_records()[0].key);
+  static_assert(core_descriptor.stage_records()[0].name == descriptor.stage_records()[0].name);
+  static_assert(core_descriptor.stage_records()[1].index == descriptor.stage_records()[1].index);
+  static_assert(core_descriptor.stage_records()[1].key == descriptor.stage_records()[1].key);
+  static_assert(core_descriptor.stage_records()[1].name == descriptor.stage_records()[1].name);
+  static_assert(core_descriptor.edge_records()[0].index == descriptor.edge_records()[0].index);
+  static_assert(core_descriptor.edge_records()[0].from_stage_index == descriptor.edge_records()[0].from_stage_index);
+  static_assert(core_descriptor.edge_records()[0].to_stage_index == descriptor.edge_records()[0].to_stage_index);
+  static_assert(core_descriptor.edge_records()[0].from_key == descriptor.edge_records()[0].from_key);
+  static_assert(core_descriptor.edge_records()[0].from_name == descriptor.edge_records()[0].from_name);
+  static_assert(core_descriptor.edge_records()[0].to_key == descriptor.edge_records()[0].to_key);
+  static_assert(core_descriptor.edge_records()[0].to_name == descriptor.edge_records()[0].to_name);
 
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
   const auto runtime_descriptor = engine.descriptor();
+  assert(runtime_descriptor.schema_version == descriptor.schema_version);
+  assert(runtime_descriptor.topology == descriptor.topology);
+  assert(runtime_descriptor.stage_records().size() == descriptor.stage_records().size());
+  assert(runtime_descriptor.edge_records().size() == descriptor.edge_records().size());
   assert(runtime_descriptor.stage_records().size() == 2);
   assert(runtime_descriptor.edge_records().size() == 1);
+  assert(runtime_descriptor.stage_records()[0].index == descriptor.stage_records()[0].index);
+  assert(runtime_descriptor.stage_records()[0].key == descriptor.stage_records()[0].key);
+  assert(runtime_descriptor.stage_records()[0].name == descriptor.stage_records()[0].name);
+  assert(runtime_descriptor.stage_records()[1].index == descriptor.stage_records()[1].index);
+  assert(runtime_descriptor.stage_records()[1].key == descriptor.stage_records()[1].key);
+  assert(runtime_descriptor.stage_records()[1].name == descriptor.stage_records()[1].name);
+  assert(runtime_descriptor.edge_records()[0].index == descriptor.edge_records()[0].index);
+  assert(runtime_descriptor.edge_records()[0].from_stage_index == descriptor.edge_records()[0].from_stage_index);
+  assert(runtime_descriptor.edge_records()[0].to_stage_index == descriptor.edge_records()[0].to_stage_index);
+  assert(runtime_descriptor.edge_records()[0].from_key == descriptor.edge_records()[0].from_key);
+  assert(runtime_descriptor.edge_records()[0].from_name == descriptor.edge_records()[0].from_name);
+  assert(runtime_descriptor.edge_records()[0].to_key == descriptor.edge_records()[0].to_key);
+  assert(runtime_descriptor.edge_records()[0].to_name == descriptor.edge_records()[0].to_name);
+
   assert(runtime_descriptor.stage_records()[0].name == "parse");
   assert(runtime_descriptor.edge_records()[0].to_name == "finish");
   static_assert(std::same_as<decltype(runtime_descriptor), const pb::runtime::descriptor_view<2>>);
