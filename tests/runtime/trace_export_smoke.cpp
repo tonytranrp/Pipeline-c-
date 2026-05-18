@@ -156,7 +156,7 @@ int main() {
     const auto failure_json = pb::runtime::export_json(recorder);
     assert(contains(failure_json, R"("kind":"stage_failure")"));
     assert(contains(failure_json, R"("category":"stage_failure")"));
-    assert(contains(failure_json, R"("message":"zero \"middle\"\nline")"));
+    assert(contains(failure_json, R"json("message":"zero \"middle\"\nline")json"));
   }
 
   // -----------------------------------------------------------------------
