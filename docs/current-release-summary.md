@@ -19,16 +19,16 @@ Status snapshot for the current long-horizon team batch. Use this page as a comp
   - `3b1a231` / `23f1d60` — integrated runtime `pb::runtime::result<T>::error_or(...)` fallback selection hardening.
   - `ec45eae` / `62820ed` / merge `caa43ee` — locked sequential observer replacement/accessor behavior with runtime smoke coverage.
 - Additional leader-accepted lane evidence after this snapshot:
-  - homogeneous sequential branch execution is now integrated and supported for the current standard-library sequential backend, including public branch/join DSL, validation, runtime routing, observer events, stateful storage, examples, and tests.
-  - branch output compatibility validation and join consumption validation are part of that supported homogeneous branch/join slice; heterogeneous branch outputs and move-only branch inputs remain roadmap-only.
-  - DOT export evidence is scoped to a narrow linear helper; keep JSON, branch/join graph export, and stable graph schema claims out of release text.
+  - sequential branch execution is now integrated and supported for the current standard-library sequential backend, including public branch/join DSL, validation, runtime routing, observer events, stateful storage, examples, and tests.
+  - branch output compatibility validation and join consumption validation are part of the supported branch/join slice; heterogeneous branch outputs have first-slice `std::variant` support and move-only selected-branch input consumption is covered.
+  - DOT/JSON export evidence now covers linear and supported branch pipelines, including branch topology in JSON; keep stable descriptor-backed graph schema, CLI/file export, and backend graph-execution claims out of release text.
 - Current cleanup scope: branch child identity implementation/test coverage plus release summary/checkpoint alignment.
 
 ## PR summary draft
 
 - Runtime diagnostic records and linear descriptor/observer/error identity checks, including custom expected-like failure and exception stage identity, now strengthen the current sequential diagnostic story; release notes should avoid calling this a stable exported diagnostic schema or runtime descriptor contract.
-- Branch/join support now covers source compatibility, predicate shape, homogeneous branch-node case inputs, branch output compatibility validation, join consumption validation, runtime sequential routing, observer case events, stateful branch storage, invalid join-stage markers, and branch-output marker misuse. Release notes must still label heterogeneous branch/join execution, move-only branch inputs, multi-input joins, and graph export as roadmap.
-- Linear DOT export/helper evidence may be mentioned only as linear DOT support on a verified candidate; release notes must label the current JSON export as a narrow descriptor/metadata helper and keep branch/join graph export, stable graph schemas, and broad graph export as roadmap.
+- Branch/join support now covers source compatibility, predicate shape, branch-node case inputs, branch output compatibility validation, join consumption validation, runtime sequential routing, observer case events, stateful branch storage, first-slice heterogeneous outputs through `std::variant`, move-only selected-branch input consumption, invalid join-stage markers, and branch-output marker misuse. Release notes must still label type-list/multi-input joins, backend branch execution, and stable descriptor-backed graph export as roadmap.
+- DOT/JSON export helper evidence may be mentioned for linear and supported branch pipelines on a verified candidate; release notes must keep descriptor-backed schemas, golden compatibility fixtures, CLI/file export, and broad graph export as roadmap.
 - Adapter/member hardening landed in the public adapter surface; release notes should keep this as incremental adapter ergonomics/hardening, not a new backend claim.
 - Core stage-traits public-header coverage now exercises the alias/metadata surface used by diagnostics and docs.
 - Runtime result normalization now has stronger coverage around fallback/error conversion boundaries.

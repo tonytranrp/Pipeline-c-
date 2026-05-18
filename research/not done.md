@@ -1,6 +1,6 @@
 # Current not-done map against `research/pipeline_builder_cpp_research_plan.md`
 
-Updated after the homogeneous sequential branch-execution hardening pass. This file is a local planning/checkpoint artifact, not a release announcement. Prefer the current tree, tests, and docs over older public-repo snapshots when deciding what is supported.
+Updated after the branch/export/thread-pool bug-fix and docs alignment pass. This file is a local planning/checkpoint artifact, not a release announcement. Prefer the current tree, tests, and docs over older public-repo snapshots when deciding what is supported.
 
 ## What is now supported / mostly done
 
@@ -15,13 +15,16 @@ Done / mostly done:
 - Runtime result / expected-like plumbing
 - Runtime observer callbacks for the sequential executor
 - Linear runtime descriptor helper
-- Narrow linear DOT / JSON metadata-export helpers
+- DOT / JSON metadata-export helpers for linear and supported branch pipelines
+- JSON branch topology detection (`"topology":"branch"` for branch pipelines)
 - Compile-pass / compile-fail / runtime / example / package / benchmark smoke scaffolding
 - Homogeneous sequential branch execution with optional join stages
+- First-slice heterogeneous branch outputs through `std::variant`
+- Move-only selected-branch input consumption when predicates observe by `const input_type&`
 - Stateful branch predicate/stage storage under pb::runtime::stateful_sequential
 - Branch observer events for selected/skipped cases
 - Branch child fallback identities for unnamed predicates/stages
-- Targeted compile-fail coverage for the move-only branch-input limitation
+- Standalone `pb::runtime::thread_pool` utility smoke coverage, while thread-pool pipeline backend remains roadmap
 ```
 
 ## Current branch/join support boundary
@@ -45,25 +48,26 @@ Supported today:
 - public ::branch<...> DSL
 - public ::join<JoinStage> after branch
 - homogeneous branch outputs
+- heterogeneous branch outputs represented as `std::variant<...>`
 - compile-time branch source/predicate/output validation
 - compile-time join validation
 - first-match-wins sequential branch routing
 - selected branch-stage execution
+- move-only input transfer into the selected branch stage after predicate evaluation
 - branch result/error propagation
 - observer on_case_selected / on_case_skipped events
 - stateful branch predicates and stages with stateful_sequential
 - unnamed branch-child fallback identities such as branch.case.0.predicate
-- branch runtime tests and branch examples
+- branch runtime tests, branch export tests, and branch examples
 ```
 
 Still unsupported:
 
 ```text
-- heterogeneous branch outputs joined through type_list / variant inputs
-- move-only branch input execution
-- multi-input join execution
-- branch/join graph export
-- JSON graph export for branch/join graphs
+- type_list / true multi-input join execution
+- consuming predicates for move-only branch inputs
+- descriptor-backed stable graph export schemas and golden outputs
+- CLI/file graph export for user pipeline definitions
 - parallel/backend branch execution
 ```
 
@@ -71,51 +75,51 @@ Still unsupported:
 
 ### 1. Heterogeneous branch / join execution
 
-Status: **missing**
+Status: **partial / first implementation**
 
-The current branch runtime supports homogeneous branch outputs. The research plan still needs heterogeneous branch outputs and richer join contracts.
+The current branch runtime supports homogeneous outputs and a first heterogeneous-output slice by representing differing branch outputs as `std::variant<...>`. Join stages can consume that variant. The research plan still needs true `type_list` / multi-input join semantics and richer diagnostics.
 
-Need to implement:
+Still needed:
 
 ```text
-- branch outputs represented as a type_list or variant-like join input
-- join stages that can consume heterogeneous branch outputs safely
+- type_list / true multi-input join lowering
 - diagnostics for unsupported / ambiguous heterogeneous joins
-- runtime tests for each heterogeneous route
-- examples explaining homogeneous versus heterogeneous branch support
+- more golden/edge runtime tests for each heterogeneous route
+- examples explaining homogeneous, variant-based heterogeneous, and future type-list join support
 ```
 
 ### 2. Move-only branch input execution
 
-Status: **explicitly unsupported**
+Status: **partial / first implementation**
 
-`selected_branch_node` currently requires a copy-constructible `input_type` so predicates and the selected branch stage can inspect the same value. This limitation is documented and covered by `tests/compile_fail/branch_move_only_input_unsupported.cpp`.
+`selected_branch_node` now supports move-only inputs when predicates are callable with `const input_type&`; runtime routing evaluates predicates through an lvalue reference and moves the input into the selected branch stage. Coverage includes `std::unique_ptr` ownership transfer into a branch stage that takes the input by value.
 
-Need to design before implementing:
+Still needed:
 
 ```text
-- borrowing/reference policy for predicates
-- selected-case ownership transfer policy
-- diagnostics for unsafe reuse
-- tests for move-only inputs and non-copyable resources
+- diagnostics for predicates that try to consume the move-only input before routing
+- broader borrowing/reference policy docs
+- unsafe-reuse diagnostics where applicable
+- more tests for non-copyable resources and observer/error edge cases
 ```
 
 ### 3. Full graph export
 
-Status: **missing**
+Status: **partial helper surface**
 
-The repo has narrow linear export helpers, but not full graph export.
+The repo has DOT/JSON helpers for linear and supported branch pipelines, and JSON now reports branch topology for branch pipelines. This is not yet a descriptor-backed stable graph export contract.
 
-Need to implement:
+Still needed:
 
 ```text
-- branch/join graph export
+- descriptor-backed DOT/JSON export
 - stable DOT schema
 - stable JSON schema
-- graph export tests
+- golden graph export tests
 - graph export examples
-- docs for graph export boundaries
+- docs for schema/version boundaries
 - export behavior for unsupported / future graph shapes
+- CLI/file export for user pipeline definitions
 ```
 
 ### 4. Stable runtime descriptor / export contract
@@ -131,7 +135,7 @@ Need to implement:
 - stable ownership rules
 - stable lifetime rules
 - stable compatibility rules
-- branch/join descriptor records
+- branch/join descriptor records aligned with exporter output
 - descriptor-backed DOT/JSON export
 - descriptor examples
 - descriptor-specific tests
@@ -146,11 +150,11 @@ The only supported backend remains the standard-library sequential runtime.
 Need to implement:
 
 ```text
-- thread-pool executor
+- thread-pool executor (the current `thread_pool` is a utility, not a pipeline backend)
 - oneTBB backend
 - Taskflow backend
 - stdexec / sender-receiver backend
-- backend feature matrix
+- backend feature matrix semantics beyond the current status table
 - backend isolation from core headers
 - backend tests
 - backend examples
@@ -367,13 +371,13 @@ Still needed before publishing:
 2. Add standard std::expected matrix evidence or clear fallback wording.
 3. Record compile-time baselines for 5-stage and 50-stage chains.
 4. Define the broader stateful stage storage/lifetime policy.
-5. Design heterogeneous branch-output / join semantics.
-6. Design move-only branch input execution policy.
+5. Finish type-list / multi-input join semantics after the current variant-based heterogeneous slice.
+6. Expand move-only branch input policy beyond const-ref predicates plus selected-stage consumption.
 7. Define stable runtime descriptor schema.
-8. Expand linear DOT helper into tested graph export boundary.
-9. Add JSON graph export.
-10. Create backend feature matrix.
-11. Prototype thread-pool backend before oneTBB/Taskflow/stdexec.
+8. Make DOT/JSON export descriptor-backed and add golden schema tests.
+9. Add CLI/file graph export only after schema tests exist.
+10. Keep backend feature matrix aligned with real executor support.
+11. Prototype thread-pool pipeline backend before oneTBB/Taskflow/stdexec.
 12. Harden observer ABI/event ordering/lifecycle docs.
 13. Add release compiler matrix evidence.
 14. Decide final candidate SHA and update release notes.
@@ -386,9 +390,11 @@ Still needed before publishing:
 Linear MVP foundation:              8.5 / 10
 Runtime/error MVP:                  7.2 / 10
 Diagnostics/validation:             7.6 / 10
-Homogeneous branch/join execution:  8.2 / 10
+Homogeneous branch/join execution:  8.5 / 10
+Heterogeneous branch/join execution: 7.0 / 10
+Move-only branch input support:     6.5 / 10
 Stateful branch storage:            8.0 / 10
-Graph export:                       3.0 / 10
+Graph export:                       5.0 / 10
 Stable descriptor/export contract:  3.2 / 10
 Backends beyond sequential:         0.5 / 10
 Release readiness:                  6.5 / 10
@@ -397,17 +403,17 @@ Full research-plan completion:      5.0 / 10
 
 ## Main conclusion
 
-The repo is no longer just a basic linear MVP. It now has a real homogeneous sequential branch/join execution slice with validation, runtime routing, stateful storage, observer events, examples, and tests.
+The repo is no longer just a basic linear MVP. It now has a real sequential branch/join execution slice with validation, runtime routing, stateful storage, observer events, first-slice heterogeneous outputs through `std::variant`, move-only selected-branch input consumption, examples, and tests.
 
 The biggest unfinished research-plan items are now:
 
 ```text
-- heterogeneous branch/join execution
-- move-only branch input execution
-- full graph export
-- JSON graph export
+- type-list / multi-input join execution
+- broader move-only branch input policies and diagnostics
+- descriptor-backed stable graph export
+- CLI/file graph export
 - stable runtime descriptor/export contract
-- optional backends
+- optional pipeline backends
 - full policy DSL
 - broader stateful storage/lifetime policy
 - compile-time performance budgets

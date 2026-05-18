@@ -158,7 +158,7 @@ void print_descriptor(std::string_view title, const Descriptor& desc) {
     std::cout << '\n';
   }
 
-  if constexpr (desc.case_count > 0) {
+  if constexpr (Descriptor::case_count > 0) {
     std::cout << "\n  Branch cases:\n";
     for (const auto& bc : desc.branch_case_records()) {
       std::cout << "    [" << bc.case_index << "] predicate: " << bc.predicate_key

@@ -24,6 +24,17 @@ struct Routed {
   int value{};
 };
 
+struct OwningMoveOnly {
+  OwningMoveOnly(int sel, std::unique_ptr<int> owned) : selector(sel), value(std::move(owned)) {}
+  OwningMoveOnly(OwningMoveOnly&&) = default;
+  OwningMoveOnly& operator=(OwningMoveOnly&&) = default;
+  OwningMoveOnly(const OwningMoveOnly&) = delete;
+  OwningMoveOnly& operator=(const OwningMoveOnly&) = delete;
+
+  int selector{};
+  std::unique_ptr<int> value;
+};
+
 // Predicates: inspect by const& (required for move-only inputs).
 struct IsEven {
   using input_type = MoveOnly;
@@ -44,6 +55,24 @@ struct IsDefault {
   using output_type = bool;
 
   bool operator()(const MoveOnly& input) const { return input.selector == 2; }
+};
+
+struct TakesOwningRoute {
+  using input_type = OwningMoveOnly;
+  using output_type = bool;
+
+  bool operator()(const OwningMoveOnly& input) const {
+    return input.selector == 7 && input.value != nullptr;
+  }
+};
+
+struct IgnoresOwningRoute {
+  using input_type = OwningMoveOnly;
+  using output_type = bool;
+
+  bool operator()(const OwningMoveOnly& input) const {
+    return input.selector == 8 && input.value != nullptr;
+  }
 };
 
 // Branch stages: accept by const& (for the common case).
@@ -94,11 +123,46 @@ struct AddOneStage {
   }
 };
 
+struct ConsumeByValueStage {
+  using input_type = OwningMoveOnly;
+  using output_type = Routed;
+
+  auto operator()(OwningMoveOnly input) const -> Routed {
+    assert(input.value != nullptr);
+    ++call_count();
+    return Routed{*input.value + input.selector};
+  }
+
+  static int& call_count() {
+    static int count = 0;
+    return count;
+  }
+};
+
+struct UnselectedOwningStage {
+  using input_type = OwningMoveOnly;
+  using output_type = Routed;
+
+  auto operator()(OwningMoveOnly input) const -> Routed {
+    assert(input.value != nullptr);
+    ++call_count();
+    return Routed{*input.value};
+  }
+
+  static int& call_count() {
+    static int count = 0;
+    return count;
+  }
+};
+
 using CaseEven = pb::case_<IsEven>::then<DoubleStage>;
 using CaseOdd = pb::case_<IsOdd>::then<TripleStage>;
 using CaseDefault = pb::case_<IsDefault>::then<AddOneStage>;
 
 using BranchPipeline = pb::from<MoveOnly>::branch<CaseEven, CaseOdd, CaseDefault>::to<Routed>;
+using OwningCase = pb::case_<TakesOwningRoute>::then<ConsumeByValueStage>;
+using UnselectedOwningCase = pb::case_<IgnoresOwningRoute>::then<UnselectedOwningStage>;
+using OwningBranchPipeline = pb::from<OwningMoveOnly>::branch<OwningCase, UnselectedOwningCase>::to<Routed>;
 
 struct CountingObserver : pb::runtime::observer {
   void on_case_selected(const pb::runtime::stage_id&, std::size_t case_index,
@@ -198,10 +262,24 @@ void move_only_branch_try_run_smoke() {
   assert(!fail_result.has_value());
 }
 
+void move_only_branch_stage_consumes_by_value_smoke() {
+  auto engine = pb::compile<domain::OwningBranchPipeline>(pb::runtime::sequential{});
+
+  domain::ConsumeByValueStage::call_count() = 0;
+  domain::UnselectedOwningStage::call_count() = 0;
+
+  auto result = engine.run(domain::OwningMoveOnly{7, std::make_unique<int>(35)});
+  assert(result.has_value());
+  assert(result.value().value == 42);
+  assert(domain::ConsumeByValueStage::call_count() == 1);
+  assert(domain::UnselectedOwningStage::call_count() == 0);
+}
+
 int main() {
   move_only_branch_selection_smoke();
   move_only_branch_observer_smoke();
   move_only_branch_stateful_smoke();
   move_only_branch_try_run_smoke();
+  move_only_branch_stage_consumes_by_value_smoke();
   return 0;
 }

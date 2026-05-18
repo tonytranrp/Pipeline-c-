@@ -8,7 +8,8 @@ Today the repository supports:
 
 - a standard-library-only core/runtime surface for the shipped MVP
 - linear compile-time pipeline validation through `pb::from<T>::then<S>::to<U>`
-- sequential runtime execution for validated linear pipelines
+- sequential runtime execution for validated linear and supported branch pipelines
+- a standard-library `pb::runtime::thread_pool` utility with smoke coverage, while `thread_pool` remains a roadmap backend
 - a public backend feature matrix that identifies supported versus roadmap/experimental backends
 - build-time feature flags that reserve space for future backend experiments and fail fast if enabled before an adapter exists
 
@@ -92,7 +93,7 @@ The current verification evidence covers the existing sequential pipeline core, 
 - package-consumer smoke coverage
 - benchmark smoke scaffolding
 
-There is currently no optional-backend-specific implementation or verification target under `tests/`, `examples/`, or `bench/`.
+There is currently no optional-backend executor implementation or verification target under `examples/` or `bench/`. The `pb_runtime_thread_pool_smoke` test covers the standalone `pb::runtime::thread_pool` utility (including zero-worker fallback and task exception propagation), but it does not compile or run a pipeline through a thread-pool executor.
 
 ## Release guidance
 

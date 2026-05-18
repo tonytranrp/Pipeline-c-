@@ -16,6 +16,9 @@ namespace pb::runtime {
 class thread_pool {
 public:
   explicit thread_pool(std::size_t num_threads = std::thread::hardware_concurrency()) {
+    if (num_threads == 0) {
+      num_threads = 1;
+    }
     workers_.reserve(num_threads);
     for (std::size_t i = 0; i < num_threads; ++i) {
       workers_.emplace_back([this] {

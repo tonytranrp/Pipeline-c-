@@ -1,6 +1,8 @@
 # Graph Export Roadmap / Status
 
-Full graph export is **not** a supported feature in the current tree. Treat this page as a roadmap/status note for planned DOT/JSON export work and the narrow linear-DOT coordination boundary, not as broad user-facing graph-export documentation.
+Graph export is now a **partial helper surface**, not a stable graph interchange contract. The current tree has linear DOT support, branch-aware DOT output, and JSON output that distinguishes `"topology":"linear"` from `"topology":"branch"` when branch stages are present.
+
+Keep release notes scoped to that helper boundary: the repository still does not provide descriptor-backed stable export schemas, golden compatibility fixtures, CLI export of user pipeline files, or backend/parallel graph export.
 
 ## Current status
 
@@ -8,80 +10,78 @@ Today the repository supports:
 
 - linear compile-time pipeline validation through `pb::from<T>::then<S>::to<U>`
 - compile-time pipeline metadata/introspection via `describe()` and stage records
-- sequential runtime execution for validated linear pipelines
-- leader-accepted evidence for a narrow **linear DOT** export/helper slice, pending final candidate integration checks before release wording promotes it
+- sequential runtime execution for validated linear and supported branch pipelines
+- DOT export helpers for linear pipelines and branch/case structure
+- JSON export helpers for linear pipelines and branch pipelines, including branch topology detection and branch case metadata
 
 Today the repository does **not** support:
 
-- JSON export APIs
-- full graph-export runtime helpers or file emitters
-- graph-export examples, tests, or benchmark coverage
-- branch/join graph lowering required for richer non-linear export surfaces
+- a stable descriptor-backed DOT/JSON compatibility contract
+- golden schema fixtures or field-ordering guarantees for long-term consumers
+- graph-export file emitters or parsing of user pipeline definitions through the CLI
+- multi-input join graph lowering
+- parallel/backend graph execution export semantics
 
-Keep examples and release notes aligned with that boundary. A linear DOT helper is narrower than full graph export: it does not provide branch/join graph shapes, JSON output, stable schema guarantees, or file-emitter coverage by itself. Branch marker aliases and descriptor alias symmetry do not provide those graph-export guarantees either.
+## Supported helper boundary
 
-## Linear DOT boundary
+The current export helpers may be used as local visualization and smoke-test aids. They are intentionally narrower than a release-grade graph schema:
 
-The accepted DOT slice is a linear-pipeline visualization/export aid only. Release notes may mention it only when the final candidate includes the implementation and targeted DOT evidence, and they must keep the wording scoped to:
+- branch pipelines now report branch topology in JSON instead of being mislabeled as linear
+- DOT can show branch/case structure for the supported branch slice
+- JSON/DOT and descriptor generation are still separate paths, so docs must not claim descriptor-backed export yet
+- exported strings are covered by targeted compile-pass checks, not by a versioned schema contract
 
-- linear pipeline structure, not branch/join graph topology
-- DOT output only, not JSON export or a versioned graph schema
-- helper/API behavior covered by targeted tests, not a general file-emitter framework
-- current descriptor metadata, not a stable runtime descriptor/export contract
+## Why full graph export remains roadmap work
 
-## Why this remains roadmap-only
-
-The research plan treats graph export as planned follow-on work rather than current behavior:
+The research plan treats graph export as a staged follow-on:
 
 - `F010` / `F011` mark DOT and JSON graph export as `v0.2` features.
 - Tasks `111`-`120` describe the future graph-export implementation/test/diagnostic slice.
 - Tasks `411`-`420` describe future documentation/example work that depends on graph export existing first.
 
-The current code and verification surfaces still focus on the MVP linear pipeline:
+The current implementation is useful progress, but it is still not the final architecture. The next stabilizing direction is:
 
-- public composition remains `then` / `to`
-- runtime coverage targets sequential execution only
-- examples cover the basic order pipeline and one compile-fail diagnostic path
-- DOT evidence is treated as a narrow linear helper until final release-candidate verification is attached
+```text
+Pipeline type -> descriptor v1 -> DOT/JSON exporters
+```
+
+That keeps DOT, JSON, and descriptor output from drifting as graph features grow.
 
 ## Planned implementation checkpoints
 
-When graph export work starts, keep it staged and separately verifiable:
+When stabilizing graph export, keep it staged and separately verifiable:
 
-1. **Define the export API surface**  
-   Add stable public names, formats, and invariants without implying branch/join support that does not exist yet.
-2. **Lower current metadata into an exportable descriptor**  
-   Reuse validated pipeline descriptors and stage records instead of inventing a second source of truth.
-3. **Add positive and negative verification**  
-   Cover DOT/JSON export success paths plus boundary failures such as unsupported metadata or unavailable formats.
-4. **Document examples only after tests exist**  
-   Keep user-facing examples aspirational until compile-pass/runtime coverage lands.
+1. **Make descriptor the source of truth**
+   Lower pipeline types into descriptor v1, then render DOT/JSON from that descriptor.
+2. **Document schema and compatibility**
+   Add field-ordering expectations, branch edge labels, type-name fields, and a schema changelog.
+3. **Add golden verification**
+   Cover linear, homogeneous branch, heterogeneous branch, and unsupported-boundary examples with golden DOT/JSON/descriptor tests.
+4. **Expose file/CLI behavior only after tests exist**
+   Keep CLI/export examples scoped until user-pipeline parsing and export are implemented.
 
 ## Verification status today
 
-The current verification evidence proves the existing pipeline core and, where integrated, only the narrow linear-DOT helper:
+Current targeted evidence includes:
 
-- compile-pass coverage
-- compile-fail diagnostic coverage
-- runtime smoke coverage
-- package-consumer smoke coverage
-- benchmark smoke scaffolding
+- `pb_export_dot_compile_pass`
+- `pb_export_dot_branch_compile_pass`
+- `pb_export_json_compile_pass`
+- `pb_export_json_branch_compile_pass`
+- public-header coverage for export headers
 
-There is still no evidence for JSON export, branch/join graph export, stable graph schemas, graph-export examples, or benchmark coverage.
+There is still no stable descriptor-backed schema, golden-output compatibility suite, CLI file-export path, or backend graph-export evidence.
 
 ## Release guidance
 
-Until full implementation and tests land, release notes and docs should describe broad graph export as:
+Release notes and docs may describe the current slice as:
 
-> roadmap work only; unimplemented and unverified in the current tree
+> DOT/JSON helper export for linear and supported branch pipelines, including branch topology in JSON; not a stable descriptor-backed graph schema and not a CLI/file export contract.
 
-If the final candidate includes the linear DOT slice, describe it separately as:
-
-> linear DOT helper/export only; not JSON export, not branch/join graph export, and not a stable graph schema
-
-If a future slice adds graph export, update this page together with:
+If a future slice stabilizes graph export, update this page together with:
 
 - `docs/production-readiness.md`
 - `docs/examples.md`
+- `docs/runtime-descriptor-roadmap.md`
 - the relevant tests/examples/bench entries
 - release verification notes in `docs/build.md` when new checks are introduced

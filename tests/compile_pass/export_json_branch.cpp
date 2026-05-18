@@ -55,6 +55,7 @@ int main() {
 
   // Basic JSON structure
   assert(graph.find("\"schema_version\":\"pb.core.graph.v1\"") != std::string_view::npos);
+  assert(graph.find("\"topology\":\"branch\"") != std::string_view::npos);
   assert(graph.find("\"stage_count\":2") != std::string_view::npos);
   assert(graph.find("\"edge_count\":1") != std::string_view::npos);
 

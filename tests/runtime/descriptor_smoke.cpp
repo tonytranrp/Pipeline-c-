@@ -280,10 +280,12 @@ int main() {
 
   // Runtime execution
   auto br_result = branch_engine.run(Document{1});
-  assert(br_result.value == 10);  // Invoice: id=1 → 1*10 = 10
+  assert(br_result.has_value());
+  assert(br_result.value() == 10);  // Invoice: id=1 → 1*10 = 10
 
   auto br_result2 = branch_engine.run(Document{2});
-  assert(br_result2.value == 40); // Report: id=2 → 2*20 = 40
+  assert(br_result2.has_value());
+  assert(br_result2.value() == 40); // Report: id=2 → 2*20 = 40
 
   // =========================================================================
   // Section 3 — type_name utility tests

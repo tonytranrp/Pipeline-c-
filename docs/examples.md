@@ -102,4 +102,4 @@ When adapting these examples for an application:
 - Prefer adapters for existing free functions and function objects; write explicit stage types when the stage owns pipeline-specific metadata.
 - Keep `static_assert(pb::valid<YourPipeline>)` next to the pipeline alias so type mismatches fail before runtime code is involved.
 - Start with `pb::runtime::sequential` before introducing future executor or backend assumptions.
-- Treat branch/join graphs, graph export, and optional backends as roadmap items until `docs/production-readiness.md` lists them as supported.
+- Treat only the branch/join and export slices listed in `docs/production-readiness.md` as supported; type-list joins, stable descriptor-backed graph export, CLI/file export, and optional backends remain roadmap items.

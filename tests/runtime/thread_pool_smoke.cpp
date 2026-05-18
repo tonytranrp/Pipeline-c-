@@ -4,6 +4,8 @@
 #include <cassert>
 #include <future>
 #include <memory>
+#include <stdexcept>
+#include <string_view>
 #include <vector>
 
 int main() {
@@ -53,6 +55,26 @@ int main() {
   {
     pb::runtime::thread_pool pool;
     assert(pool.worker_count() > 0);
+  }
+
+  // Test 7: Explicit zero worker count falls back to one worker
+  {
+    pb::runtime::thread_pool pool{0};
+    assert(pool.worker_count() == 1);
+    auto future = pool.enqueue([] { return 5; });
+    assert(future.get() == 5);
+  }
+
+  // Test 8: Task exceptions propagate through futures
+  {
+    pb::runtime::thread_pool pool{1};
+    auto future = pool.enqueue([]() -> int { throw std::runtime_error{"boom"}; });
+    try {
+      (void)future.get();
+      assert(false);
+    } catch (const std::runtime_error& exception) {
+      assert(std::string_view{exception.what()} == "boom");
+    }
   }
 
   return 0;

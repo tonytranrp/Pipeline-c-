@@ -28,8 +28,8 @@ int main() {
   const auto dot = pb::to_dot<Pipeline>("order_pipeline");
 
   assert(dot.find("digraph order_pipeline") != std::string_view::npos);
-  assert(dot.find("  0 [label=\"parse\\n(order.parse)\"]") != std::string_view::npos);
-  assert(dot.find("  1 [label=\"finish\"]") != std::string_view::npos);
-  assert(dot.find("  0 -> 1 [label=\"order.parse -> finish\"]") != std::string_view::npos);
+  assert(dot.find("  stage_0 [label=\"parse\\n(order.parse)\"]") != std::string_view::npos);
+  assert(dot.find("  stage_1 [label=\"finish\"]") != std::string_view::npos);
+  assert(dot.find("  stage_0 -> stage_1 [label=\"order.parse -> finish\"]") != std::string_view::npos);
   return 0;
 }

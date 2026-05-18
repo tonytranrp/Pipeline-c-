@@ -4,12 +4,25 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <type_traits>
 
 #include "pb/core/describe.hpp"
+#include "pb/core/pipeline_state.hpp"
 
 namespace pb::core {
 
 namespace detail {
+
+template <class StageList>
+struct json_has_branch_stage_impl;
+
+template <class... Stages>
+struct json_has_branch_stage_impl<meta::type_list<Stages...>>
+    : std::bool_constant<(is_selected_branch_node<Stages>::value || ...)> {};
+
+template <class Pipeline>
+inline constexpr bool json_pipeline_has_branch_v =
+    json_has_branch_stage_impl<typename pipeline_traits<Pipeline>::stages>::value;
 
 inline void append_json_string(std::ostringstream& stream, std::string_view value) {
   stream << '"';
@@ -109,9 +122,13 @@ inline void append_graph_edge_json(std::ostringstream& stream, const edge_record
 template <ValidPipeline Pipeline>
 [[nodiscard]] auto to_json() -> std::string {
   constexpr auto descriptor = describe<Pipeline>();
+  constexpr auto topology = detail::json_pipeline_has_branch_v<Pipeline> ? std::string_view{"branch"}
+                                                                         : std::string_view{"linear"};
 
   std::ostringstream stream;
-  stream << "{\"schema_version\":\"pb.core.graph.v1\",\"topology\":\"linear\",\"stage_count\":"
+  stream << "{\"schema_version\":\"pb.core.graph.v1\",\"topology\":";
+  detail::append_json_string(stream, topology);
+  stream << ",\"stage_count\":"
          << descriptor.stage_count << ",\"edge_count\":" << descriptor.edge_count << ",\"stages\":[";
   detail::append_graph_stages_json<Pipeline>(stream, std::make_index_sequence<descriptor.stage_count>{});
   stream << "],\"edges\":[";
