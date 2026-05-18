@@ -247,6 +247,13 @@ pb_apply_project_options(pb_export_json_compile_pass PRIVATE)
 add_test(NAME pb_export_json_compile_pass COMMAND pb_export_json_compile_pass)
 set_tests_properties(pb_export_json_compile_pass PROPERTIES LABELS "compile-pass;export;json;branch")
 
+add_executable(pb_branch_join_validation_compile_pass compile_pass/branch_join_validation_compile_pass.cpp)
+target_link_libraries(pb_branch_join_validation_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_branch_join_validation_compile_pass PRIVATE)
+pb_enable_pch_if_requested(pb_branch_join_validation_compile_pass)
+add_test(NAME pb_branch_join_validation_compile_pass COMMAND pb_branch_join_validation_compile_pass)
+set_tests_properties(pb_branch_join_validation_compile_pass PROPERTIES LABELS "compile-pass;metadata;topology")
+
 add_test(NAME pb_compile_fail_edge_mismatch
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/edge_mismatch.cpp
@@ -296,6 +303,13 @@ target_link_libraries(pb_runtime_sequential_branch_execution_smoke PRIVATE pb::p
 pb_apply_project_options(pb_runtime_sequential_branch_execution_smoke PRIVATE)
 add_test(NAME pb_runtime_sequential_branch_execution_smoke COMMAND pb_runtime_sequential_branch_execution_smoke)
 set_tests_properties(pb_runtime_sequential_branch_execution_smoke PROPERTIES LABELS "runtime;observer;branch")
+
+add_executable(pb_runtime_sequential_branch_comprehensive runtime/sequential_branch_comprehensive.cpp)
+target_link_libraries(pb_runtime_sequential_branch_comprehensive PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_sequential_branch_comprehensive PRIVATE)
+pb_enable_pch_if_requested(pb_runtime_sequential_branch_comprehensive)
+add_test(NAME pb_runtime_sequential_branch_comprehensive COMMAND pb_runtime_sequential_branch_comprehensive)
+set_tests_properties(pb_runtime_sequential_branch_comprehensive PROPERTIES LABELS "runtime;branch;observer;result;comprehensive")
 
 add_test(NAME pb_compile_fail_branch_builder_source_mismatch
   COMMAND ${CMAKE_COMMAND}
@@ -461,6 +475,28 @@ add_test(NAME pb_compile_fail_join_builder_source_mismatch
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_join_builder_source_mismatch PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+
+add_test(NAME pb_compile_fail_join_without_branch_diagnostic
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/join_without_branch_diagnostic.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Join requires a preceding branch
+    -DEXPECTED_DIAGNOSTICS=pipeline_state;branch
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_join_without_branch_diagnostic PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+
+add_test(NAME pb_compile_fail_branch_join_type_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_join_type_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Pipeline edge mismatch
+    -DEXPECTED_DIAGNOSTICS=pb::connectable_v
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_branch_join_type_mismatch PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 
 add_test(NAME pb_compile_fail_join_output_invalid_node_misuse
   COMMAND ${CMAKE_COMMAND}

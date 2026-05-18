@@ -291,34 +291,44 @@ template <class BranchNode, std::size_t StageIndex, class Input>
             .message = "no branch predicate selected a case"}};
 }
 
-template <class BranchNode, std::size_t StageIndex, class Input, class Case, class... Rest>
+template <class BranchNode, std::size_t StageIndex, class Input, std::size_t CaseIndex, class Case, class... Rest>
 [[nodiscard]] auto run_selected_branch_cases(observer* sink, const Input& input) -> result<typename BranchNode::output_type> {
   using Predicate = typename Case::predicate_type;
   using BranchStage = typename Case::stage_type;
+
+  auto predicate_id = stage_id_for<Predicate>(StageIndex);
+  auto branch_id = stage_id_for<BranchNode>(StageIndex);
 
   auto predicate_result = evaluate_branch_predicate<Predicate, StageIndex>(sink, input);
   if (!predicate_result.has_value()) {
     return result<typename BranchNode::output_type>{std::move(predicate_result).error()};
   }
   if (predicate_result.value()) {
+    if (sink) sink->on_case_selected(branch_id, CaseIndex, predicate_id);
     return run_branch_stage<BranchStage, StageIndex, typename BranchNode::output_type>(sink, input);
   }
+  if (sink) sink->on_case_skipped(branch_id, CaseIndex, predicate_id);
   if constexpr (sizeof...(Rest) == 0) {
     return unselected_branch_error<BranchNode, StageIndex, Input>();
   } else {
-    return run_selected_branch_cases<BranchNode, StageIndex, Input, Rest...>(sink, input);
+    return run_selected_branch_cases<BranchNode, StageIndex, Input, CaseIndex + 1, Rest...>(sink, input);
   }
 }
 
 template <class BranchNode, std::size_t StageIndex, class Input, class... Cases>
 [[nodiscard]] auto run_selected_branch(observer* sink, const Input& input, pb::meta::type_list<Cases...>)
     -> result<typename BranchNode::output_type> {
-  return run_selected_branch_cases<BranchNode, StageIndex, Input, Cases...>(sink, input);
+  return run_selected_branch_cases<BranchNode, StageIndex, Input, 0, Cases...>(sink, input);
 }
 
 template <class BranchNode, std::size_t StageIndex, class Input>
 [[nodiscard]] auto run_selected_branch(observer* sink, Input&& input) -> result<typename BranchNode::output_type> {
-  return run_selected_branch<BranchNode, StageIndex>(sink, input, typename BranchNode::cases{});
+  auto result = run_selected_branch<BranchNode, StageIndex>(sink, input, typename BranchNode::cases{});
+  if (!result.has_value() && has_message(result.error())) {
+    auto& err = result.error();
+    err.message = std::string{"["} + std::string{BranchNode::stage_name()} + "] " + err.message;
+  }
+  return result;
 }
 
 template <std::size_t StageIndex, class FinalOutput, class StageStorage, class Input, class Stage, class... Rest>

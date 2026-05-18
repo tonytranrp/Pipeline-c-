@@ -196,6 +196,16 @@ struct is_selected_branch_node : std::false_type {};
 
 template <class... Cases>
 struct is_selected_branch_node<selected_branch_node<Cases...>> : std::true_type {};
+
+template <class... Stages>
+struct last_stage_or_void {
+  using type = void;
+};
+
+template <class First, class... Rest>
+struct last_stage_or_void<First, Rest...> {
+  using type = meta::back_t<meta::type_list<First, Rest...>>;
+};
 } // namespace detail
 
 template <class Predicate, class BranchStage>
@@ -316,6 +326,28 @@ struct append_stage<pipeline_state<Input, Current, Stages...>, StageType> {
   using type = pipeline_state<Input, stage_output_t<StageType>, Stages..., StageType>;
 };
 
+template <class State, class JoinStage>
+struct append_join;
+
+template <class Input, class Current, class... Stages, class JoinStage>
+struct append_join<pipeline_state<Input, Current, Stages...>, JoinStage> {
+  using last_stage = typename detail::last_stage_or_void<Stages...>::type;
+
+  static_assert(!std::is_same_v<last_stage, void>,
+                "Join requires a preceding branch: use pb::from<...>::branch<...>::join<Stage>");
+
+  static_assert(detail::is_selected_branch_node<last_stage>::value,
+                "Join must follow a branch node: pipeline_state::join is only valid after ::branch<...>");
+
+  static_assert(Stage<JoinStage>, "Join stage is invalid: define input_type and output_type");
+
+  static_assert(Connectable<Current, JoinStage>,
+                "Pipeline edge mismatch: previous output_type must match join stage input_type; inspect "
+                "pb::connectable_v<PreviousOutput, JoinStage>");
+
+  using type = pipeline_state<Input, stage_output_t<JoinStage>, Stages..., JoinStage>;
+};
+
 template <class State, class Output>
 struct finalize_pipeline;
 
@@ -359,7 +391,7 @@ struct pipeline_state {
   using then = typename detail::append_stage<pipeline_state, StageType>::type;
 
   template <class StageType>
-  using join = typename detail::append_stage<pipeline_state, StageType>::type;
+  using join = typename detail::append_join<pipeline_state, StageType>::type;
 
   template <class Output>
   using to = typename detail::finalize_pipeline<pipeline_state, Output>::type;

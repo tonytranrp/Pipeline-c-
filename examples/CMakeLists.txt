@@ -22,3 +22,21 @@ add_test(NAME pb_example_error_diagnostic_compile_fail
     -P ${PROJECT_SOURCE_DIR}/tests/run_compile_fail.cmake
 )
 set_tests_properties(pb_example_error_diagnostic_compile_fail PROPERTIES LABELS "examples;compile-fail")
+
+# ---------------------------------------------------------------------------
+# Branch / join examples
+# ---------------------------------------------------------------------------
+
+add_executable(pb_branch_routing_demo branch_routing_demo.cpp)
+target_link_libraries(pb_branch_routing_demo PRIVATE pb::pipeline)
+pb_apply_project_options(pb_branch_routing_demo PRIVATE)
+pb_enable_pch_if_requested(pb_branch_routing_demo)
+add_test(NAME pb_example_branch_routing_demo COMMAND pb_branch_routing_demo)
+set_tests_properties(pb_example_branch_routing_demo PROPERTIES LABELS "examples;branch")
+
+add_executable(pb_branch_error_handling branch_error_handling.cpp)
+target_link_libraries(pb_branch_error_handling PRIVATE pb::pipeline)
+pb_apply_project_options(pb_branch_error_handling PRIVATE)
+pb_enable_pch_if_requested(pb_branch_error_handling)
+add_test(NAME pb_example_branch_error_handling COMMAND pb_branch_error_handling)
+set_tests_properties(pb_example_branch_error_handling PROPERTIES LABELS "examples;branch")

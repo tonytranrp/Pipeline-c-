@@ -153,11 +153,11 @@ int main() {
   RecordingObserver failing_observer{};
   failing_engine.set_observer(&failing_observer);
   auto failed = failing_engine.run(Raw{5});
-  if (failed.has_value() || failed.error().stage.key != "fail-route" || failed.error().message != "route failed") {
+  if (failed.has_value() || failed.error().stage.key != "fail-route" || failed.error().message != "[branch] route failed") {
     return 5;
   }
   if (!contains(failing_observer.events, "failure:fail-route:fail-route:route failed") ||
-      !contains(failing_observer.events, "failure:branch:fail-route:route failed")) {
+      !contains(failing_observer.events, "failure:branch:fail-route:[branch] route failed")) {
     return 6;
   }
 
