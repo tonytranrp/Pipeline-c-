@@ -34,6 +34,7 @@ struct Double {
 
 struct Triple {
   using input_type = MoveOnly;
+  using output_type = Routed;
   auto operator()(const MoveOnly& m) const -> Routed { return Routed{m.value * 3}; }
 };
 
