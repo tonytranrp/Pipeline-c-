@@ -266,10 +266,119 @@ void test_error_routing() {
 } // namespace test2
 
 // =====================================================================
-// Test 3: Heterogeneous branch with stateful sequential policy
+// Test 3: Heterogeneous branch with duplicate output alternatives
 // =====================================================================
 
 namespace test3 {
+
+struct Request {
+  int route{};
+  int payload{};
+};
+
+struct Parsed {
+  int value{};
+};
+
+struct Reviewed {
+  int score{};
+};
+
+struct IsFastParse {
+  using input_type = Request;
+  using output_type = bool;
+  bool operator()(const Request& request) const { return request.route == 0; }
+};
+
+struct NeedsReview {
+  using input_type = Request;
+  using output_type = bool;
+  bool operator()(const Request& request) const { return request.route == 1; }
+};
+
+struct IsFallbackParse {
+  using input_type = Request;
+  using output_type = bool;
+  bool operator()(const Request& request) const { return request.route == 2; }
+};
+
+struct FastParse {
+  using input_type = Request;
+  using output_type = Parsed;
+  Parsed operator()(const Request& request) const { return Parsed{request.payload + 10}; }
+};
+
+struct Review {
+  using input_type = Request;
+  using output_type = Reviewed;
+  Reviewed operator()(const Request& request) const { return Reviewed{request.payload + 20}; }
+};
+
+struct FallbackParse {
+  using input_type = Request;
+  using output_type = Parsed;
+  Parsed operator()(const Request& request) const { return Parsed{request.payload + 30}; }
+};
+
+using OutputVariant = std::variant<Parsed, Reviewed, Parsed>;
+
+struct JoinDuplicateOutputs {
+  using input_type = OutputVariant;
+  using output_type = std::string;
+
+  std::string operator()(OutputVariant output) const {
+    switch (output.index()) {
+    case 0:
+      return "fast-parse:" + std::to_string(std::get<0>(output).value);
+    case 1:
+      return "review:" + std::to_string(std::get<1>(output).score);
+    case 2:
+      return "fallback-parse:" + std::to_string(std::get<2>(output).value);
+    default:
+      return "unknown";
+    }
+  }
+};
+
+using FastCase = pb::case_<IsFastParse>::then<FastParse>;
+using ReviewCase = pb::case_<NeedsReview>::then<Review>;
+using FallbackCase = pb::case_<IsFallbackParse>::then<FallbackParse>;
+using Outputs = pb::branch_outputs<FastCase, ReviewCase, FallbackCase>;
+using Pipeline = pb::from<Request>::branch<FastCase, ReviewCase, FallbackCase>::join<JoinDuplicateOutputs>::to<std::string>;
+
+static_assert(std::is_same_v<Outputs::output_types, pb::meta::type_list<Parsed, Reviewed, Parsed>>);
+static_assert(std::is_same_v<Outputs::output_type, OutputVariant>);
+static_assert(std::is_same_v<pb::branch_unified_output_t<FastCase, ReviewCase, FallbackCase>, OutputVariant>);
+static_assert(pb::valid<Pipeline>);
+
+void test_duplicate_first_parsed_route() {
+  auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
+  auto result = engine.run(Request{0, 1});
+  assert(result.has_value());
+  assert(result.value() == "fast-parse:11");
+}
+
+void test_duplicate_review_route() {
+  auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
+  auto result = engine.run(Request{1, 2});
+  assert(result.has_value());
+  assert(result.value() == "review:22");
+}
+
+void test_duplicate_second_parsed_route() {
+  auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
+  auto result = engine.run(Request{2, 3});
+  assert(result.has_value());
+  assert(result.value() == "fallback-parse:33");
+}
+
+} // namespace test3
+
+// =====================================================================
+// Test 4: Heterogeneous branch with stateful sequential policy
+// =====================================================================
+
+namespace test4 {
 
 struct Input {
   int value{};
@@ -369,7 +478,7 @@ void test_stateful_heterogeneous_branch() {
   assert(r4.value() == "-36");  // -3 * (10 + 2) = -36
 }
 
-} // namespace test3
+} // namespace test4
 
 // =====================================================================
 // main
@@ -382,6 +491,9 @@ int main() {
   test2::test_text_routing();
   test2::test_number_routing();
   test2::test_error_routing();
-  test3::test_stateful_heterogeneous_branch();
+  test3::test_duplicate_first_parsed_route();
+  test3::test_duplicate_review_route();
+  test3::test_duplicate_second_parsed_route();
+  test4::test_stateful_heterogeneous_branch();
   return 0;
 }

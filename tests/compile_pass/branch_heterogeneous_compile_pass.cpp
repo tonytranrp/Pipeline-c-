@@ -37,6 +37,12 @@ struct JoinResults {
 using ParseCase = pb::case_<IsParseable>::then<Parse>;
 using ReviewCase = pb::case_<NeedsReview>::then<Review>;
 using Outputs = pb::branch_outputs<ParseCase, ReviewCase>;
+static_assert(std::same_as<Outputs::output_types, pb::meta::type_list<Parsed, Reviewed>>);
+static_assert(std::same_as<Outputs::output_type, std::variant<Parsed, Reviewed>>);
+static_assert(std::same_as<pb::branch_raw_output_types_t<ParseCase, ReviewCase>,
+                           pb::meta::type_list<Parsed, Reviewed>>);
+static_assert(std::same_as<pb::branch_unified_output_t<ParseCase, ReviewCase>,
+                           std::variant<Parsed, Reviewed>>);
 
 // Heterogeneous branch outputs produce std::variant<Parsed, Reviewed>
 using HeterogeneousBranch = pb::from<Raw>::branch<ParseCase, ReviewCase>;

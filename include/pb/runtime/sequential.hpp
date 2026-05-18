@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <tuple>
 #include <utility>
+#include <variant>
 
 #include "pb/core/meta.hpp"
 #include "pb/core/validate.hpp"
@@ -342,6 +343,15 @@ template <class Stage, class StageResult>
   return normalize_stage_error<Stage>(0, std::move(stage_result));
 }
 
+template <class BranchNode, std::size_t CaseIndex, class Value>
+[[nodiscard]] auto selected_branch_success(Value&& value) -> result<typename BranchNode::output_type> {
+  using BranchOutput = typename BranchNode::output_type;
+  if constexpr (BranchNode::homogeneous) {
+    return result<BranchOutput>{std::forward<Value>(value)};
+  } else {
+    return result<BranchOutput>{BranchOutput{std::in_place_index<CaseIndex>, std::forward<Value>(value)}};
+  }
+}
 
 template <class BranchNode, class Predicate, std::size_t StageIndex, class Input>
 [[nodiscard]] auto evaluate_branch_predicate(observer* sink, const Input& input, std::size_t case_index)
@@ -374,9 +384,9 @@ template <class BranchNode, class Predicate, std::size_t StageIndex, class Input
   }
 }
 
-template <class BranchNode, class BranchStage, std::size_t StageIndex, class BranchOutput, class Input>
+template <class BranchNode, class BranchStage, std::size_t StageIndex, std::size_t CaseIndex, class Input>
 [[nodiscard]] auto run_branch_stage(observer* sink, Input&& input, std::size_t case_index)
-    -> result<BranchOutput> {
+    -> result<typename BranchNode::output_type> {
   auto branch_stage_id = branch_child_stage_id<BranchNode, BranchStage>(StageIndex, case_index, "stage");
   try {
     notify_stage_start(sink, branch_stage_id);
@@ -386,22 +396,22 @@ template <class BranchNode, class BranchStage, std::size_t StageIndex, class Bra
       if (!normalized_result.has_value()) {
         auto branch_error = normalize_stage_error(branch_stage_id, std::move(normalized_result));
         notify_stage_failure(sink, branch_stage_id, branch_error);
-        return result<BranchOutput>{std::move(branch_error)};
+        return result<typename BranchNode::output_type>{std::move(branch_error)};
       }
       notify_stage_success(sink, branch_stage_id);
-      return result<BranchOutput>{std::move(normalized_result).value()};
+      return selected_branch_success<BranchNode, CaseIndex>(std::move(normalized_result).value());
     } else {
       notify_stage_success(sink, branch_stage_id);
-      return result<BranchOutput>{std::move(branch_result)};
+      return selected_branch_success<BranchNode, CaseIndex>(std::move(branch_result));
     }
   } catch (const std::exception& exception) {
     auto branch_error = exception_error(branch_stage_id, exception);
     notify_stage_exception(sink, branch_stage_id, branch_error);
-    return result<BranchOutput>{std::move(branch_error)};
+    return result<typename BranchNode::output_type>{std::move(branch_error)};
   } catch (...) {
     auto branch_error = unknown_exception_error(branch_stage_id);
     notify_stage_exception(sink, branch_stage_id, branch_error);
-    return result<BranchOutput>{std::move(branch_error)};
+    return result<typename BranchNode::output_type>{std::move(branch_error)};
   }
 }
 
@@ -451,10 +461,10 @@ template <class BranchNode, std::size_t StageIndex, class Input, std::size_t Cas
               return result<typename BranchNode::output_type>{std::move(branch_error)};
             }
             notify_stage_success(sink, branch_stage_id);
-            return result<typename BranchNode::output_type>{std::move(normalized).value()};
+            return selected_branch_success<BranchNode, CaseIndex>(std::move(normalized).value());
           } else {
             notify_stage_success(sink, branch_stage_id);
-            return result<typename BranchNode::output_type>{std::move(branch_result)};
+            return selected_branch_success<BranchNode, CaseIndex>(std::move(branch_result));
           }
         } catch (const std::exception& exception) {
           auto branch_error = exception_error(branch_stage_id, exception);
@@ -482,10 +492,10 @@ template <class BranchNode, std::size_t StageIndex, class Input, std::size_t Cas
               return result<typename BranchNode::output_type>{std::move(branch_error)};
             }
             notify_stage_success(sink, branch_stage_id);
-            return result<typename BranchNode::output_type>{std::move(normalized).value()};
+            return selected_branch_success<BranchNode, CaseIndex>(std::move(normalized).value());
           } else {
             notify_stage_success(sink, branch_stage_id);
-            return result<typename BranchNode::output_type>{std::move(branch_result)};
+            return selected_branch_success<BranchNode, CaseIndex>(std::move(branch_result));
           }
         } catch (const std::exception& exception) {
           auto branch_error = exception_error(branch_stage_id, exception);
@@ -530,8 +540,7 @@ template <class BranchNode, std::size_t StageIndex, class Input, std::size_t Cas
   }
   if (predicate_result.value()) {
     if (sink) sink->on_case_selected(branch_id, CaseIndex, predicate_id);
-    return run_branch_stage<BranchNode, BranchStage, StageIndex, typename BranchNode::output_type>(
-        sink, std::move(input), CaseIndex);
+    return run_branch_stage<BranchNode, BranchStage, StageIndex, CaseIndex>(sink, std::move(input), CaseIndex);
   }
   if (sink) sink->on_case_skipped(branch_id, CaseIndex, predicate_id);
   if constexpr (sizeof...(Rest) == 0) {

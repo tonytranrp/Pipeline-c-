@@ -29,6 +29,38 @@ namespace detail {
   return output;
 }
 
+[[nodiscard]] inline auto escape_dot_label(std::string_view value) -> std::string {
+  std::string output;
+  output.reserve(value.size());
+  for (const auto ch : value) {
+    switch (ch) {
+    case '"':
+      output += "\\\"";
+      break;
+    case '\\':
+      output += "\\\\";
+      break;
+    case '\n':
+      output += "\\n";
+      break;
+    case '\r':
+      output += "\\r";
+      break;
+    case '\t':
+      output += "\\t";
+      break;
+    default:
+      output.push_back(ch);
+      break;
+    }
+  }
+  return output;
+}
+
+inline void append_dot_label(std::ostringstream& stream, std::string_view value) {
+  stream << '"' << escape_dot_label(value) << '"';
+}
+
 // ── Compile-time branch detection ───────────────────────────────────────────
 
 template <class StageList>
@@ -51,15 +83,23 @@ void append_branch_case_subgraph(std::ostringstream& stream) {
 
   const auto pred_name = stage_traits<Predicate>::name();
   const auto stage_name = stage_traits<BranchStage>::name();
+  const auto case_label = std::string{"Case "} + std::to_string(CaseIndex) + ": " + std::string{pred_name};
+  const auto pred_label = std::string{"pred: "} + std::string{pred_name};
 
   stream << "  subgraph cluster_case_" << BranchIndex << "_" << CaseIndex << " {\n";
-  stream << "    label=\"Case " << CaseIndex << ": " << pred_name << "\";\n";
-  stream << "    pred_" << BranchIndex << "_" << CaseIndex
-         << " [label=\"pred: " << pred_name << "\"];\n";
-  stream << "    case_" << BranchIndex << "_" << CaseIndex
-         << " [label=\"" << stage_name << "\"];\n";
+  stream << "    label=";
+  append_dot_label(stream, case_label);
+  stream << ";\n";
+  stream << "    pred_" << BranchIndex << "_" << CaseIndex << " [label=";
+  append_dot_label(stream, pred_label);
+  stream << "];\n";
+  stream << "    case_" << BranchIndex << "_" << CaseIndex << " [label=";
+  append_dot_label(stream, stage_name);
+  stream << "];\n";
   stream << "    branch_" << BranchIndex << " -> pred_" << BranchIndex << "_" << CaseIndex
-         << " [style=dashed, label=\"test\"];\n";
+         << " [style=dashed, label=";
+  append_dot_label(stream, "test");
+  stream << "];\n";
   stream << "    pred_" << BranchIndex << "_" << CaseIndex << " -> case_" << BranchIndex << "_"
          << CaseIndex << ";\n";
   stream << "  }\n";
@@ -74,7 +114,9 @@ void append_branch_case_subgraphs(std::ostringstream& stream,
 
 template <class Stage, std::size_t StageIndex>
 void append_branch_stage_dot(std::ostringstream& stream) {
-  stream << "  branch_" << StageIndex << " [shape=diamond, label=\"branch\"];\n\n";
+  stream << "  branch_" << StageIndex << " [shape=diamond, label=";
+  append_dot_label(stream, "branch");
+  stream << "];\n\n";
 
   using Cases = typename Stage::cases;
   append_branch_case_subgraphs<Cases, StageIndex>(
@@ -101,18 +143,25 @@ struct dot_emitter<Pipeline, false> {
     for (std::size_t index = 0; index < descriptor.stage_count; ++index) {
       const auto key = descriptor.stage_keys()[index];
       const auto name = descriptor.stage_names()[index];
-      stream << "  stage_" << index << " [label=\"" << name;
+      auto label = std::string{name};
       if (name != key) {
-        stream << "\\n(" << key << ")";
+        label += "\n(";
+        label += key;
+        label += ")";
       }
-      stream << "\"];\n";
+      stream << "  stage_" << index << " [label=";
+      append_dot_label(stream, label);
+      stream << "];\n";
     }
 
     stream << "\n";
 
     for (const auto& edge : descriptor.edge_records()) {
       stream << "  stage_" << edge.from_stage_index << " -> stage_" << edge.to_stage_index;
-      stream << " [label=\"" << edge.from_key << " -> " << edge.to_key << "\"];\n";
+      const auto label = std::string{edge.from_key} + " -> " + std::string{edge.to_key};
+      stream << " [label=";
+      append_dot_label(stream, label);
+      stream << "];\n";
     }
 
     stream << "}\n";
@@ -134,13 +183,17 @@ struct dot_emitter<Pipeline, true> {
     stream << "  node [shape=box];\n\n";
 
     // ── Input node ──────────────────────────────────────────────
-    stream << "  from_input [label=\"Input\"];\n\n";
+    stream << "  from_input [label=";
+    append_dot_label(stream, "Input");
+    stream << "];\n\n";
 
     // ── Stage nodes ─────────────────────────────────────────────
     emit_stages(stream, std::make_index_sequence<stage_count>{});
 
     // ── Output node ─────────────────────────────────────────────
-    stream << "  to_output [shape=doublecircle, label=\"Output\"];\n\n";
+    stream << "  to_output [shape=doublecircle, label=";
+    append_dot_label(stream, "Output");
+    stream << "];\n\n";
 
     // ── Edges ───────────────────────────────────────────────────
     emit_all_edges(stream);
@@ -165,11 +218,15 @@ private:
       constexpr auto desc = describe<Pipeline>();
       const auto key = desc.stage_keys()[StageIndex];
       const auto name = desc.stage_names()[StageIndex];
-      stream << "  stage_" << StageIndex << " [label=\"" << name;
+      auto label = std::string{name};
       if (name != key) {
-        stream << "\\n(" << key << ")";
+        label += "\n(";
+        label += key;
+        label += ")";
       }
-      stream << "\"];\n";
+      stream << "  stage_" << StageIndex << " [label=";
+      append_dot_label(stream, label);
+      stream << "];\n";
     }
   }
 

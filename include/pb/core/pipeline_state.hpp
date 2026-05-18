@@ -28,6 +28,12 @@ struct branch_output_validation;
 template <class Outputs, class JoinStage>
 struct join_builder_validation;
 
+template <class... Cases>
+struct branch_raw_output_types;
+
+template <class... Cases>
+struct branch_unified_output;
+
 namespace detail {
 
 template <class>
@@ -106,12 +112,13 @@ struct join_validation_impl {
 
 template <class Outputs, class Join>
 struct join_validation_impl<Outputs, Join, true, true> {
-  static_assert(std::same_as<typename Join::input_type, typename Outputs::output_types>,
-                "Join validation mismatch: join stage input_type must match branch output_types");
+  static_assert(std::same_as<typename Join::input_type, typename Outputs::output_type>,
+                "Join validation mismatch: join stage input_type must match the unified branch output_type");
 
   using branch_outputs_type = Outputs;
   using join_type = Join;
-  using input_type = typename Outputs::output_types;
+  using raw_output_types = typename Outputs::output_types;
+  using input_type = typename Outputs::output_type;
   using output_type = typename Join::output_type;
 };
 
@@ -126,13 +133,14 @@ template <class Outputs, class JoinStage>
 struct join_builder_validation_impl<Outputs, JoinStage, true, true> {
   using join_type = join_node<JoinStage>;
 
-  static_assert(std::same_as<stage_input_t<JoinStage>, typename Outputs::output_types>,
-                "Join builder source mismatch: join stage input_type must match branch output_types before "
+  static_assert(std::same_as<stage_input_t<JoinStage>, typename Outputs::output_type>,
+                "Join builder source mismatch: join stage input_type must match unified branch output_type before "
                 "pb::from<...>::branch<...>::join<Stage>");
 
   using branch_outputs_type = Outputs;
   using stage_type = JoinStage;
-  using input_type = typename Outputs::output_types;
+  using raw_output_types = typename Outputs::output_types;
+  using input_type = typename Outputs::output_type;
   using output_type = stage_output_t<JoinStage>;
 };
 
@@ -223,6 +231,14 @@ public:
   using type = typename impl<homogeneous, Output1, Output2, Rest...>::type;
 };
 
+template <class OutputTypes>
+struct branch_unified_output_from_type_list;
+
+template <class... Outputs>
+struct branch_unified_output_from_type_list<meta::type_list<Outputs...>> {
+  using type = typename branch_output_type_or_variant<Outputs...>::type;
+};
+
 template <class... Cases>
 struct selected_branch_node;
 
@@ -292,8 +308,25 @@ struct branch_outputs {
   using cases = meta::type_list<Cases...>;
   using input_type = typename detail::branch_node_input<Cases...>::type;
   using output_types = meta::type_list<typename branch_case_output<Cases>::output_type...>;
+  using output_type = typename detail::branch_unified_output_from_type_list<output_types>::type;
   static constexpr std::size_t output_count = sizeof...(Cases);
 };
+
+template <class... Cases>
+struct branch_raw_output_types {
+  using type = typename branch_outputs<Cases...>::output_types;
+};
+
+template <class... Cases>
+using branch_raw_output_types_t = typename branch_raw_output_types<Cases...>::type;
+
+template <class... Cases>
+struct branch_unified_output {
+  using type = typename branch_outputs<Cases...>::output_type;
+};
+
+template <class... Cases>
+using branch_unified_output_t = typename branch_unified_output<Cases...>::type;
 
 namespace detail {
 template <class... Cases>
@@ -309,8 +342,7 @@ struct selected_branch_node {
   // Variant-or-single type:
   // - If all branch outputs are the same type, use it directly (homogeneous, backward compatible).
   // - Otherwise, wrap in std::variant (heterogeneous).
-  using output_type = typename branch_output_type_or_variant<
-      typename branch_case_output<Cases>::output_type...>::type;
+  using output_type = typename branch_outputs_type::output_type;
 
   static constexpr std::size_t case_count = sizeof...(Cases);
   static constexpr bool homogeneous = all_same<
