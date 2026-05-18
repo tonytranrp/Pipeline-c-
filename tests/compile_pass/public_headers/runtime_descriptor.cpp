@@ -35,14 +35,14 @@ using Pipeline = pb::from<Input>::then<Parse>::then<Finish>::to<Output>;
 using EmptyPipeline = pb::from<Input>::to<Input>;
 
 static_assert(pb::valid<Pipeline>);
-static_assert(pb::descriptor_schema_version == std::string_view{"pb.runtime.descriptor.v1"});
+static_assert(pb::descriptor_schema_version == std::string_view{"pb.descriptor.v1"});
 static_assert(pb::descriptor_topology::linear == pb::runtime::descriptor_topology::linear);
 
 constexpr auto descriptor = pb::make_descriptor<Pipeline>();
 static_assert(decltype(descriptor)::stage_count == 2);
 static_assert(decltype(descriptor)::edge_count == 1);
 static_assert(!decltype(descriptor)::empty);
-static_assert(decltype(descriptor)::schema_version == std::string_view{"pb.runtime.descriptor.v1"});
+static_assert(decltype(descriptor)::schema_version == std::string_view{"pb.descriptor.v1"});
 static_assert(decltype(descriptor)::topology == pb::descriptor_topology::linear);
 static_assert(descriptor.stage_records()[0].index == 0);
 static_assert(descriptor.stage_records()[0].key == std::string_view{"runtime.parse"});

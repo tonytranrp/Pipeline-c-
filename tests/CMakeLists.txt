@@ -1,9 +1,23 @@
+add_executable(pb_policy_dsl_compile_pass compile_pass/policy_dsl.cpp)
+target_link_libraries(pb_policy_dsl_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_policy_dsl_compile_pass PRIVATE)
+pb_enable_pch_if_requested(pb_policy_dsl_compile_pass)
+add_test(NAME pb_policy_dsl_compile_pass COMMAND pb_policy_dsl_compile_pass)
+set_tests_properties(pb_policy_dsl_compile_pass PROPERTIES LABELS "compile-pass;policy;dsl")
+
 add_executable(pb_smoke_compile_pass compile_pass/smoke_pipeline.cpp)
 target_link_libraries(pb_smoke_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_smoke_compile_pass PRIVATE)
 pb_enable_pch_if_requested(pb_smoke_compile_pass)
 add_test(NAME pb_smoke_compile_pass COMMAND pb_smoke_compile_pass)
 set_tests_properties(pb_smoke_compile_pass PROPERTIES LABELS "compile-pass;smoke")
+
+add_executable(pb_compile_time_bench_compile_pass compile_pass/compile_time_bench.cpp)
+target_link_libraries(pb_compile_time_bench_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_compile_time_bench_compile_pass PRIVATE)
+pb_enable_pch_if_requested(pb_compile_time_bench_compile_pass)
+add_test(NAME pb_compile_time_bench_compile_pass COMMAND pb_compile_time_bench_compile_pass)
+set_tests_properties(pb_compile_time_bench_compile_pass PROPERTIES LABELS "compile-pass;bench;baseline")
 
 
 add_executable(pb_describe_compile_pass compile_pass/describe_pipeline.cpp)
@@ -32,6 +46,12 @@ pb_apply_project_options(pb_stage_info_compile_pass PRIVATE)
 add_test(NAME pb_stage_info_compile_pass COMMAND pb_stage_info_compile_pass)
 set_tests_properties(pb_stage_info_compile_pass PROPERTIES LABELS "compile-pass;metadata")
 
+add_executable(pb_diagnostics_contract_compile_pass compile_pass/diagnostics_contract.cpp)
+target_link_libraries(pb_diagnostics_contract_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_diagnostics_contract_compile_pass PRIVATE)
+add_test(NAME pb_diagnostics_contract_compile_pass COMMAND pb_diagnostics_contract_compile_pass)
+set_tests_properties(pb_diagnostics_contract_compile_pass PROPERTIES LABELS "compile-pass;diagnostics")
+
 add_executable(pb_stage_naming_descriptor_compile_pass compile_pass/stage_naming_descriptor.cpp)
 target_link_libraries(pb_stage_naming_descriptor_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_stage_naming_descriptor_compile_pass PRIVATE)
@@ -44,6 +64,12 @@ pb_apply_project_options(pb_adapt_functor_compile_pass PRIVATE)
 add_test(NAME pb_adapt_functor_compile_pass COMMAND pb_adapt_functor_compile_pass)
 set_tests_properties(pb_adapt_functor_compile_pass PROPERTIES LABELS "compile-pass;adapter")
 
+add_executable(pb_adapt_void_compile_pass compile_pass/adapt_void.cpp)
+target_link_libraries(pb_adapt_void_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_adapt_void_compile_pass PRIVATE)
+add_test(NAME pb_adapt_void_compile_pass COMMAND pb_adapt_void_compile_pass)
+set_tests_properties(pb_adapt_void_compile_pass PROPERTIES LABELS "compile-pass;adapter;void")
+
 add_executable(pb_result_error_type_compatible_compile_pass compile_pass/result_error_type_compatible.cpp)
 target_link_libraries(pb_result_error_type_compatible_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_result_error_type_compatible_compile_pass PRIVATE)
@@ -54,6 +80,7 @@ add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers.cpp
   compile_pass/public_headers/adapt_fn.cpp
   compile_pass/public_headers/adapt_member.cpp
+  compile_pass/public_headers/adapt_void.cpp
   compile_pass/public_headers/adaptors.cpp
   compile_pass/public_headers/core_concepts.cpp
   compile_pass/public_headers/core_describe.cpp
@@ -62,6 +89,7 @@ add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers/core_pipeline_state.cpp
   compile_pass/public_headers/core_stage_traits.cpp
   compile_pass/public_headers/core_validate.cpp
+  compile_pass/public_headers/core_diagnostics.cpp
   compile_pass/public_headers/pipeline.cpp
   compile_pass/public_headers/runtime_descriptor.cpp
   compile_pass/public_headers/runtime_backend.cpp
@@ -99,6 +127,12 @@ target_link_libraries(pb_runtime_backend_feature_matrix_smoke PRIVATE pb::pipeli
 pb_apply_project_options(pb_runtime_backend_feature_matrix_smoke PRIVATE)
 add_test(NAME pb_runtime_backend_feature_matrix_smoke COMMAND pb_runtime_backend_feature_matrix_smoke)
 set_tests_properties(pb_runtime_backend_feature_matrix_smoke PROPERTIES LABELS "runtime;metadata;backend")
+
+add_executable(pb_runtime_thread_pool_smoke runtime/thread_pool_smoke.cpp)
+target_link_libraries(pb_runtime_thread_pool_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_thread_pool_smoke PRIVATE)
+add_test(NAME pb_runtime_thread_pool_smoke COMMAND pb_runtime_thread_pool_smoke)
+set_tests_properties(pb_runtime_thread_pool_smoke PROPERTIES LABELS "runtime;thread-pool;smoke")
 
 add_executable(pb_runtime_sequential_policy_dsl_smoke runtime/sequential_policy_dsl_smoke.cpp)
 target_link_libraries(pb_runtime_sequential_policy_dsl_smoke PRIVATE pb::pipeline)
@@ -204,6 +238,12 @@ pb_apply_project_options(pb_runtime_sequential_observer_smoke PRIVATE)
 add_test(NAME pb_runtime_sequential_observer_smoke COMMAND pb_runtime_sequential_observer_smoke)
 set_tests_properties(pb_runtime_sequential_observer_smoke PROPERTIES LABELS "runtime;observer")
 
+add_executable(pb_runtime_trace_export_smoke runtime/trace_export_smoke.cpp)
+target_link_libraries(pb_runtime_trace_export_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_trace_export_smoke PRIVATE)
+add_test(NAME pb_runtime_trace_export_smoke COMMAND pb_runtime_trace_export_smoke)
+set_tests_properties(pb_runtime_trace_export_smoke PROPERTIES LABELS "runtime;trace;observer;export")
+
 add_executable(pb_runtime_sequential_observer_try_run_exception_smoke runtime/sequential_observer_try_run_exception_smoke.cpp)
 target_link_libraries(pb_runtime_sequential_observer_try_run_exception_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_sequential_observer_try_run_exception_smoke PRIVATE)
@@ -235,11 +275,23 @@ add_test(NAME pb_runtime_sequential_adapters_value_category_smoke
   COMMAND pb_runtime_sequential_adapters_value_category_smoke)
 set_tests_properties(pb_runtime_sequential_adapters_value_category_smoke PROPERTIES LABELS "runtime;adapter")
 
+add_executable(pb_runtime_adapt_void_smoke runtime/adapt_void_smoke.cpp)
+target_link_libraries(pb_runtime_adapt_void_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_adapt_void_smoke PRIVATE)
+add_test(NAME pb_runtime_adapt_void_smoke COMMAND pb_runtime_adapt_void_smoke)
+set_tests_properties(pb_runtime_adapt_void_smoke PROPERTIES LABELS "runtime;adapter;void")
+
 add_executable(pb_export_dot_compile_pass compile_pass/export_dot.cpp)
 target_link_libraries(pb_export_dot_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_export_dot_compile_pass PRIVATE)
 add_test(NAME pb_export_dot_compile_pass COMMAND pb_export_dot_compile_pass)
 set_tests_properties(pb_export_dot_compile_pass PROPERTIES LABELS "compile-pass;export;dot")
+
+add_executable(pb_export_dot_branch_compile_pass compile_pass/export_dot_branch.cpp)
+target_link_libraries(pb_export_dot_branch_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_export_dot_branch_compile_pass PRIVATE)
+add_test(NAME pb_export_dot_branch_compile_pass COMMAND pb_export_dot_branch_compile_pass)
+set_tests_properties(pb_export_dot_branch_compile_pass PROPERTIES LABELS "compile-pass;export;dot;branch")
 
 add_executable(pb_export_json_compile_pass compile_pass/export_json.cpp)
 target_link_libraries(pb_export_json_compile_pass PRIVATE pb::pipeline)
@@ -247,12 +299,32 @@ pb_apply_project_options(pb_export_json_compile_pass PRIVATE)
 add_test(NAME pb_export_json_compile_pass COMMAND pb_export_json_compile_pass)
 set_tests_properties(pb_export_json_compile_pass PROPERTIES LABELS "compile-pass;export;json;branch")
 
+add_executable(pb_export_json_branch_compile_pass compile_pass/export_json_branch.cpp)
+target_link_libraries(pb_export_json_branch_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_export_json_branch_compile_pass PRIVATE)
+add_test(NAME pb_export_json_branch_compile_pass COMMAND pb_export_json_branch_compile_pass)
+set_tests_properties(pb_export_json_branch_compile_pass PROPERTIES LABELS "compile-pass;export;json;branch")
+
 add_executable(pb_branch_join_validation_compile_pass compile_pass/branch_join_validation_compile_pass.cpp)
 target_link_libraries(pb_branch_join_validation_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_branch_join_validation_compile_pass PRIVATE)
 pb_enable_pch_if_requested(pb_branch_join_validation_compile_pass)
 add_test(NAME pb_branch_join_validation_compile_pass COMMAND pb_branch_join_validation_compile_pass)
 set_tests_properties(pb_branch_join_validation_compile_pass PROPERTIES LABELS "compile-pass;metadata;topology")
+
+add_executable(pb_branch_heterogeneous_compile_pass compile_pass/branch_heterogeneous_compile_pass.cpp)
+target_link_libraries(pb_branch_heterogeneous_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_branch_heterogeneous_compile_pass PRIVATE)
+pb_enable_pch_if_requested(pb_branch_heterogeneous_compile_pass)
+add_test(NAME pb_branch_heterogeneous_compile_pass COMMAND pb_branch_heterogeneous_compile_pass)
+set_tests_properties(pb_branch_heterogeneous_compile_pass PROPERTIES LABELS "compile-pass;branch;heterogeneous")
+
+add_executable(pb_branch_topology_heterogeneous_compile_pass compile_pass/branch_topology_heterogeneous_compile_pass.cpp)
+target_link_libraries(pb_branch_topology_heterogeneous_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_branch_topology_heterogeneous_compile_pass PRIVATE)
+pb_enable_pch_if_requested(pb_branch_topology_heterogeneous_compile_pass)
+add_test(NAME pb_branch_topology_heterogeneous_compile_pass COMMAND pb_branch_topology_heterogeneous_compile_pass)
+set_tests_properties(pb_branch_topology_heterogeneous_compile_pass PROPERTIES LABELS "compile-pass;branch;heterogeneous;topology")
 
 add_test(NAME pb_compile_fail_edge_mismatch
   COMMAND ${CMAKE_COMMAND}
@@ -276,33 +348,21 @@ add_test(NAME pb_compile_fail_duplicate_stage_edge_mismatch
 )
 set_tests_properties(pb_compile_fail_duplicate_stage_edge_mismatch PROPERTIES LABELS "compile-fail;diagnostics")
 
-add_test(NAME pb_compile_fail_branch_topology_unsupported_boundary
-  COMMAND ${CMAKE_COMMAND}
-    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_topology_unsupported_boundary.cpp
-    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
-    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
-    -DEXPECT_DIAGNOSTIC=Branch\ output\ validation\ mismatch
-    -DEXPECTED_DIAGNOSTICS=branch_output_validation
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
-)
-set_tests_properties(pb_compile_fail_branch_topology_unsupported_boundary PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
-
-add_test(NAME pb_compile_fail_branch_outputs_heterogeneous_join_unsupported
-  COMMAND ${CMAKE_COMMAND}
-    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_outputs_heterogeneous_join_unsupported.cpp
-    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
-    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
-    -DEXPECT_DIAGNOSTIC=Branch\ output\ validation\ mismatch
-    -DEXPECTED_DIAGNOSTICS=branch_output_validation
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
-)
-set_tests_properties(pb_compile_fail_branch_outputs_heterogeneous_join_unsupported PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+# (removed: branch_topology_unsupported_boundary — heterogeneous branch now compiles via std::variant)
+# (removed: branch_outputs_heterogeneous_join_unsupported — heterogeneous join now supported via std::variant)
 
 add_executable(pb_runtime_sequential_branch_execution_smoke runtime/sequential_branch_execution_smoke.cpp)
 target_link_libraries(pb_runtime_sequential_branch_execution_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_sequential_branch_execution_smoke PRIVATE)
 add_test(NAME pb_runtime_sequential_branch_execution_smoke COMMAND pb_runtime_sequential_branch_execution_smoke)
 set_tests_properties(pb_runtime_sequential_branch_execution_smoke PROPERTIES LABELS "runtime;observer;branch")
+
+add_executable(pb_runtime_sequential_branch_move_only runtime/sequential_branch_move_only.cpp)
+target_link_libraries(pb_runtime_sequential_branch_move_only PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_sequential_branch_move_only PRIVATE)
+pb_enable_pch_if_requested(pb_runtime_sequential_branch_move_only)
+add_test(NAME pb_runtime_sequential_branch_move_only COMMAND pb_runtime_sequential_branch_move_only)
+set_tests_properties(pb_runtime_sequential_branch_move_only PROPERTIES LABELS "runtime;branch;move-only")
 
 add_executable(pb_runtime_sequential_branch_comprehensive runtime/sequential_branch_comprehensive.cpp)
 target_link_libraries(pb_runtime_sequential_branch_comprehensive PRIVATE pb::pipeline)
@@ -317,6 +377,13 @@ pb_apply_project_options(pb_runtime_sequential_branch_unnamed_stages PRIVATE)
 pb_enable_pch_if_requested(pb_runtime_sequential_branch_unnamed_stages)
 add_test(NAME pb_runtime_sequential_branch_unnamed_stages COMMAND pb_runtime_sequential_branch_unnamed_stages)
 set_tests_properties(pb_runtime_sequential_branch_unnamed_stages PROPERTIES LABELS "runtime;branch;observer")
+
+add_executable(pb_runtime_sequential_branch_heterogeneous runtime/sequential_branch_heterogeneous.cpp)
+target_link_libraries(pb_runtime_sequential_branch_heterogeneous PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_sequential_branch_heterogeneous PRIVATE)
+pb_enable_pch_if_requested(pb_runtime_sequential_branch_heterogeneous)
+add_test(NAME pb_runtime_sequential_branch_heterogeneous COMMAND pb_runtime_sequential_branch_heterogeneous)
+set_tests_properties(pb_runtime_sequential_branch_heterogeneous PROPERTIES LABELS "runtime;branch;heterogeneous")
 
 add_test(NAME pb_compile_fail_branch_builder_source_mismatch
   COMMAND ${CMAKE_COMMAND}
@@ -505,16 +572,23 @@ add_test(NAME pb_compile_fail_branch_join_type_mismatch
 )
 set_tests_properties(pb_compile_fail_branch_join_type_mismatch PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 
-add_test(NAME pb_compile_fail_branch_move_only_input_unsupported
+add_test(NAME pb_compile_fail_branch_heterogeneous_join_type_mismatch
   COMMAND ${CMAKE_COMMAND}
-    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_move_only_input_unsupported.cpp
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_heterogeneous_join_type_mismatch.cpp
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
-    -DEXPECT_DIAGNOSTIC=copy-constructible branch input_type
-    -DEXPECTED_DIAGNOSTICS=copy_constructible;branch input_type
+    -DEXPECT_DIAGNOSTIC=Pipeline\ edge\ mismatch
+    -DEXPECTED_DIAGNOSTICS=pb::connectable_v
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
-set_tests_properties(pb_compile_fail_branch_move_only_input_unsupported PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+set_tests_properties(pb_compile_fail_branch_heterogeneous_join_type_mismatch PROPERTIES LABELS "compile-fail;diagnostics;branch;heterogeneous")
+
+add_executable(pb_branch_move_only_input_compile_pass compile_pass/branch_move_only_input.cpp)
+target_link_libraries(pb_branch_move_only_input_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_branch_move_only_input_compile_pass PRIVATE)
+pb_enable_pch_if_requested(pb_branch_move_only_input_compile_pass)
+add_test(NAME pb_branch_move_only_input_compile_pass COMMAND pb_branch_move_only_input_compile_pass)
+set_tests_properties(pb_branch_move_only_input_compile_pass PROPERTIES LABELS "compile-pass;branch;move-only")
 
 add_test(NAME pb_compile_fail_join_output_invalid_node_misuse
   COMMAND ${CMAKE_COMMAND}
@@ -1139,3 +1213,42 @@ add_test(NAME pb_compile_fail_runtime_make_descriptor_non_pipeline_misuse
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_runtime_make_descriptor_non_pipeline_misuse PROPERTIES LABELS "compile-fail;diagnostics;runtime")
+
+# ─────────────────────────────────────────────────────────────
+# C++26 feature‑gate compile‑pass test
+# ─────────────────────────────────────────────────────────────
+add_executable(pb_cpp26_features_compile_pass compile_pass/cpp26_features.cpp)
+target_link_libraries(pb_cpp26_features_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_cpp26_features_compile_pass PRIVATE)
+add_test(NAME pb_cpp26_features_compile_pass COMMAND pb_cpp26_features_compile_pass)
+set_tests_properties(pb_cpp26_features_compile_pass PROPERTIES LABELS "compile-pass;features;cpp26")
+
+# ─────────────────────────────────────────────────────────────
+# CLI smoke tests
+# ─────────────────────────────────────────────────────────────
+if(PB_BUILD_CLI)
+  add_test(NAME pb_cli_no_args     COMMAND pb_cli)
+  set_tests_properties(pb_cli_no_args PROPERTIES LABELS "cli;smoke")
+
+  add_test(NAME pb_cli_version     COMMAND pb_cli version)
+  set_tests_properties(pb_cli_version PROPERTIES LABELS "cli;smoke")
+
+  add_test(NAME pb_cli_features    COMMAND pb_cli features)
+  set_tests_properties(pb_cli_features PROPERTIES LABELS "cli;features")
+
+  add_test(NAME pb_cli_export      COMMAND pb_cli export)
+  set_tests_properties(pb_cli_export PROPERTIES LABELS "cli;export")
+
+  add_test(NAME pb_cli_export_dot  COMMAND pb_cli export --dot)
+  set_tests_properties(pb_cli_export_dot PROPERTIES LABELS "cli;export;dot")
+
+  add_test(NAME pb_cli_export_json COMMAND pb_cli export --json)
+  set_tests_properties(pb_cli_export_json PROPERTIES LABELS "cli;export;json")
+
+  add_test(NAME pb_cli_validate    COMMAND pb_cli validate)
+  set_tests_properties(pb_cli_validate PROPERTIES LABELS "cli;reserved")
+
+  add_test(NAME pb_cli_unknown     COMMAND pb_cli nonexistent_command)
+  set_tests_properties(pb_cli_unknown PROPERTIES LABELS "cli;error")
+  set_tests_properties(pb_cli_unknown PROPERTIES WILL_FAIL TRUE)
+endif()

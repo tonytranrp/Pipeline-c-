@@ -375,12 +375,12 @@ template <class BranchNode, class Predicate, std::size_t StageIndex, class Input
 }
 
 template <class BranchNode, class BranchStage, std::size_t StageIndex, class BranchOutput, class Input>
-[[nodiscard]] auto run_branch_stage(observer* sink, const Input& input, std::size_t case_index)
+[[nodiscard]] auto run_branch_stage(observer* sink, Input&& input, std::size_t case_index)
     -> result<BranchOutput> {
   auto branch_stage_id = branch_child_stage_id<BranchNode, BranchStage>(StageIndex, case_index, "stage");
   try {
     notify_stage_start(sink, branch_stage_id);
-    auto branch_result = BranchStage{}(input);
+    auto branch_result = BranchStage{}(std::forward<Input>(input));
     if constexpr (expected_like<decltype(branch_result)>) {
       auto normalized_result = to_result(std::move(branch_result));
       if (!normalized_result.has_value()) {
@@ -415,7 +415,7 @@ template <class BranchNode, std::size_t StageIndex, class Input>
 
 template <class BranchNode, std::size_t StageIndex, class Input, std::size_t CaseIndex, class Case, class... Rest>
 [[nodiscard]] auto run_selected_branch_cases_with_storage(
-    BranchNode* branch_storage, observer* sink, const Input& input)
+    BranchNode* branch_storage, observer* sink, Input& input)
     -> result<typename BranchNode::output_type> {
   using Predicate = typename Case::predicate_type;
   using BranchStage = typename Case::stage_type;
@@ -442,7 +442,7 @@ template <class BranchNode, std::size_t StageIndex, class Input, std::size_t Cas
         auto& stored_stage = std::get<CaseIndex>(branch_storage->branch_stages_);
         try {
           notify_stage_start(sink, branch_stage_id);
-          auto branch_result = stored_stage(input);
+          auto branch_result = stored_stage(std::move(input));
           if constexpr (expected_like<decltype(branch_result)>) {
             auto normalized = to_result(std::move(branch_result));
             if (!normalized.has_value()) {
@@ -473,7 +473,7 @@ template <class BranchNode, std::size_t StageIndex, class Input, std::size_t Cas
         auto& stored_stage = std::get<CaseIndex>(branch_storage->branch_stages_);
         try {
           notify_stage_start(sink, branch_stage_id);
-          auto branch_result = stored_stage(input);
+          auto branch_result = stored_stage(std::move(input));
           if constexpr (expected_like<decltype(branch_result)>) {
             auto normalized = to_result(std::move(branch_result));
             if (!normalized.has_value()) {
@@ -517,7 +517,7 @@ template <class BranchNode, std::size_t StageIndex, class Input, std::size_t Cas
 }
 
 template <class BranchNode, std::size_t StageIndex, class Input, std::size_t CaseIndex, class Case, class... Rest>
-[[nodiscard]] auto run_selected_branch_cases(observer* sink, const Input& input) -> result<typename BranchNode::output_type> {
+[[nodiscard]] auto run_selected_branch_cases(observer* sink, Input& input) -> result<typename BranchNode::output_type> {
   using Predicate = typename Case::predicate_type;
   using BranchStage = typename Case::stage_type;
 
@@ -531,7 +531,7 @@ template <class BranchNode, std::size_t StageIndex, class Input, std::size_t Cas
   if (predicate_result.value()) {
     if (sink) sink->on_case_selected(branch_id, CaseIndex, predicate_id);
     return run_branch_stage<BranchNode, BranchStage, StageIndex, typename BranchNode::output_type>(
-        sink, input, CaseIndex);
+        sink, std::move(input), CaseIndex);
   }
   if (sink) sink->on_case_skipped(branch_id, CaseIndex, predicate_id);
   if constexpr (sizeof...(Rest) == 0) {
@@ -542,7 +542,7 @@ template <class BranchNode, std::size_t StageIndex, class Input, std::size_t Cas
 }
 
 template <class BranchNode, std::size_t StageIndex, class Input, class... Cases>
-[[nodiscard]] auto run_selected_branch(observer* sink, const Input& input, pb::meta::type_list<Cases...>)
+[[nodiscard]] auto run_selected_branch(observer* sink, Input& input, pb::meta::type_list<Cases...>)
     -> result<typename BranchNode::output_type> {
   return run_selected_branch_cases<BranchNode, StageIndex, Input, 0, Cases...>(sink, input);
 }
@@ -559,7 +559,7 @@ template <class BranchNode, std::size_t StageIndex, class Input>
 
 template <class BranchNode, std::size_t StageIndex, class Input, class... Cases>
 [[nodiscard]] auto run_selected_branch_cases_with_storage(
-    BranchNode* branch_storage, observer* sink, const Input& input, pb::meta::type_list<Cases...>)
+    BranchNode* branch_storage, observer* sink, Input& input, pb::meta::type_list<Cases...>)
     -> result<typename BranchNode::output_type> {
   return run_selected_branch_cases_with_storage<BranchNode, StageIndex, Input, 0, Cases...>(branch_storage, sink, input);
 }
@@ -809,5 +809,4 @@ template <pb::core::ValidPipeline Pipeline, class SequentialPolicy>
 
 namespace pb {
 using runtime::compile;
-namespace policy = runtime::policy;
 } // namespace pb

@@ -40,3 +40,25 @@ pb_apply_project_options(pb_branch_error_handling PRIVATE)
 pb_enable_pch_if_requested(pb_branch_error_handling)
 add_test(NAME pb_example_branch_error_handling COMMAND pb_branch_error_handling)
 set_tests_properties(pb_example_branch_error_handling PROPERTIES LABELS "examples;branch")
+
+# ---------------------------------------------------------------------------
+# Descriptor schema demo
+# ---------------------------------------------------------------------------
+
+add_executable(pb_descriptor_demo descriptor_demo.cpp)
+target_link_libraries(pb_descriptor_demo PRIVATE pb::pipeline)
+pb_apply_project_options(pb_descriptor_demo PRIVATE)
+pb_enable_pch_if_requested(pb_descriptor_demo)
+add_test(NAME pb_example_descriptor_demo COMMAND pb_descriptor_demo)
+set_tests_properties(pb_example_descriptor_demo PROPERTIES LABELS "examples;descriptor;branch")
+
+# ---------------------------------------------------------------------------
+# Heterogeneous branch example
+# ---------------------------------------------------------------------------
+
+add_executable(pb_branch_heterogeneous_demo branch_heterogeneous_demo.cpp)
+target_link_libraries(pb_branch_heterogeneous_demo PRIVATE pb::pipeline)
+pb_apply_project_options(pb_branch_heterogeneous_demo PRIVATE)
+pb_enable_pch_if_requested(pb_branch_heterogeneous_demo)
+add_test(NAME pb_example_branch_heterogeneous_demo COMMAND pb_branch_heterogeneous_demo)
+set_tests_properties(pb_example_branch_heterogeneous_demo PROPERTIES LABELS "examples;branch;heterogeneous")

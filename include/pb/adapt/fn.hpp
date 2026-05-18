@@ -354,4 +354,8 @@ concept adapted_stage = pb::core::Stage<Stage> && requires(Stage stage, typename
   stage(std::move(input));
 };
 
+template <class Stage, class Input>
+inline constexpr bool is_noexcept_stage_v =
+    noexcept(std::declval<Stage>()(std::declval<Input>()));
+
 } // namespace pb

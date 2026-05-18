@@ -1,5 +1,9 @@
 #include <pb/pipeline.hpp>
-#include <memory>
+#include <type_traits>
+
+// Verify that move-only branch inputs are supported.
+// Predicates inspect the input by const&, and the selected branch
+// stage receives the input by move.
 
 struct MoveOnly {
   MoveOnly() = default;
@@ -41,8 +45,12 @@ struct Triple {
 using CaseA = pb::case_<Always>::then<Double>;
 using CaseB = pb::case_<Never>::then<Triple>;
 
-// selected_branch_node requires copy-constructible branch input
-using BadPipeline = pb::from<MoveOnly>::branch<CaseA, CaseB>::to<Routed>;
-static_assert(sizeof(BadPipeline) > 0);
+// This pipeline must compile: move-only input is now supported.
+using MoveOnlyPipeline = pb::from<MoveOnly>::branch<CaseA, CaseB>::to<Routed>;
+
+static_assert(pb::valid<MoveOnlyPipeline>);
+static_assert(std::is_same_v<pb::pipeline_input_t<MoveOnlyPipeline>, MoveOnly>);
+static_assert(std::is_same_v<pb::pipeline_output_t<MoveOnlyPipeline>, Routed>);
+static_assert(pb::pipeline_size_v<MoveOnlyPipeline> == 1);
 
 int main() { return 0; }

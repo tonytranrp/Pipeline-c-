@@ -51,6 +51,8 @@ void append_branch_case_json(std::ostringstream& stream, std::size_t index) {
   append_json_string(stream, stage_traits<BranchStage>::key());
   stream << ",\"stage_name\":";
   append_json_string(stream, stage_traits<BranchStage>::name());
+  stream << ",\"predicate_edge\":{\"from\":\"branch\",\"to\":\"predicate\",\"style\":\"dashed\",\"label\":\"test\"}";
+  stream << ",\"stage_edge\":{\"from\":\"predicate\",\"to\":\"case_stage\"}";
   stream << "}";
 }
 

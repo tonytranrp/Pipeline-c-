@@ -1,15 +1,19 @@
 #pragma once
 
 #include "pb/adapt/fn.hpp"
+#include "pb/adapt/void_adapter.hpp"
 #include "pb/core/concepts.hpp"
 #include "pb/core/describe.hpp"
+#include "pb/core/diagnostics.hpp"
 #include "pb/core/fixed_string.hpp"
 #include "pb/core/export_dot.hpp"
 #include "pb/core/export_json.hpp"
 #include "pb/core/meta.hpp"
 #include "pb/core/pipeline_state.hpp"
+#include "pb/core/policy.hpp"
 #include "pb/core/stage_traits.hpp"
 #include "pb/core/validate.hpp"
+#include "pb/core/compile_time_bench.hpp"
 #include "pb/runtime/descriptor.hpp"
 #include "pb/runtime/backend.hpp"
 #include "pb/runtime/error.hpp"
@@ -93,6 +97,9 @@ using runtime::descriptor_schema_version;
 using runtime::descriptor_stage_record;
 using runtime::descriptor_topology;
 using runtime::make_descriptor;
+using runtime::make_branch_descriptor;
+using runtime::type_name;
+using runtime::descriptor_branch_case_record;
 using runtime::expected_like;
 using runtime::error;
 using runtime::error_category;
@@ -121,4 +128,24 @@ using runtime::trace_observer;
 using runtime::trace_recorder;
 using runtime::trace_schema_version;
 using runtime::trace_sink;
+
+// diagnostics
+using diagnostics::diagnostic_collector;
+using diagnostics::diagnostic_record;
+using diagnostics::diagnostics_schema_version;
+using diagnostics::severity;
+using bench::compile_counter;
+using bench::instantiation_depth;
+using bench::instantiation_depth_v;
+using bench::chain_depth;
+using bench::stage_chain_bench;
+using bench::trivial_chain_size;
+using bench::moderate_chain_size;
+using bench::heavy_chain_size;
+using bench::stress_chain_size;
+using bench::baseline_record;
+using bench::trivial_baseline;
+using bench::moderate_baseline;
+using bench::heavy_baseline;
+using bench::stress_baseline;
 } // namespace pb

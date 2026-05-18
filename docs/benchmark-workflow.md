@@ -15,6 +15,59 @@ When `PB_BUILD_BENCHMARKS=ON`, the repository builds four benchmark-oriented exe
 
 These targets are registered as CTest entries with `benchmark` and `smoke` labels, so the dedicated benchmark presets can run them without enabling the normal test suite.
 
+When `PB_BUILD_TESTS=ON`, an additional compile-time baseline test is registered:
+
+- `pb_compile_time_bench_compile_pass` — `static_assert`-driven baseline that verifies 5-stage and 50-stage pipeline chains compile, validates the `pb::bench::stage_chain_bench` measurement framework, and enforces the qualitative depth classification (trivial / moderate / heavy / stress).
+
+## Compile-time baseline numbers
+
+The `pb::bench` namespace in `<pb/core/compile_time_bench.hpp>` provides template-instantiation-based compile-time profiling types.  The baseline sizes are:
+
+| Label    | Stage count | Classification |
+|----------|-------------|----------------|
+| Trivial  | 5           | `chain_depth<N>::is_trivial`  |
+| Moderate | 25          | `chain_depth<N>::is_moderate` |
+| Heavy    | 50          | `chain_depth<N>::is_heavy`    |
+| Stress   | 100         | `chain_depth<N>::is_stress`   |
+
+### Baseline type aliases
+
+```cpp
+pb::bench::trivial_baseline   // baseline_record<5, 5>
+pb::bench::moderate_baseline  // baseline_record<25, 25>
+pb::bench::heavy_baseline     // baseline_record<50, 50>
+pb::bench::stress_baseline    // baseline_record<100, 100>
+```
+
+### Qualitative classification
+
+```cpp
+pb::bench::stage_chain_bench<5>::is_trivial   // true
+pb::bench::stage_chain_bench<5>::is_moderate  // false
+pb::bench::stage_chain_bench<10>::is_moderate // true
+pb::bench::stage_chain_bench<50>::is_heavy    // true
+pb::bench::stage_chain_bench<100>::is_stress  // true
+```
+
+These classifications are enforced by `static_assert` in both `<pb/core/compile_time_bench.hpp>` (self-testing) and `tests/compile_pass/compile_time_bench.cpp` (integration verification).
+
+### How to use
+
+Include the header and query the baseline at compile-time:
+
+```cpp
+#include <pb/core/compile_time_bench.hpp>
+
+// Check if a stage count is in the trivial range
+static_assert(pb::bench::stage_chain_bench<5>::is_trivial);
+
+// Get the classification depth
+static_assert(pb::bench::stage_chain_bench<50>::template_depth == 50);
+
+// Compute depth ratio relative to the 5-stage trivial baseline
+// stage_chain_bench<50>::depth_ratio == 10.0
+```
+
 ## Presets and build modes
 
 The current preset surface splits benchmark work into two lanes plus a Clang time-trace lane:

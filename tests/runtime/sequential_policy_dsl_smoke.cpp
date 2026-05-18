@@ -26,7 +26,7 @@ struct CountingStage {
 using Pipeline = pb::from<Input>::then<CountingStage>::to<Output>;
 
 int main() {
-  auto per_run = pb::compile<Pipeline>(pb::policy::sequential<pb::policy::storage::construct_per_run>{});
+  auto per_run = pb::compile<Pipeline>(pb::runtime::policy::sequential<pb::runtime::policy::storage::construct_per_run>{});
   using PerRunEngine = decltype(per_run);
   static_assert(std::is_same_v<typename PerRunEngine::stage_storage_policy, pb::runtime::construct_stages_per_run>);
 
@@ -36,7 +36,7 @@ int main() {
   assert(per_run_first.value == 11);
   assert(per_run_second.value().value == 11);
 
-  auto stateful = pb::compile<Pipeline>(pb::policy::sequential<pb::policy::storage::store_in_engine>{});
+  auto stateful = pb::compile<Pipeline>(pb::runtime::policy::sequential<pb::runtime::policy::storage::store_in_engine>{});
   using StatefulEngine = decltype(stateful);
   static_assert(std::is_same_v<typename StatefulEngine::stage_storage_policy, pb::runtime::store_stages_in_engine>);
 

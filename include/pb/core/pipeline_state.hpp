@@ -3,6 +3,7 @@
 #include <concepts>
 #include <tuple>
 #include <type_traits>
+#include <variant>
 
 #include "pb/core/concepts.hpp"
 #include "pb/core/meta.hpp"
@@ -189,6 +190,39 @@ template <class First, class... Rest>
 struct branch_node_input<First, Rest...>
     : branch_case_input_or_void<is_branch_case<First>::value, First> {};
 
+template <class T, class... Rest>
+struct all_same : std::bool_constant<(std::same_as<T, Rest> && ...)> {};
+
+template <class... Outputs>
+struct branch_output_type_or_variant;
+
+template <class Output>
+struct branch_output_type_or_variant<Output> {
+  using type = Output;
+};
+
+template <class Output1, class Output2, class... Rest>
+struct branch_output_type_or_variant<Output1, Output2, Rest...> {
+private:
+  static constexpr bool homogeneous = all_same<Output1, Output2, Rest...>::value;
+
+  template <bool IsHomogeneous, class... Ts>
+  struct impl;
+
+  template <class T, class... Ts>
+  struct impl<true, T, Ts...> {
+    using type = T;
+  };
+
+  template <class... Ts>
+  struct impl<false, Ts...> {
+    using type = std::variant<Ts...>;
+  };
+
+public:
+  using type = typename impl<homogeneous, Output1, Output2, Rest...>::type;
+};
+
 template <class... Cases>
 struct selected_branch_node;
 
@@ -264,16 +298,32 @@ struct branch_outputs {
 namespace detail {
 template <class... Cases>
 struct selected_branch_node {
-  using validation = branch_output_validation<branch_outputs<Cases...>, typename first_branch_output<Cases...>::type>;
+  // Extract all branch output types
   using cases = meta::type_list<Cases...>;
-  using input_type = typename validation::input_type;
-  using output_type = typename validation::output_type;
-  using output_types = typename validation::output_types;
-  static constexpr std::size_t case_count = sizeof...(Cases);
+  using input_type = typename branch_node_input<Cases...>::type;
 
-  static_assert(std::copy_constructible<input_type>,
-                "Sequential branch execution requires a copy-constructible branch input_type so predicates and the "
-                "selected branch case can inspect the same value");
+  // Collect all output types via branch_outputs (validates cases are valid branch_case types)
+  using branch_outputs_type = branch_outputs<Cases...>;
+  using output_types = typename branch_outputs_type::output_types;
+
+  // Variant-or-single type:
+  // - If all branch outputs are the same type, use it directly (homogeneous, backward compatible).
+  // - Otherwise, wrap in std::variant (heterogeneous).
+  using output_type = typename branch_output_type_or_variant<
+      typename branch_case_output<Cases>::output_type...>::type;
+
+  static constexpr std::size_t case_count = sizeof...(Cases);
+  static constexpr bool homogeneous = all_same<
+      typename branch_case_output<Cases>::output_type...>::value;
+
+  // For move-only inputs, predicates must accept const& to inspect the input
+  // before it gets moved into the selected branch stage.
+  // For copy-constructible inputs, no additional predicate constraint is required.
+  static_assert(std::copy_constructible<input_type> ||
+                    (std::is_invocable_v<typename Cases::predicate_type, const input_type&> && ...),
+                "Move-only branch inputs require predicates callable with const input_type& — "
+                "predicates inspect the input by const reference while the selected branch stage "
+                "receives it by move; define operator()(const input_type&) const on each predicate stage");
 
   // Storage for stateful branch execution: preserves predicate and branch stage
   // instances across multiple pipeline runs so they can carry mutable state.
@@ -407,6 +457,13 @@ struct pipeline_state {
 
   template <class... Cases>
   using branch = typename detail::append_branch<pipeline_state, Cases...>::type;
+
+  /// Policy tag — pass-through that carries policy type metadata.
+  /// Policies are stored as type-level annotations; the compiler eliminates
+  /// every tag at zero runtime cost.  Future extensions will inspect the
+  /// policy pack to drive compile-time behavioural selection.
+  template <class... Policies>
+  using with = pipeline_state;
 };
 
 template <class Input>
