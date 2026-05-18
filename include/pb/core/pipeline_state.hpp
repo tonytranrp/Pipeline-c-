@@ -1,6 +1,7 @@
 #pragma once
 
 #include <concepts>
+#include <tuple>
 #include <type_traits>
 
 #include "pb/core/concepts.hpp"
@@ -273,6 +274,14 @@ struct selected_branch_node {
   static_assert(std::copy_constructible<input_type>,
                 "Sequential branch execution requires a copy-constructible branch input_type so predicates and the "
                 "selected branch case can inspect the same value");
+
+  // Storage for stateful branch execution: preserves predicate and branch stage
+  // instances across multiple pipeline runs so they can carry mutable state.
+  using predicate_tuple = std::tuple<typename Cases::predicate_type...>;
+  using branch_stage_tuple = std::tuple<typename Cases::stage_type...>;
+
+  predicate_tuple predicates_{};
+  branch_stage_tuple branch_stages_{};
 
   [[nodiscard]] static constexpr auto stage_name() noexcept { return "branch"; }
   [[nodiscard]] static constexpr auto stage_key() noexcept { return "branch"; }

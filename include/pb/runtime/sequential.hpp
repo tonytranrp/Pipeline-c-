@@ -51,10 +51,19 @@ inline constexpr bool stores_stages_in_engine_v = std::same_as<StageStoragePolic
 template <class BranchNode, std::size_t StageIndex, class Input>
 [[nodiscard]] auto run_selected_branch(observer* sink, Input&& input) -> result<typename BranchNode::output_type>;
 
+template <class BranchNode, std::size_t StageIndex, class Input>
+[[nodiscard]] auto run_selected_branch(BranchNode* branch_storage, observer* sink, Input&& input)
+    -> result<typename BranchNode::output_type>;
+
 template <class Stage, std::size_t StageIndex, class StageStorage, class Input>
 [[nodiscard]] decltype(auto) invoke_stage(StageStorage* storage, observer* sink, Input&& input) {
   if constexpr (pb::core::detail::is_selected_branch_node<Stage>::value) {
-    return run_selected_branch<Stage, StageIndex>(sink, std::forward<Input>(input));
+    if constexpr (std::same_as<std::remove_cvref_t<StageStorage>, no_stage_storage>) {
+      return run_selected_branch<Stage, StageIndex>(sink, std::forward<Input>(input));
+    } else {
+      auto& branch_node = std::get<StageIndex>(*storage);
+      return run_selected_branch<Stage, StageIndex>(&branch_node, sink, std::forward<Input>(input));
+    }
   } else if constexpr (std::same_as<std::remove_cvref_t<StageStorage>, no_stage_storage>) {
     return Stage{}(std::forward<Input>(input));
   } else {
@@ -292,6 +301,108 @@ template <class BranchNode, std::size_t StageIndex, class Input>
 }
 
 template <class BranchNode, std::size_t StageIndex, class Input, std::size_t CaseIndex, class Case, class... Rest>
+[[nodiscard]] auto run_selected_branch_cases_with_storage(
+    BranchNode* branch_storage, observer* sink, const Input& input)
+    -> result<typename BranchNode::output_type> {
+  using Predicate = typename Case::predicate_type;
+  using BranchStage = typename Case::stage_type;
+
+  auto predicate_id = stage_id_for<Predicate>(StageIndex);
+  auto branch_id = stage_id_for<BranchNode>(StageIndex);
+
+  auto& stored_predicate = std::get<CaseIndex>(branch_storage->predicates_);
+
+  try {
+    notify_stage_start<Predicate>(sink, StageIndex);
+    auto predicate_result = stored_predicate(input);
+    if constexpr (expected_like<decltype(predicate_result)>) {
+      auto normalized_result = to_result(std::move(predicate_result));
+      if (!normalized_result.has_value()) {
+        auto predicate_error = normalize_stage_error<Predicate>(StageIndex, std::move(normalized_result));
+        notify_stage_failure<Predicate>(sink, StageIndex, predicate_error);
+        return result<typename BranchNode::output_type>{std::move(predicate_error)};
+      }
+      notify_stage_success<Predicate>(sink, StageIndex);
+      if (static_cast<bool>(std::move(normalized_result).value())) {
+        if (sink) sink->on_case_selected(branch_id, CaseIndex, predicate_id);
+        auto& stored_stage = std::get<CaseIndex>(branch_storage->branch_stages_);
+        try {
+          notify_stage_start<BranchStage>(sink, StageIndex);
+          auto branch_result = stored_stage(input);
+          if constexpr (expected_like<decltype(branch_result)>) {
+            auto normalized = to_result(std::move(branch_result));
+            if (!normalized.has_value()) {
+              auto branch_error = normalize_stage_error<BranchStage>(StageIndex, std::move(normalized));
+              notify_stage_failure<BranchStage>(sink, StageIndex, branch_error);
+              return result<typename BranchNode::output_type>{std::move(branch_error)};
+            }
+            notify_stage_success<BranchStage>(sink, StageIndex);
+            return result<typename BranchNode::output_type>{std::move(normalized).value()};
+          } else {
+            notify_stage_success<BranchStage>(sink, StageIndex);
+            return result<typename BranchNode::output_type>{std::move(branch_result)};
+          }
+        } catch (const std::exception& exception) {
+          auto branch_error = exception_error<BranchStage>(StageIndex, exception);
+          notify_stage_exception<BranchStage>(sink, StageIndex, branch_error);
+          return result<typename BranchNode::output_type>{std::move(branch_error)};
+        } catch (...) {
+          auto branch_error = unknown_exception_error<BranchStage>(StageIndex);
+          notify_stage_exception<BranchStage>(sink, StageIndex, branch_error);
+          return result<typename BranchNode::output_type>{std::move(branch_error)};
+        }
+      }
+    } else {
+      notify_stage_success<Predicate>(sink, StageIndex);
+      if (static_cast<bool>(predicate_result)) {
+        if (sink) sink->on_case_selected(branch_id, CaseIndex, predicate_id);
+        auto& stored_stage = std::get<CaseIndex>(branch_storage->branch_stages_);
+        try {
+          notify_stage_start<BranchStage>(sink, StageIndex);
+          auto branch_result = stored_stage(input);
+          if constexpr (expected_like<decltype(branch_result)>) {
+            auto normalized = to_result(std::move(branch_result));
+            if (!normalized.has_value()) {
+              auto branch_error = normalize_stage_error<BranchStage>(StageIndex, std::move(normalized));
+              notify_stage_failure<BranchStage>(sink, StageIndex, branch_error);
+              return result<typename BranchNode::output_type>{std::move(branch_error)};
+            }
+            notify_stage_success<BranchStage>(sink, StageIndex);
+            return result<typename BranchNode::output_type>{std::move(normalized).value()};
+          } else {
+            notify_stage_success<BranchStage>(sink, StageIndex);
+            return result<typename BranchNode::output_type>{std::move(branch_result)};
+          }
+        } catch (const std::exception& exception) {
+          auto branch_error = exception_error<BranchStage>(StageIndex, exception);
+          notify_stage_exception<BranchStage>(sink, StageIndex, branch_error);
+          return result<typename BranchNode::output_type>{std::move(branch_error)};
+        } catch (...) {
+          auto branch_error = unknown_exception_error<BranchStage>(StageIndex);
+          notify_stage_exception<BranchStage>(sink, StageIndex, branch_error);
+          return result<typename BranchNode::output_type>{std::move(branch_error)};
+        }
+      }
+    }
+    if (sink) sink->on_case_skipped(branch_id, CaseIndex, predicate_id);
+    if constexpr (sizeof...(Rest) == 0) {
+      return unselected_branch_error<BranchNode, StageIndex, Input>();
+    } else {
+      return run_selected_branch_cases_with_storage<BranchNode, StageIndex, Input, CaseIndex + 1, Rest...>(
+          branch_storage, sink, input);
+    }
+  } catch (const std::exception& exception) {
+    auto predicate_error = exception_error<Predicate>(StageIndex, exception);
+    notify_stage_exception<Predicate>(sink, StageIndex, predicate_error);
+    return result<typename BranchNode::output_type>{std::move(predicate_error)};
+  } catch (...) {
+    auto predicate_error = unknown_exception_error<Predicate>(StageIndex);
+    notify_stage_exception<Predicate>(sink, StageIndex, predicate_error);
+    return result<typename BranchNode::output_type>{std::move(predicate_error)};
+  }
+}
+
+template <class BranchNode, std::size_t StageIndex, class Input, std::size_t CaseIndex, class Case, class... Rest>
 [[nodiscard]] auto run_selected_branch_cases(observer* sink, const Input& input) -> result<typename BranchNode::output_type> {
   using Predicate = typename Case::predicate_type;
   using BranchStage = typename Case::stage_type;
@@ -324,6 +435,25 @@ template <class BranchNode, std::size_t StageIndex, class Input, class... Cases>
 template <class BranchNode, std::size_t StageIndex, class Input>
 [[nodiscard]] auto run_selected_branch(observer* sink, Input&& input) -> result<typename BranchNode::output_type> {
   auto result = run_selected_branch<BranchNode, StageIndex>(sink, input, typename BranchNode::cases{});
+  if (!result.has_value() && has_message(result.error())) {
+    auto& err = result.error();
+    err.message = std::string{"["} + std::string{BranchNode::stage_name()} + "] " + err.message;
+  }
+  return result;
+}
+
+template <class BranchNode, std::size_t StageIndex, class Input, class... Cases>
+[[nodiscard]] auto run_selected_branch_cases_with_storage(
+    BranchNode* branch_storage, observer* sink, const Input& input, pb::meta::type_list<Cases...>)
+    -> result<typename BranchNode::output_type> {
+  return run_selected_branch_cases_with_storage<BranchNode, StageIndex, Input, 0, Cases...>(branch_storage, sink, input);
+}
+
+template <class BranchNode, std::size_t StageIndex, class Input>
+[[nodiscard]] auto run_selected_branch(BranchNode* branch_storage, observer* sink, Input&& input)
+    -> result<typename BranchNode::output_type> {
+  auto result = run_selected_branch_cases_with_storage<BranchNode, StageIndex, Input>(
+      branch_storage, sink, input, typename BranchNode::cases{});
   if (!result.has_value() && has_message(result.error())) {
     auto& err = result.error();
     err.message = std::string{"["} + std::string{BranchNode::stage_name()} + "] " + err.message;

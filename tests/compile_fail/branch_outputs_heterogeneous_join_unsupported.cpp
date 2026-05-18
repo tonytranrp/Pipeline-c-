@@ -37,10 +37,13 @@ using Join = pb::join_node<JoinResults>;
 using CheckedJoin = pb::join_validation<Outputs, Join>;
 static_assert(sizeof(CheckedJoin) > 0);
 
-// Regression guard for the promoted sequential branch-execution scope: branch
-// and join metadata can be validated, but the pipeline builder/runtime must not
-// silently accept executable branch topology until Worker 1/2 product support
-// lands with runtime tests.
+// Current sequential branch execution supports homogeneous branch output types
+// (all branch cases must produce the same output_type). Heterogeneous branch
+// outputs that produce different types (Parsed vs Reviewed) and would require a
+// type_list/variant-style join input are not yet supported.
+//
+// This test verifies that the builder correctly rejects heterogeneous branch
+// outputs at compile time via branch_output_validation.
 using UnsupportedBranchJoinExecution = pb::from<Raw>::branch<ParseCase, ReviewCase>;
 static_assert(sizeof(UnsupportedBranchJoinExecution) > 0);
 

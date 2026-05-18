@@ -1,6 +1,6 @@
 # Branch / Join Roadmap / Status
 
-Executable branch and join support is **not** a supported feature in the current tree. Treat this page as a roadmap/status note for planned non-linear pipeline composition and the current validation-only boundary, not as public runtime API documentation.
+Sequential branch execution is now a **supported, tested feature** for homogeneous branch outputs with optional join stages. Heterogeneous branch/join with type-list/variant join inputs remains roadmap-only.
 
 ## Current status
 
@@ -9,17 +9,20 @@ Today the repository supports:
 - linear compile-time pipeline validation through `pb::from<T>::then<S>::to<U>`
 - compile-time metadata/introspection through `describe()` and stage records
 - sequential runtime execution for validated linear pipelines
-- branch marker aliases (`case_`, `branch_case`, `branch_node`, `join_node`) plus `branch_case_output` / `branch_outputs` marker metadata that lock the current unsupported boundary, branch source compatibility, predicate marker, homogeneous branch-node case-input, branch-output compatibility validation, join consumption validation, invalid join-stage, and branch-output marker misuse requirements from research lines 468-479, 583-591, and 989-997
-- a small standard-library-only runtime route descriptor and ordered `select_route(...)` helper that can be reused by future branch execution work
+- **public branch/join DSL**: `pb::from<Input>::branch<CaseA, CaseB>::to<Output>` and `pb::from<Input>::branch<CaseA, CaseB>::join<JoinStage>::to<Output>`
+- **compile-time join validation**: `pipeline_state::join` validates branch context (must follow `::branch<...>`, join stage input must match branch output)
+- **runtime branch execution**: predicate evaluation, first-match-wins case selection with short-circuit, branch-stage execution, observer events (`on_case_selected`, `on_case_skipped`), error annotation with `[branch]` prefix
+- **stateful branch execution**: branch predicates and stages respect `pb::runtime::stateful_sequential` policy, preserving stage state across multiple runs
+- branch marker aliases (`case_`, `branch_case`, `branch_node`, `join_node`) plus `branch_case_output` / `branch_outputs` marker metadata, branch source compatibility, predicate marker, homogeneous branch-node case-input, branch-output compatibility validation, join consumption validation, invalid join-stage, and branch-output marker misuse diagnostics
+- runtime route descriptor and ordered `select_route(...)` helper
+- supported branch/join examples (`branch_routing_demo.cpp`, `branch_error_handling.cpp`)
+- comprehensive branch runtime tests (multi-case routing, predicate errors, predicate exceptions, stage exceptions, observer events, try_run with join, stateful, multiple runs)
 
-Today the repository does **not** support:
+Today the repository does **not** yet support:
 
-- public `branch`, `fork`, `select`, or `join` pipeline builders
-- multi-output lowering into labeled branch paths
-- branch routing/execution, multi-input join execution, full graph export, or JSON export
-- supported branch/join examples, benchmarks, or executor coverage
-
-Keep release notes and examples aligned with that boundary. The marker/validation/diagnostic slice is evidence for compile-time validation only, and the runtime route descriptor is prerequisite plumbing only; do not present branch/join execution or graph topology as shipped just because the research plan already sketches the feature.
+- heterogeneous branch outputs joined through `type_list` or `variant` join inputs (all branch cases must produce the same output type)
+- move-only branch inputs (branch input must be copy-constructible so predicates and the selected case can inspect the same value)
+- multi-input join execution, full graph export, or JSON export
 
 ## Why branch/join matters
 
@@ -54,40 +57,40 @@ The current MVP should **not** claim:
 
 Those decisions belong to a later implementation slice with explicit tests, examples, and executor contracts.
 
-## What would be required before claiming support
+## What is supported for homogeneous branch/join
 
-Before branch/join can move from roadmap to supported behavior, the repo needs:
+1. **Public graph-builder API** ✅  
+   `pb::from<Input>::branch<CaseA, CaseB>::to<Output>` and `pb::from<Input>::branch<CaseA, CaseB>::join<JoinStage>::to<Output>` with compile-time validation.
+2. **Compile-time validation coverage** ✅  
+   Checks for branch predicates, join context, and type compatibility. Branch-output and join validation have accepted evidence.
+3. **Runtime execution coverage** ✅  
+   Sequential branch routing with first-match-wins short-circuit, observer events, error propagation, stateful storage, and join stage execution.
+4. **Targeted tests and examples** ✅  
+   Positive runtime tests (3 files), negative compile-fail diagnostics (17+ tests), and user-facing examples (2 files).
 
-1. **A defined public graph-builder API**  
-   Stable type names, label semantics, topology rules, and composition syntax.
-2. **Compile-time validation coverage**  
-   Checks for branch predicates, label mapping, multi-output routing, and join compatibility. Branch-output and join validation have accepted evidence; keep final candidate logs attached before release wording promotes them.
-3. **Runtime routing bridge**  
-   A descriptor that records ordered route cases and a deterministic route-selection helper. The current `pb::runtime::route_descriptor` / `pb::runtime::select_route(...)` surface covers this prerequisite only.
-4. **Runtime execution coverage**  
-   At minimum, one supported executor path that proves branch selection and join behavior work correctly.
-5. **Targeted tests and examples**  
-   Positive tests, negative diagnostics, and at least one user-facing example that reflects the supported shape.
-6. **Follow-on documentation and performance evidence**  
-   Updated docs, graph-export alignment, and evidence about validation/execution cost once the feature exists.
+## Remaining roadmap items
+
+- Heterogeneous branch outputs with `type_list`/`variant` join inputs
+- Move-only branch input support
+- Full graph export (DOT/JSON)
+- Parallel/async backend support for branch execution
 
 ## Verification status today
 
-The current verification evidence covers the existing linear pipeline core plus validation-only branch/join boundary diagnostics, not executable branch/join behavior:
+- compile-pass coverage including `branch_join_validation_compile_pass.cpp`
+- compile-fail diagnostic coverage for join-without-branch, join-type-mismatch, and 15+ other branch/join boundary diagnostics
+- runtime branch execution tests: `sequential_branch_smoke.cpp`, `sequential_branch_execution_smoke.cpp`, `sequential_branch_comprehensive.cpp`
+- user-facing branch examples: `branch_routing_demo.cpp` (3-case document routing + join), `branch_error_handling.cpp` (error propagation)
+- observer event coverage for branch case selection/skipping
+- stateful branch storage tested via `sequential_branch_comprehensive.cpp`
 
-- compile-pass coverage
-- compile-fail diagnostic coverage
-- runtime smoke coverage
-- package-consumer smoke coverage
-- benchmark smoke scaffolding
-
-Current branch/join-specific verification includes compile-pass public marker aliases/branch-output marker metadata, compile-fail diagnostics for unsupported topology, branch source compatibility, predicate marker misuse, branch-node case-input mismatch, branch-output mismatch, join-validation mismatch/misuse, invalid join-stage markers, branch-output marker misuse, and runtime route descriptor smoke coverage. There are still no supported branch/join examples, benchmarks, graph-export tests, or executor tests.
+Heterogeneous branch output joins, move-only branch inputs, and full graph export remain as future slices.
 
 ## Release guidance
 
-Until execution implementation and tests land, release notes and docs should describe branch/join support as:
+Release notes and docs should describe branch/join support as:
 
-> validation-only branch/join marker, source/predicate, homogeneous branch-node case-input, branch-output compatibility, join consumption, invalid join-stage, and branch-output marker diagnostics exist; sequential branch execution, full graph export, and executable branch/join topology remain roadmap work
+> sequential branch routing with homogeneous branch outputs and optional join stages is supported; heterogeneous branch/join with type-list/variant join inputs, move-only branch inputs, and full graph export remain roadmap work
 
 If a future slice adds branch/join support, update this page together with:
 

@@ -287,16 +287,16 @@ add_test(NAME pb_compile_fail_branch_topology_unsupported_boundary
 )
 set_tests_properties(pb_compile_fail_branch_topology_unsupported_boundary PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 
-add_test(NAME pb_compile_fail_branch_join_execution_unsupported
+add_test(NAME pb_compile_fail_branch_outputs_heterogeneous_join_unsupported
   COMMAND ${CMAKE_COMMAND}
-    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_join_execution_unsupported.cpp
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_outputs_heterogeneous_join_unsupported.cpp
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
     -DEXPECT_DIAGNOSTIC=Branch\ output\ validation\ mismatch
     -DEXPECTED_DIAGNOSTICS=branch_output_validation
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
-set_tests_properties(pb_compile_fail_branch_join_execution_unsupported PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+set_tests_properties(pb_compile_fail_branch_outputs_heterogeneous_join_unsupported PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 
 add_executable(pb_runtime_sequential_branch_execution_smoke runtime/sequential_branch_execution_smoke.cpp)
 target_link_libraries(pb_runtime_sequential_branch_execution_smoke PRIVATE pb::pipeline)
@@ -310,6 +310,13 @@ pb_apply_project_options(pb_runtime_sequential_branch_comprehensive PRIVATE)
 pb_enable_pch_if_requested(pb_runtime_sequential_branch_comprehensive)
 add_test(NAME pb_runtime_sequential_branch_comprehensive COMMAND pb_runtime_sequential_branch_comprehensive)
 set_tests_properties(pb_runtime_sequential_branch_comprehensive PROPERTIES LABELS "runtime;branch;observer;result;comprehensive")
+
+add_executable(pb_runtime_sequential_branch_unnamed_stages runtime/sequential_branch_unnamed_stages.cpp)
+target_link_libraries(pb_runtime_sequential_branch_unnamed_stages PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_sequential_branch_unnamed_stages PRIVATE)
+pb_enable_pch_if_requested(pb_runtime_sequential_branch_unnamed_stages)
+add_test(NAME pb_runtime_sequential_branch_unnamed_stages COMMAND pb_runtime_sequential_branch_unnamed_stages)
+set_tests_properties(pb_runtime_sequential_branch_unnamed_stages PROPERTIES LABELS "runtime;branch;observer")
 
 add_test(NAME pb_compile_fail_branch_builder_source_mismatch
   COMMAND ${CMAKE_COMMAND}
@@ -497,6 +504,17 @@ add_test(NAME pb_compile_fail_branch_join_type_mismatch
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_branch_join_type_mismatch PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
+
+add_test(NAME pb_compile_fail_branch_move_only_input_unsupported
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_move_only_input_unsupported.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=copy-constructible branch input_type
+    -DEXPECTED_DIAGNOSTICS=copy_constructible;branch input_type
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_branch_move_only_input_unsupported PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 
 add_test(NAME pb_compile_fail_join_output_invalid_node_misuse
   COMMAND ${CMAKE_COMMAND}

@@ -70,14 +70,15 @@ Each theme below records four things:
 
 ### 5. Branch/join topology
 
-- **Current repository evidence:** Marker-only branch/join aliases and `branch_case_output` / `branch_outputs` metadata compile today, with accepted evidence for branch output compatibility validation, join consumption validation, unsupported topology, branch-node case-input mismatch, and marker misuse diagnostics. Non-linear execution and branch routing remain unimplemented roadmap work.
-- **Current support level:** **Validation support only; executable branch/join topology remains roadmap-only.**
+- **Current repository evidence:** Public branch/join DSL with compile-time validation, runtime sequential branch execution (first-match-wins with short-circuit), observer events (`on_case_selected`, `on_case_skipped`), stateful storage, join stages, error propagation, and comprehensive tests and examples.
+- **Current support level:** **Supported for homogeneous branch outputs with optional join stages. Heterogeneous branch/join and move-only inputs remain roadmap-only.**
 - **Proof points:**
   - `docs/branch-join-roadmap.md`
-  - known-gap references in `docs/production-readiness.md`
-  - research-plan branch/join themes
-- **Safe next slice:** keep follow-on work isolated to sequential branch execution planning/tests until validation commits are integrated on the release branch with fresh evidence.
-- **Coordination note:** branch-output validation and join-validation are accepted as validation-only slices. Do not promote sequential branch execution until runtime tests, examples, docs, and candidate-branch verification land.
+  - `include/pb/core/pipeline_state.hpp` (public `::branch<...>::join<...>` DSL)
+  - `include/pb/runtime/sequential.hpp` (runtime branch routing with storage)
+  - `tests/runtime/sequential_branch_comprehensive.cpp`
+  - `examples/branch_routing_demo.cpp`, `examples/branch_error_handling.cpp`
+- **Safe next slice:** keep heterogeneous branch/join and move-only input support as separate design/implementation phases.
 ### 6. Graph export
 
 - **Current repository evidence:** A narrow linear DOT export/helper slice is accepted in the coordination lane, but full graph export remains roadmap-only.
@@ -145,7 +146,7 @@ This queue is the durable docs-lane view of the current missing-feature push. It
 | 4 | Explicit stateful stage storage policy | Narrow public guarantee exists for default-initializable sequential stages: per-run construction versus engine-stored state, including non-copyable owned stage state, is covered by policy aliases, runtime tests, and examples. Borrowed/shared/unique ownership policies, reset policy, and thread-local future-backend storage remain gaps. | API decisions, tests, and docs for borrowed/reference/shared/unique ownership, reset behavior, and future parallel/thread-local storage. |
 | 5 | Branch output compatibility/routing validation | Accepted validation evidence exists; keep the claim scoped to compile-time compatibility validation until final candidate logs are attached. | Candidate branch includes branch-output validation implementation plus compatible/incompatible compile-pass/compile-fail tests. |
 | 6 | Join consumption/compatibility validation | Accepted validation evidence exists; keep the claim scoped to join consumption/compatibility validation, not runtime execution. | Candidate branch includes join validation implementation plus misuse/mismatch compile-fail tests. |
-| 7 | Sequential branch execution | Promoted for careful planning after validation-gate worker reports; not a support claim yet. | Tests-first minimal linear lowering plan, then integrated runtime branch execution tests, examples, and docs. |
+| 7 | Sequential branch execution | **Done.** Homogeneous branch outputs, join stages, observer events, stateful storage, compile-time join validation, runtime tests, and examples are all present. | Keep docs/examples aligned with supported boundary; heterogeneous joins and move-only inputs remain future work. |
 | 8 | Runtime descriptor/export contract | Compile-time/diagnostic metadata exists; stable runtime export remains roadmap. | Versioned schema, ownership rules, and tests for the public descriptor/export surface. |
 | 9 | DOT/graph export | Narrow linear DOT helper is accepted; full graph export remains roadmap-only. | Candidate DOT evidence plus clear distinction between linear export and graph-shaped branch/join export, JSON export, and stable schemas. |
 | 10 | Backend feature matrix | Documented in `docs/optional-backends-roadmap.md`; backend support remains roadmap-only beyond sequential. | Keep the matrix current before any backend implementation/support claim. |
