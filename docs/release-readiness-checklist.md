@@ -7,15 +7,17 @@ Use [Research Verification Matrix](research-verification-matrix.md) to check whe
 
 ## What is supported today
 
-A release candidate can only claim the currently shipped MVP surface:
+A release candidate can only claim the currently shipped and tested surface:
 
 - C++20 CMake package targets `pb::core`, `pb::runtime`, and `pb::pipeline`
 - linear typed pipeline validation with explicit stage metadata
 - sequential runtime execution for validated linear pipelines
+- supported sequential branch/join slice: homogeneous outputs, variant-based heterogeneous outputs including duplicate alternatives by index, move-only selected-stage consumption when predicates observe by `const input_type&`, observer events, and stateful branch predicate/stage storage
+- DOT/JSON helper export for linear and supported branch pipelines, including JSON branch topology and DOT label escaping
 - compile-pass, compile-fail, runtime, example, package-consumer, and benchmark **smoke** scaffolding
 - the intentional compile-fail diagnostic example and the package-consumer contract described in the current docs
 
-Do **not** treat roadmap pages as if they are already releaseable features. Branch/join, graph export, fully stabilized observer contracts, optional backend execution, a stable runtime descriptor, and richer diagnostics remain separate follow-on slices.
+Do **not** treat roadmap pages as if they are already releaseable features. Type-list/multi-input joins, descriptor-backed stable graph export, fully stabilized observer contracts, optional backend execution, a stable runtime descriptor, and richer diagnostics remain separate follow-on slices.
 
 ## Release evidence to collect before tagging
 
@@ -66,7 +68,28 @@ cmake --build --preset package-release-clang-ninja --target package
 
 The `pb_package_config_smoke` result is the minimum install-time consumer contract for the release candidate.
 
-### 4. Benchmark smoke context
+### 4. Cross-compiler validation gate
+
+For a release candidate, run the GitHub workflow and archive the run URL, exact SHA, compiler versions, and test counts:
+
+```bash
+gh workflow run cross-compiler-validation.yml --ref <candidate-ref>
+```
+
+Required passing lanes:
+
+```text
+GCC C++20 configure/build/CTest
+GCC C++23 configure/build/CTest when supported by the runner image
+Clang C++20 configure/build/CTest
+Clang C++23 configure/build/CTest when supported by the runner image
+MSVC C++20 configure/build/CTest
+package-release-clang-ninja configure/build/CTest/package in at least one clean environment
+```
+
+The latest completed evidence is summarized in [Cross-Compiler Validation Status](cross-compiler-validation.md). Treat that page as historical evidence for its recorded SHA, not as proof for future code changes.
+
+### 5. Benchmark smoke context
 
 Benchmark targets are not release performance gates yet, but the release lane should still prove that the scaffold builds and runs and that any numbers are recorded with context:
 
@@ -97,14 +120,14 @@ This keeps the release note aligned with the current docs and avoids treating lo
 
 Before tagging, confirm the release notes and docs still describe these as **not current guarantees**:
 
-- branch/join topology support
-- graph export
+- type-list/multi-input join execution and backend branch execution beyond the supported sequential slice
+- descriptor-backed stable graph export beyond the current helper output
 - observer behavior beyond the current sequential runtime callback path
 - optional backend execution beyond the sequential MVP path
 - fully stable observer ABI, event schema, and cross-executor contracts beyond current sequential support
 - a stable runtime descriptor/export contract
 - fully hardened diagnostic wording or broader machine-readable diagnostic schemas
-- cross-compiler validation beyond the toolchains that were actually exercised for the candidate
+- compiler/platform claims beyond the toolchains that were actually exercised for the candidate
 - benchmark thresholds or CI-enforced regression budgets
 
 If any of those items are mentioned in release notes, they must be labeled as roadmap or future work rather than supported behavior.
@@ -114,9 +137,10 @@ If any of those items are mentioned in release notes, they must be labeled as ro
 Do not tag a release candidate until all of the following are true:
 
 1. The supported-today commands above have fresh passing evidence on the candidate commit.
-2. `pb_package_config_smoke` passes in the release package lane.
-3. The local package archive is produced for inspection.
-4. Known roadmap-only gaps are either documented as limitations or intentionally removed from release claims.
-5. Example and diagnostic docs still match the tests that currently pass.
+2. The cross-compiler workflow passes on the candidate commit, or the release notes explicitly narrow the compiler claim to the exercised subset.
+3. `pb_package_config_smoke` passes in the release package lane.
+4. The package archive is produced for inspection.
+5. Known roadmap-only gaps are either documented as limitations or intentionally removed from release claims.
+6. Example and diagnostic docs still match the tests that currently pass.
 
 If any command fails, either fix the candidate or record the issue as a blocker instead of treating the release checklist as satisfied.

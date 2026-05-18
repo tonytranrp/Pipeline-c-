@@ -1,71 +1,69 @@
 # Current PR / Release Summary
 
-Status snapshot for the current long-horizon team batch. Use this page as a compact handoff note before copying details into a PR body or release evidence record.
+Status snapshot for the current branch/export hardening and validation batch. Use this page as a compact handoff note before copying details into a PR body or release evidence record.
 
 ## Candidate snapshot
 
-- Candidate baseline observed before this cleanup: `52e1512` on `main` / `origin/main`.
-- Recent integrated hardening commits observed in this worktree:
-  - `4be3ab1` / `3e48488` — locked linear descriptor, observer failure callback, and `try_run()` error identity consistency.
-  - `371312a` / `218664c` — added runtime `error_record` / `to_record(...)` diagnostic projection and smoke coverage.
-  - `c13a54c` / `2939908` — preserved/fill custom expected-like diagnostic stage identity and aligned error records, observer failure/exception stage identity, and `engine.describe()` in the linear runtime path.
-  - `30447ae` — required homogeneous `branch_node` case inputs and locked the mismatch diagnostic while staying marker-only.
-  - `4c6419e` — added marker-only `branch_case_output` / `branch_outputs` metadata scaffolding and public-header coverage.
-  - `5afcb3a` / `f0652be` — added compile-fail diagnostics for branch-output marker misuse.
-  - `dbb8d5b` — added marker-only `join_node` validation and invalid join-stage diagnostics.
-  - `b737175` — checked branch_case source compatibility at the marker boundary.
-  - `7a483b7` — added adapter/member hardening in `include/pb/adapt/fn.hpp`.
-  - `ee412f7` — added public-header coverage for core `stage_traits` aliases and tightened related diagnostic misuse cases.
-  - `3b1a231` / `23f1d60` — integrated runtime `pb::runtime::result<T>::error_or(...)` fallback selection hardening.
-  - `ec45eae` / `62820ed` / merge `caa43ee` — locked sequential observer replacement/accessor behavior with runtime smoke coverage.
-- Additional leader-accepted lane evidence after this snapshot:
-  - sequential branch execution is now integrated and supported for the current standard-library sequential backend, including public branch/join DSL, validation, runtime routing, observer events, stateful storage, examples, and tests.
-  - branch output compatibility validation and join consumption validation are part of the supported branch/join slice; heterogeneous branch outputs have first-slice `std::variant` support and move-only selected-branch input consumption is covered.
-  - DOT/JSON export evidence now covers linear and supported branch pipelines, including branch topology in JSON; keep stable descriptor-backed graph schema, CLI/file export, and backend graph-execution claims out of release text.
-- Current cleanup scope: branch child identity implementation/test coverage plus release summary/checkpoint alignment.
+- Latest code-validation SHA: `6805543ede6946aa283be7f24fb3736c762f47b2` on `main` / `origin/main`.
+- Cross-compiler validation workflow: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26058848575> — **passed**.
+- Normal CI workflow on the same SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26058841298> — **passed**.
+- This docs update may create a later docs-only SHA. If a release tag requires exact-SHA evidence, rerun the workflows on the final tag candidate; no library code changed in this docs pass.
+
+## What can be claimed with current evidence
+
+- Linear typed pipeline validation and sequential runtime execution remain supported.
+- Public branch/join DSL is supported for the sequential runtime slice.
+- Homogeneous branch outputs and variant-based heterogeneous branch outputs are supported, including duplicate output alternatives preserved by `std::variant` index.
+- Join validation checks the unified branch execution output, while raw branch output type-list metadata remains available for introspection.
+- Move-only selected-branch input consumption is supported when predicates inspect by `const input_type&`; consuming predicates for move-only inputs remain unsupported and have negative compile-fail coverage.
+- Stateful branch predicates/stages are covered under `pb::runtime::stateful_sequential`, and predicate invocation uses const-input semantics in both per-run and stateful paths.
+- DOT/JSON helpers cover linear and supported branch pipelines, including JSON branch topology detection, DOT label escaping, and helper-output golden regressions.
+- `pb::runtime::thread_pool` is a standalone utility only; it is not a pipeline backend.
+
+## What must stay roadmap-only
+
+- `type_list` / true multi-input join execution.
+- Descriptor-backed stable DOT/JSON graph export schemas and release-grade compatibility fixtures.
+- CLI/file export for user pipeline definitions.
+- Thread-pool, oneTBB, Taskflow, or stdexec pipeline executor backends.
+- C++ modules and C++26 reflection/contracts feature integrations.
+- Stable/frozen diagnostic wording across all future features.
+- Benchmark thresholds, dashboards, or CI-enforced compile-time/runtime performance budgets.
+
+## Validation evidence collected
+
+Cross-compiler validation run `26058848575` passed with these lanes:
+
+```text
+GCC C++20:        passed, 150/150, g++ 13.3.0
+GCC C++23:        passed, 150/150, g++ 13.3.0
+Clang C++20:      passed, 150/150, Ubuntu clang 18.1.3
+Clang C++23:      passed, 150/150, Ubuntu clang 18.1.3
+MSVC C++20:       passed, 149/149, MSVC 19.44.35226 / VS 2022 Enterprise
+Package release:  passed, 150/150, package TGZ generated
+CMake:            3.31.6 in GitHub Actions lanes
+Ninja:            1.13.2 in GitHub Actions Linux lanes
+```
+
+Package-release clean Ubuntu evidence from the same run:
+
+```text
+cmake --preset package-release-clang-ninja: passed
+cmake --build --preset package-release-clang-ninja: passed
+ctest --preset package-release-clang-ninja --output-on-failure: passed, 150/150
+cmake --build --preset package-release-clang-ninja --target package: passed
+artifact: build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz
+```
+
+See [Cross-Compiler Validation Status](cross-compiler-validation.md) for the detailed matrix and workflow notes.
 
 ## PR summary draft
 
-- Runtime diagnostic records and linear descriptor/observer/error identity checks, including custom expected-like failure and exception stage identity, now strengthen the current sequential diagnostic story; release notes should avoid calling this a stable exported diagnostic schema or runtime descriptor contract.
-- Branch/join support now covers source compatibility, predicate shape, branch-node case inputs, branch output compatibility validation, join consumption validation, runtime sequential routing, observer case events, stateful branch storage, first-slice heterogeneous outputs through `std::variant`, move-only selected-branch input consumption, invalid join-stage markers, and branch-output marker misuse. Release notes must still label type-list/multi-input joins, backend branch execution, and stable descriptor-backed graph export as roadmap.
-- DOT/JSON export helper evidence may be mentioned for linear and supported branch pipelines on a verified candidate; release notes must keep descriptor-backed schemas, golden compatibility fixtures, CLI/file export, and broad graph export as roadmap.
-- Adapter/member hardening landed in the public adapter surface; release notes should keep this as incremental adapter ergonomics/hardening, not a new backend claim.
-- Core stage-traits public-header coverage now exercises the alias/metadata surface used by diagnostics and docs.
-- Runtime result normalization now has stronger coverage around fallback/error conversion boundaries.
-- Sequential observer registration now has smoke coverage for replacing and clearing the observer sink through the public accessor path.
-- Roadmap-facing docs should continue to describe observer hooks as partial sequential-runtime support: the current callback path is supported, but ABI, event schema, cross-executor semantics, examples, and benchmark/cost evidence remain follow-on work.
+- Added/validated a cross-compiler workflow covering GCC C++20/C++23, Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release.
+- Preserved the supported branch/export boundary: sequential branch execution, variant-based heterogeneous output, move-only selected-stage consumption, and helper-level DOT/JSON export.
+- Kept descriptor-backed graph export, optional executor backends, C++ modules/C++26 integrations, and performance budgets out of the supported claims.
+- Fixed MSVC validation portability in the workflow by running CTest under the MSVC compiler environment and keeping package smoke in the dedicated package-release lane.
 
+## Release note guardrail
 
-## Docs-lane verification collected
-
-For this docs/checkpoint update, the worker refreshed local developer evidence on the current worktree:
-
-- `cmake --preset clang-dev-ninja` — passed.
-- `cmake --build --preset clang-dev-ninja` — passed.
-- `ctest --preset clang-dev-ninja --output-on-failure` — passed, `124/124` tests on the current candidate.
-
-Fresh package-release evidence was also collected on the current worktree:
-
-- `cmake --preset package-release-clang-ninja` — passed on a clean reconfigure.
-- `cmake --build --preset package-release-clang-ninja` — passed.
-- `ctest --preset package-release-clang-ninja --output-on-failure` — passed, `124/124` tests.
-- `cmake --build --preset package-release-clang-ninja --target package` — passed and produced `build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz`.
-
-This is now fresh package-release evidence on the current worktree, and the full package-release CTest lane is green after the branch identity/docs hardening cleanup.
-
-## Verification to attach before release tagging
-
-Collect fresh evidence on the final candidate SHA rather than relying on older checkpoints:
-
-```sh
-cmake --preset clang-dev-ninja
-cmake --build --preset clang-dev-ninja
-ctest --preset clang-dev-ninja --output-on-failure
-
-cmake --preset package-release-clang-ninja
-cmake --build --preset package-release-clang-ninja
-ctest --preset package-release-clang-ninja --output-on-failure
-cmake --build --preset package-release-clang-ninja --target package
-```
-
-If a release note mentions observer hooks, explicitly keep the limitation wording: partial sequential support is present; stable observer ABI, event schemas, cross-executor behavior, and tracing/export integrations remain roadmap items.
+Release notes may mention the matrix pass only with the exact SHA and workflow link above. If more non-doc code changes land before tagging, rerun the cross-compiler workflow and update this page plus `docs/cross-compiler-validation.md`.

@@ -50,6 +50,17 @@ In the package lanes, `pb_package_config_smoke` installs the build into a tempor
 
 `PB_ENABLE_CLANG_TIME_TRACE=ON` is available through the `clang-time-trace` preset for compile-time profiling. Optional backend flags are present but intentionally off in the base scaffold.
 
+
+## Cross-compiler validation workflow
+
+The repository includes `.github/workflows/cross-compiler-validation.yml` for release-hardening validation beyond the local Clang loop. Run it from GitHub Actions when compiler-matrix evidence is needed:
+
+```bash
+gh workflow run cross-compiler-validation.yml --ref main
+```
+
+The workflow records the exact commit SHA and tool versions, then runs configure/build/CTest for GCC C++20, GCC C++23, Clang C++20, Clang C++23, and MSVC C++20. It also runs `package-release-clang-ninja` in a clean Ubuntu job and builds the TGZ package. The latest completed matrix evidence is summarized in [Cross-Compiler Validation Status](cross-compiler-validation.md).
+
 ## Benchmark smoke targets
 
 Benchmark targets are intentionally opt-in so the default developer presets stay fast. Enable them on an existing preset when you want a local smoke check for header inclusion cost or basic sequential runtime overhead:

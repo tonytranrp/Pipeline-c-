@@ -58,6 +58,23 @@ artifact=<path-to-generated-.tar.gz>
 notes=<install/export/archive blockers or limitations>
 ```
 
+
+## Cross-compiler validation gate
+
+```text
+workflow=cross-compiler-validation.yml
+run_url=<github-actions-run-url>
+head_sha=<exact-sha-reported-by-run>
+result=<PASS|FAIL>
+gcc_cxx20=<PASS|FAIL|not-run> compiler=<id-version> tests=<passed/total>
+gcc_cxx23=<PASS|FAIL|not-run> compiler=<id-version> tests=<passed/total>
+clang_cxx20=<PASS|FAIL|not-run> compiler=<id-version> tests=<passed/total>
+clang_cxx23=<PASS|FAIL|not-run> compiler=<id-version> tests=<passed/total>
+msvc_cxx20=<PASS|FAIL|not-run> compiler=<id-version> tests=<passed/total>
+package_release_clean=<PASS|FAIL|not-run> compiler=<id-version> tests=<passed/total> artifact=<path-or-url>
+notes=<runner warnings, explicitly unclaimed lanes, or rerun requirements>
+```
+
 ## Benchmark smoke gate
 
 Benchmark results are smoke/profiling evidence, not release performance thresholds.
@@ -98,7 +115,8 @@ graph_export=<roadmap-only|supported-with-evidence>
 observer_callbacks=<supported|roadmap-only>
 optional_backends=<roadmap-only|experimental|supported-with-evidence>
 benchmark_thresholds=<roadmap-only|supported-with-policy>
-cross_compiler_package_manager_validation=<not-run|blocked|supported-with-evidence>
+cross_compiler_validation=<not-run|blocked|supported-with-evidence>
+package_manager_validation=<not-run|blocked|supported-with-evidence>
 ```
 
 ## Blockers and release decision

@@ -19,7 +19,8 @@ This first base follows `research/pipeline_builder_cpp_research_plan.md`:
 - [Pipeline-c++ docs hub](docs/README.md) links all guides used during the review lane.
 - [Production Readiness Status](docs/production-readiness.md) tracks supported capabilities, known release gaps, and the package-consumer release gate.
 - [Research Verification Matrix](docs/research-verification-matrix.md) maps research-plan gaps to shipped evidence, tests, release status, and next slices.
-- [Graph Export Roadmap / Status](docs/graph-export-roadmap.md) explains the narrow linear-DOT boundary and what must land before docs can present full graph export as supported.
+- [Graph Export Roadmap / Status](docs/graph-export-roadmap.md) explains the DOT/JSON helper boundary and what must land before docs can present stable graph export as supported.
+- [Cross-Compiler Validation Status](docs/cross-compiler-validation.md) records the latest GCC/Clang/MSVC/package validation evidence and remaining release boundaries.
 
 For package consumers, the release-readiness path is the `package-release-clang-ninja` configure, build, CTest, and package target sequence below. That CTest run includes `pb_package_config_smoke`, which installs the package into a temporary prefix, verifies that `find_package(pipebuilder CONFIG REQUIRED)` exposes `pb::core`, `pb::runtime`, and the `pb::pipeline` compatibility target, builds separate downstream consumers against each target, runs those consumers, and checks the generated TGZ for key headers, CMake config files, and the runtime library. Treat the package lane as release evidence only when this preset and package target pass freshly on the candidate SHA.
 

@@ -2272,10 +2272,62 @@ This addendum records the 2026-05-15 autoresearch pass over the master research 
 4. Produce a compiler feature matrix before using C++23/26 features in public headers.
 5. Add research-refresh checkpoints before committing to reflection/contracts/stdexec APIs.
 
+
+# Part 26.5 - Implementation Evidence Snapshot (2026-05-18)
+
+This snapshot records implementation and validation evidence that landed after the original research-plan recommendation. It does not rewrite the long-horizon plan; it marks what the current repository can claim and what must stay roadmap-only.
+
+## Current supported implementation slice
+
+The repository has progressed beyond the original linear-only first-slice recommendation in a narrow, tested way:
+
+- Linear typed pipelines, stage metadata, validation, adapters, sequential runtime execution, observer callbacks, diagnostics scaffolding, package smoke, and benchmark smoke scaffolding are implemented for the current MVP surface.
+- Sequential branch/join execution is supported for the current standard-library sequential runtime: public `::branch<...>` and `::join<JoinStage>` DSL, first-match-wins routing, selected branch-stage execution, result/error propagation, observer selected/skipped events, stateful branch predicate/stage storage, and branch examples/tests.
+- Homogeneous branch outputs are supported. Heterogeneous branch outputs are represented as `std::variant<Ts...>`, including duplicate output alternatives routed by variant index. Raw case output metadata remains available separately from the unified execution output.
+- Move-only selected-branch input consumption is supported when predicates inspect by `const input_type&`; predicates that consume a move-only input before routing remain unsupported.
+- DOT/JSON graph export exists as a helper surface for linear and supported branch pipelines, including JSON branch topology detection, DOT label escaping, and helper-output golden regression checks.
+- `pb::runtime::thread_pool` exists as a standalone standard-library utility; it is not a pipeline executor backend.
+
+## Latest compiler/release validation evidence
+
+Validation-only GitHub Actions evidence was collected for code SHA `6805543ede6946aa283be7f24fb3736c762f47b2`:
+
+```text
+GCC C++20 configure/build/CTest:        PASS, 150/150, g++ 13.3.0
+GCC C++23 configure/build/CTest:        PASS, 150/150, g++ 13.3.0
+Clang C++20 configure/build/CTest:      PASS, 150/150, Ubuntu clang 18.1.3
+Clang C++23 configure/build/CTest:      PASS, 150/150, Ubuntu clang 18.1.3
+MSVC C++20 configure/build/CTest:       PASS, 149/149, MSVC 19.44.35226
+Clean Ubuntu package-release preset:    PASS, 150/150, TGZ package generated
+Workflow run: https://github.com/tonytranrp/Pipeline-c-/actions/runs/26058848575
+Normal CI run: https://github.com/tonytranrp/Pipeline-c-/actions/runs/26058841298
+```
+
+This evidence supports the exercised compiler/package matrix only. If non-doc code changes land after this SHA, rerun the matrix on the final candidate before using it as release evidence.
+
+## Still roadmap-only after the snapshot
+
+The following research-plan items remain missing or partial and must not be presented as shipped support:
+
+- `type_list` / true multi-input join execution.
+- Descriptor-backed stable DOT/JSON graph export schemas and release-grade compatibility fixtures.
+- CLI/file export for user pipeline definitions.
+- Thread-pool, oneTBB, Taskflow, or stdexec pipeline executor backends.
+- Full policy DSL for error, exception, lifetime, contract, diagnostics, and executor capabilities.
+- Broader stateful storage/lifetime policies: borrowed/reference/shared/unique ownership, reset, move-in stage instances, and thread-local future-backend storage.
+- C++ modules.
+- C++26 reflection/contracts integrations beyond feature gates.
+- Measured compile-time baselines, thresholds, dashboards, and CI-enforced performance budgets.
+- Fully stable/frozen diagnostic wording and machine-readable diagnostic schemas across all future roadmap slices.
+
+## Updated planning implication
+
+The original recommendation to ship a small first version remains valid in spirit, but the current small surface is no longer linear-only. Release-facing docs may describe the supported sequential branch/join and helper export slices only when paired with the exact validation evidence above. The next implementation milestones should stabilize descriptor-backed export, type-list/multi-input joins, and backend execution as separate phases rather than broadening claims inside routine hardening work.
+
 # Part 27 - Final Recommendation
 
 - Build the product as a compile-time pipeline compiler with a small meta core and a separate runtime engine.
-- Ship the first usable version with linear chains only.
+- Keep the first usable version small and evidence-bound; the current validated surface includes linear chains plus a narrow sequential branch/join slice, while broader graph/backends remain roadmap-only.
 - Make named stage types the default API and lambdas an adapter feature.
 - Use concepts and targeted static assertions as the diagnostic foundation.
 - Use `std::expected` as the default runtime error path where C++23 is available, with a C++20 fallback.

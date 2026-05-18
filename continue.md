@@ -1,10 +1,10 @@
 # Continue checkpoint — Pipeline-c++ long-horizon resume
 
-Snapshot UTC: `2026-05-16T05:45:00Z`
-Repo: `/mnt/c/users/tonyt/documents/github/pipeline-c++`
+Snapshot UTC: `2026-05-18T20:40:00Z`
+Repo: `/Users/tonytran/Documents/GitHub/Pipeline-c-`
 Current branch: `main`
-Current baseline HEAD: `aa3b8f6` — `Merge commit '3b1bde497880b10735e17ef20b6ae8b2da2d3563'`
-Remote status at checkpoint: `main...origin/main` with no reported ahead/behind count.
+Latest code-validation HEAD: `6805543ede6946aa283be7f24fb3736c762f47b2` — cross-compiler validation passed
+Remote status at checkpoint: pushed to `origin/main` at the validation SHA before this docs-only refresh.
 
 This checkpoint replaces older OMX team pause notes. Use it to resume the next 3-agent long-horizon wave after usage resets without re-reading the entire prior team transcript.
 
@@ -19,34 +19,29 @@ The current tree is a **strong MVP foundation** for `research/pipeline_builder_c
 - Free-function, member-function, and functor adapters for existing user code.
 - Sequential runtime with `run()`, `try_run()`, result/expected-like plumbing, zero-stage identity behavior, and observer hooks.
 - Compile-pass, compile-fail, runtime, example, package-consumer, and benchmark smoke scaffolding.
-- Docs mostly separate supported MVP behavior from roadmap-only branch/join, graph export, runtime descriptor, optional backend, and performance-budget work.
+- Sequential branch/join support for the current standard-library sequential runtime: homogeneous outputs, variant-based heterogeneous outputs including duplicate alternatives by index, optional joins, observer case events, stateful branch predicate/stage storage, and move-only selected-stage consumption when predicates inspect by `const input_type&`.
+- DOT/JSON helper export for linear and supported branch pipelines, including JSON branch topology, DOT label escaping, and helper-output golden regressions.
+- Docs separate supported branch/export helper behavior from roadmap-only type-list joins, descriptor-backed stable export, CLI/file export, optional backends, runtime descriptor stability, and performance-budget work.
 
-Fresh local verification from the current baseline (refreshed during the 2026-05-16 docs-lane checkpoint):
+Fresh cross-compiler validation from the current code snapshot:
 
-```bash
-cmake --preset clang-dev-ninja
-cmake --build --preset clang-dev-ninja
-ctest --preset clang-dev-ninja --output-on-failure
+```text
+validated_code_sha=6805543ede6946aa283be7f24fb3736c762f47b2
+workflow=https://github.com/tonytranrp/Pipeline-c-/actions/runs/26058848575
+GCC C++20: passed, 150/150
+GCC C++23: passed, 150/150
+Clang C++20: passed, 150/150
+Clang C++23: passed, 150/150
+MSVC C++20: passed, 149/149
+package-release clean Ubuntu: passed, 150/150 plus TGZ package generated
 ```
-
-Result: **83/83 tests passed** with the `clang-dev-ninja` preset after configure and build.
 
 ## Current working tree note
 
-At checkpoint time the pipeline implementation was clean relative to `main`, but token/context tooling files were uncommitted:
-
-```text
- M .gitignore
-?? .contextignore
-?? .github/copilot-instructions.md
-?? .repomixignore
-?? gen-context.config.json
-```
-
-These are RTK/SigMap/Repomix context-saving files, not pipeline feature changes. Before launching workers, decide whether the leader owns committing them, keeping them uncommitted, or excluding them from worker lanes. Do not let coding workers revert them accidentally.
+At the validation checkpoint, `main` was pushed and GitHub Actions passed on SHA `6805543`. This docs-only refresh may create a later SHA; rerun the matrix before release tagging if exact tag-SHA evidence is required.
 
 
-## Latest team-batch checkpoint (2026-05-16)
+## Latest team-batch checkpoint (updated 2026-05-18)
 
 Docs-lane monitoring observed current integration head `30447ae` plus runtime diagnostic identity integration `c13a54c` / `2939908` and docs checkpoint `1182b6d` after the core/runtime/adapter/docs hardening batch:
 
@@ -67,7 +62,7 @@ Docs-lane monitoring observed current integration head `30447ae` plus runtime di
 - `3b1a231` / `23f1d60` hardened runtime `error_or(...)` fallback selection for expected-like/result normalization boundaries.
 - `ec45eae` / `62820ed` / merge `caa43ee` carried sequential observer replacement/accessor coverage into the integrated history.
 
-Release-facing wording should stay narrow: these commits strengthen the current linear/sequential MVP, align more linear runtime diagnostic stage identity evidence, and add branch/join marker diagnostics for unsupported boundaries, source compatibility, predicates, homogeneous branch-node case inputs, invalid join-stage markers, and branch-output marker misuse, plus branch-output marker metadata scaffolding. They do not complete branch output routing/compatibility validation, join consumption validation, branch execution, graph export, stable observer ABI/event schema, optional backend execution, runtime descriptor export, or release-grade benchmark budgets. Use `docs/current-release-summary.md` and `docs/research-verification-matrix.md` as compact PR/release note seeds for this batch.
+Release-facing wording should stay narrow but current: branch/join execution is now supported for the sequential slice, including homogeneous outputs, variant-based heterogeneous outputs with duplicate alternatives by index, move-only selected-stage input consumption, observer events, stateful branch storage, and compile-time join validation. DOT/JSON export is helper-level for linear and supported branch pipelines. Do not claim type-list/multi-input joins, descriptor-backed stable graph export, CLI/file export, optional backend execution, stable observer ABI/event schema, runtime descriptor export, or release-grade benchmark budgets. Use `docs/current-release-summary.md`, `docs/cross-compiler-validation.md`, and `docs/research-verification-matrix.md` as compact PR/release note seeds.
 
 ## What is done from the research plan
 
@@ -77,14 +72,14 @@ Treat these as shipped MVP support unless a future regression proves otherwise:
 2. **Phase 2 — Runtime sequential execution:** implemented for validated linear pipelines with runtime tests for success, failure, exceptions, expected-like results, observer paths, and zero-stage identity.
 3. **Phase 3 — User adapters:** implemented for free functions, member functions, and functors with runtime and compile-fail coverage.
 4. **Phase 4 — Diagnostics/tooling foundation:** partially implemented through metadata helpers, compile-fail diagnostics, runtime error formatting, package smoke, benchmark smoke, and docs.
-5. **Phase 7 — Packaging/release scaffolding:** partially implemented through install/export/package smoke checks and release-readiness docs.
+5. **Phase 7 — Packaging/release scaffolding:** partially implemented through install/export/package smoke checks, cross-compiler validation workflow/evidence, and release-readiness docs.
 
 ## What is still roadmap-only
 
 Do not claim these as supported until code, tests, examples, and docs land together:
 
-- Executable branch/join topology and non-linear validation beyond marker-only unsupported-boundary/source/predicate/branch-node-input/join-stage/branch-output diagnostics.
-- Graph export (`DOT`, JSON, or stable graph schema).
+- Type-list / true multi-input join execution beyond the supported variant-based sequential branch slice.
+- Descriptor-backed stable graph export schema, CLI/file export, and backend graph-export semantics beyond helper DOT/JSON output.
 - Stable runtime descriptor/export contract.
 - Optional Taskflow/oneTBB/stdexec backends.
 - Fully unified exception/error policy between `run()` and `try_run()`.
@@ -141,7 +136,7 @@ Before starting the next team:
 1. `git status --short --branch`
 2. `git log --oneline -12`
 3. Confirm what to do with token-tooling files listed above.
-4. Re-run at least `cmake --preset clang-dev-ninja`, `cmake --build --preset clang-dev-ninja`, and `ctest --preset clang-dev-ninja --output-on-failure` if significant time or upstream changes passed.
+4. Re-run at least `cmake --preset clang-dev-ninja`, `cmake --build --preset clang-dev-ninja`, and `ctest --preset clang-dev-ninja --output-on-failure` if significant time or upstream changes passed; rerun `cross-compiler-validation.yml` before release tagging if non-doc code changed after `6805543`.
 5. Launch the 3-agent wave with finite batch tasks and ask each worker to report changed files, tests, risks, and next task.
 
 Before ending the next team wave:
