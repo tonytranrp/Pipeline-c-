@@ -25,6 +25,9 @@ struct branch_case_output;
 template <class Outputs, class Output>
 struct branch_output_validation;
 
+template <class Outputs, class Output>
+struct branch_unified_output_validation;
+
 template <class Outputs, class JoinStage>
 struct join_builder_validation;
 
@@ -159,6 +162,25 @@ struct branch_output_validation_impl<branch_outputs<Cases...>, Output, true> {
   using input_type = typename branch_outputs<Cases...>::input_type;
   using output_type = Output;
   using output_types = typename branch_outputs<Cases...>::output_types;
+  static constexpr std::size_t output_count = sizeof...(Cases);
+};
+
+template <class Outputs, class Output, bool IsOutputs = is_branch_outputs<Outputs>::value>
+struct branch_unified_output_validation_impl {
+  static_assert(always_false_v<Outputs>,
+                "Branch unified output validation requires pb::branch_outputs<...>");
+};
+
+template <class Output, class... Cases>
+struct branch_unified_output_validation_impl<branch_outputs<Cases...>, Output, true> {
+  static_assert(std::same_as<typename branch_outputs<Cases...>::output_type, Output>,
+                "Branch unified output validation mismatch: Output must match branch_outputs::output_type");
+
+  using branch_outputs_type = branch_outputs<Cases...>;
+  using input_type = typename branch_outputs<Cases...>::input_type;
+  using output_type = Output;
+  using raw_output_types = typename branch_outputs<Cases...>::output_types;
+  using unified_output_type = typename branch_outputs<Cases...>::output_type;
   static constexpr std::size_t output_count = sizeof...(Cases);
 };
 
@@ -372,6 +394,9 @@ struct selected_branch_node {
 
 template <class Outputs, class Output>
 struct branch_output_validation : detail::branch_output_validation_impl<Outputs, Output> {};
+
+template <class Outputs, class Output>
+struct branch_unified_output_validation : detail::branch_unified_output_validation_impl<Outputs, Output> {};
 
 template <class JoinStage>
 struct join_node {

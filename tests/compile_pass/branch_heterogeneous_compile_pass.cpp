@@ -43,6 +43,16 @@ static_assert(std::same_as<pb::branch_raw_output_types_t<ParseCase, ReviewCase>,
                            pb::meta::type_list<Parsed, Reviewed>>);
 static_assert(std::same_as<pb::branch_unified_output_t<ParseCase, ReviewCase>,
                            std::variant<Parsed, Reviewed>>);
+using UnifiedOutputValidation =
+    pb::branch_unified_output_validation<Outputs, std::variant<Parsed, Reviewed>>;
+static_assert(std::same_as<UnifiedOutputValidation::branch_outputs_type, Outputs>);
+static_assert(std::same_as<UnifiedOutputValidation::raw_output_types,
+                           pb::meta::type_list<Parsed, Reviewed>>);
+static_assert(std::same_as<UnifiedOutputValidation::unified_output_type,
+                           std::variant<Parsed, Reviewed>>);
+static_assert(std::same_as<UnifiedOutputValidation::output_type,
+                           std::variant<Parsed, Reviewed>>);
+static_assert(UnifiedOutputValidation::output_count == 2);
 
 // Heterogeneous branch outputs produce std::variant<Parsed, Reviewed>
 using HeterogeneousBranch = pb::from<Raw>::branch<ParseCase, ReviewCase>;

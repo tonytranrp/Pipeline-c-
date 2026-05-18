@@ -501,6 +501,18 @@ add_test(NAME pb_compile_fail_branch_output_validation_mismatch
 )
 set_tests_properties(pb_compile_fail_branch_output_validation_mismatch PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
 
+add_test(NAME pb_compile_fail_branch_unified_output_validation_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_unified_output_validation_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Branch\ unified\ output\ validation\ mismatch
+    -DEXPECTED_DIAGNOSTICS=branch_unified_output_validation;branch_outputs::output_type
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_branch_unified_output_validation_mismatch
+  PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology;branch;heterogeneous")
+
 add_test(NAME pb_compile_fail_branch_case_output_non_case_misuse
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_case_output_non_case_misuse.cpp

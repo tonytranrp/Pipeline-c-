@@ -779,6 +779,68 @@ void test_multiple_runs_same_engine() {
 } // namespace test8
 
 // =====================================================================
+// Test 9: Stateful branch predicates observe const input
+// =====================================================================
+
+namespace test9 {
+
+struct Input {
+  int value{};
+};
+
+struct Routed {
+  int value{};
+};
+
+struct OverloadedPredicate {
+  using input_type = Input;
+  using output_type = bool;
+  static constexpr auto stage_name() noexcept { return "overloaded-predicate"; }
+  static constexpr auto stage_key() noexcept { return "overloaded-predicate"; }
+
+  static inline int const_calls = 0;
+  static inline int mutable_calls = 0;
+
+  bool operator()(const Input& input) const {
+    ++const_calls;
+    return input.value == 42;
+  }
+
+  bool operator()(Input&) const {
+    ++mutable_calls;
+    return false;
+  }
+};
+
+struct Route {
+  using input_type = Input;
+  using output_type = Routed;
+  static constexpr auto stage_name() noexcept { return "route"; }
+  static constexpr auto stage_key() noexcept { return "route"; }
+
+  Routed operator()(Input input) const { return Routed{input.value + 1}; }
+};
+
+using Case = pb::case_<OverloadedPredicate>::then<Route>;
+using Pipeline = pb::from<Input>::branch<Case>::to<Routed>;
+static_assert(pb::valid<Pipeline>);
+
+void test_stateful_predicate_uses_const_input_overload() {
+  OverloadedPredicate::const_calls = 0;
+  OverloadedPredicate::mutable_calls = 0;
+
+  auto engine = pb::compile<Pipeline>(pb::runtime::stateful_sequential{});
+  auto result = engine.run(Input{42});
+
+  assert(result.has_value());
+  assert(result.value().value == 43);
+  assert(OverloadedPredicate::const_calls == 1);
+  assert(OverloadedPredicate::mutable_calls == 0);
+}
+
+} // namespace test9
+
+// =====================================================================
 // main
 // =====================================================================
 
@@ -791,5 +853,6 @@ int main() {
   test6::test_try_run_branch_join();
   test7::test_stateful_sequential_branch();
   test8::test_multiple_runs_same_engine();
+  test9::test_stateful_predicate_uses_const_input_overload();
   return 0;
 }

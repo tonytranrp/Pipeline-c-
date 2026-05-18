@@ -438,7 +438,7 @@ template <class BranchNode, std::size_t StageIndex, class Input, std::size_t Cas
 
   try {
     notify_stage_start(sink, predicate_id);
-    auto predicate_result = stored_predicate(input);
+    auto predicate_result = stored_predicate(static_cast<const Input&>(input));
     if constexpr (expected_like<decltype(predicate_result)>) {
       auto normalized_result = to_result(std::move(predicate_result));
       if (!normalized_result.has_value()) {

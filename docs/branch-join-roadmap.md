@@ -17,10 +17,19 @@ Today the repository supports:
 - **heterogeneous branch outputs**: selected branch nodes return `std::variant<Ts...>` when case outputs differ, preserve duplicate output alternatives by index, and join stages can consume that variant
 - **move-only branch inputs**: predicates observe an lvalue reference and the selected branch stage receives the moved input; coverage includes `std::unique_ptr` ownership transfer into a by-value branch stage
 - branch-aware export helpers: DOT includes branch/case structure and JSON now reports branch topology instead of always reporting linear topology
-- branch marker aliases (`case_`, `branch_case`, `branch_node`, `join_node`) plus `branch_case_output` / `branch_outputs` marker metadata, raw output type-list helpers, unified branch output helpers, branch source compatibility, predicate marker, homogeneous branch-node case-input, branch-output compatibility validation, join consumption validation, invalid join-stage, and branch-output marker misuse diagnostics
+- branch marker aliases (`case_`, `branch_case`, `branch_node`, `join_node`) plus `branch_case_output` / `branch_outputs` marker metadata, raw output type-list helpers, unified branch output helpers, homogeneous branch-output validation, unified-output validation, branch source compatibility, predicate marker, homogeneous branch-node case-input, branch-output compatibility validation, join consumption validation, invalid join-stage, and branch-output marker misuse diagnostics
 - runtime route descriptor and ordered `select_route(...)` helper
 - supported branch/join examples (`branch_routing_demo.cpp`, `branch_error_handling.cpp`)
 - comprehensive branch runtime tests (multi-case routing, predicate errors, predicate exceptions, stage exceptions, observer events, try_run with join, stateful, multiple runs)
+
+## Branch output metadata vocabulary
+
+`pb::branch_outputs<Cases...>` exposes two intentionally different output views:
+
+- `output_types` / `pb::branch_raw_output_types_t<Cases...>` is raw metadata: a `pb::meta::type_list<...>` preserving every case-stage output type in case order.
+- `output_type` / `pb::branch_unified_output_t<Cases...>` is the execution output: a single `T` for homogeneous branches or `std::variant<Ts...>` for heterogeneous branches.
+
+`pb::branch_output_validation<Outputs, Output>` remains the homogeneous compatibility check that every raw case output is exactly `Output`. `pb::branch_unified_output_validation<Outputs, Output>` checks the execution output contract and should be used when validating a heterogeneous branch against its `std::variant` join input.
 
 Today the repository does **not** yet support:
 
@@ -43,7 +52,7 @@ Without this feature, the current library remains intentionally limited to one v
 
 The research plan originally treated branch/join as post-MVP work after the linear chain. The current repository now ships the first production-readiness slice of that plan: homogeneous sequential branch/join execution with public DSL, validation, runtime routing, observer events, stateful storage, tests, and examples.
 
-The broader graph-shaped plan is still not complete. Heterogeneous branch outputs and move-only branch inputs have first implementation slices, including duplicate-output variant routing and negative coverage for move-only predicates that would consume by value. `type_list` multi-input joins, descriptor-backed stable graph export, stable golden export schemas, and backend branch execution remain roadmap work.
+The broader graph-shaped plan is still not complete. Heterogeneous branch outputs and move-only branch inputs have first implementation slices, including duplicate-output variant routing, explicit raw-vs-unified output validation helpers, and negative coverage for move-only predicates that would consume by value. `type_list` multi-input joins, descriptor-backed stable graph export, stable golden export schemas, and backend branch execution remain roadmap work.
 
 ## Non-goals for the current MVP
 
@@ -63,7 +72,7 @@ Those decisions belong to a later implementation slice with explicit tests, exam
 2. **Compile-time validation coverage** ✅  
    Checks for branch predicates, join context, and type compatibility. Branch-output and join validation have accepted evidence.
 3. **Runtime execution coverage** ✅  
-   Sequential branch routing with first-match-wins short-circuit, observer events, error propagation, stateful storage, join stage execution, variant joins for heterogeneous outputs including duplicate output alternatives by index, and move-only input consumption by the selected branch stage.
+   Sequential branch routing with first-match-wins short-circuit, observer events, error propagation, stateful storage, const-input predicate evaluation, join stage execution, variant joins for heterogeneous outputs including duplicate output alternatives by index, and move-only input consumption by the selected branch stage.
 4. **Targeted tests and examples** ✅  
    Positive runtime tests, negative compile-fail diagnostics, branch export compile-pass tests, and user-facing examples.
 

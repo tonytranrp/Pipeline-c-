@@ -31,6 +31,8 @@ using public_branch_node = pb::branch_node<public_branch_case, public_review_bra
 using public_branch_outputs = pb::branch_outputs<public_branch_case, public_review_branch_case>;
 using public_review_branch_outputs = pb::branch_outputs<public_review_branch_case>;
 using public_branch_output_validation = pb::branch_output_validation<public_review_branch_outputs, reviewed>;
+using public_branch_unified_output_validation =
+    pb::branch_unified_output_validation<public_branch_outputs, std::variant<parsed, reviewed>>;
 using public_join_node = pb::join_node<join>;
 using public_join_output = pb::join_output<public_join_node>;
 using public_join_validation = pb::join_validation<public_branch_outputs, public_join_node>;
@@ -57,6 +59,15 @@ static_assert(std::is_same_v<public_branch_output_validation::branch_outputs_typ
 static_assert(std::is_same_v<public_branch_output_validation::input_type, raw>);
 static_assert(std::is_same_v<public_branch_output_validation::output_type, reviewed>);
 static_assert(public_branch_output_validation::output_count == 1);
+static_assert(std::is_same_v<public_branch_unified_output_validation::branch_outputs_type,
+                             public_branch_outputs>);
+static_assert(std::is_same_v<public_branch_unified_output_validation::raw_output_types,
+                             pb::meta::type_list<parsed, reviewed>>);
+static_assert(std::is_same_v<public_branch_unified_output_validation::unified_output_type,
+                             std::variant<parsed, reviewed>>);
+static_assert(std::is_same_v<public_branch_unified_output_validation::output_type,
+                             std::variant<parsed, reviewed>>);
+static_assert(public_branch_unified_output_validation::output_count == 2);
 static_assert(std::is_same_v<public_join_node::stage_type, join>);
 static_assert(std::is_same_v<public_join_node::input_type, std::variant<parsed, reviewed>>);
 static_assert(std::is_same_v<public_join_node::output_type, parsed>);

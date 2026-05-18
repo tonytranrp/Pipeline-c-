@@ -39,6 +39,7 @@ using core::branch_raw_output_types;
 using core::branch_raw_output_types_t;
 using core::branch_unified_output;
 using core::branch_unified_output_t;
+using core::branch_unified_output_validation;
 using core::case_;
 using core::connectable_v;
 using core::join_node;
