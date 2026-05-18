@@ -12,6 +12,7 @@ Today the repository supports:
 - **public branch/join DSL**: `pb::from<Input>::branch<CaseA, CaseB>::to<Output>` and `pb::from<Input>::branch<CaseA, CaseB>::join<JoinStage>::to<Output>`
 - **compile-time join validation**: `pipeline_state::join` validates branch context (must follow `::branch<...>`, join stage input must match branch output)
 - **runtime branch execution**: predicate evaluation, first-match-wins case selection with short-circuit, branch-stage execution, observer events (`on_case_selected`, `on_case_skipped`), error annotation with `[branch]` prefix
+- **branch child identities**: unnamed branch predicates/stages receive runtime fallback keys such as `branch.case.0.predicate` and `branch.case.0.stage` so observer/error events do not collapse to the parent branch stage index
 - **stateful branch execution**: branch predicates and stages respect `pb::runtime::stateful_sequential` policy, preserving stage state across multiple runs
 - branch marker aliases (`case_`, `branch_case`, `branch_node`, `join_node`) plus `branch_case_output` / `branch_outputs` marker metadata, branch source compatibility, predicate marker, homogeneous branch-node case-input, branch-output compatibility validation, join consumption validation, invalid join-stage, and branch-output marker misuse diagnostics
 - runtime route descriptor and ordered `select_route(...)` helper
@@ -35,16 +36,11 @@ Branch/join support is the main step from a linear pipeline DSL to a richer grap
 
 Without this feature, the current library remains intentionally limited to one validated chain of stages.
 
-## Intended scope relative to the research plan
+## Scope relative to the research plan
 
-The research plan treats branch/join as planned work, not current behavior:
+The research plan originally treated branch/join as post-MVP work after the linear chain. The current repository now ships the first production-readiness slice of that plan: homogeneous sequential branch/join execution with public DSL, validation, runtime routing, observer events, stateful storage, tests, and examples.
 
-- branch and join modeling is explicitly deferred until after the MVP linear chain
-- a future branch graph builder slice introduces `fork`, `select`, `join`, and branch labels
-- current validation work covers branch predicate checks, branch output compatibility, join compatibility, and branch diagnostics
-- future runtime work covers sequential branch execution before more advanced backends
-
-The current repository documents the intent and ships validation-only pieces, but it does not yet ship the public graph-builder API or execution model needed to claim executable branch/join support.
+The broader graph-shaped plan is still not complete. Heterogeneous branch outputs, move-only branch inputs, multi-input join execution, full graph export, JSON export, and backend branch execution remain roadmap-only.
 
 ## Non-goals for the current MVP
 
@@ -81,7 +77,7 @@ Those decisions belong to a later implementation slice with explicit tests, exam
 - compile-fail diagnostic coverage for join-without-branch, join-type-mismatch, and 15+ other branch/join boundary diagnostics
 - runtime branch execution tests: `sequential_branch_smoke.cpp`, `sequential_branch_execution_smoke.cpp`, `sequential_branch_comprehensive.cpp`
 - user-facing branch examples: `branch_routing_demo.cpp` (3-case document routing + join), `branch_error_handling.cpp` (error propagation)
-- observer event coverage for branch case selection/skipping
+- observer event coverage for branch case selection/skipping and unnamed predicate/stage fallback identities
 - stateful branch storage tested via `sequential_branch_comprehensive.cpp`
 
 Heterogeneous branch output joins, move-only branch inputs, and full graph export remain as future slices.

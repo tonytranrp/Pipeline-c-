@@ -6,7 +6,7 @@ This page maps the major themes in `research/pipeline_builder_cpp_research_plan.
 For a compact release-governance table that maps each gap to evidence, tests, release status, and the next required slice, see [Research Verification Matrix](research-verification-matrix.md).
 ## Current audited baseline
 
-Last local audit baseline: `aa3b8f6` on `main`. The current MVP audit found the linear pipeline builder sound and locally green: developer configure/build/CTest completed with **78/78 tests passed**. Use `continue.md` as the resume checkpoint for the next long-horizon team wave.
+Historical local audit baseline: `aa3b8f6` on `main`. That MVP audit found the linear pipeline builder sound and locally green: developer configure/build/CTest completed with **78/78 tests passed**. Later branch hardening updates promoted homogeneous sequential branch execution into the supported surface, so use current candidate verification rather than the old audit when making branch/join claims.
 
 This baseline supports planning and documentation claims only for the linear MVP. Any later code change should refresh the evidence before release-facing wording is updated.
 
@@ -158,13 +158,14 @@ The current repository can safely claim:
 - linear typed pipeline validation
 - explicit stage metadata and compile-time introspection helpers
 - sequential runtime execution for validated linear pipelines
+- homogeneous sequential branch execution with optional join stages
 - compile-pass, compile-fail, runtime, example, package-consumer, and benchmark smoke scaffolding
 - release-readiness documentation that explains what evidence must be collected before tagging
 
 The current repository should **not** claim:
 
 - production-complete topology or execution coverage
-- sequential branch execution, full branch/join graph export, JSON export, fully stabilized observer contracts, optional backend execution, or a stable runtime descriptor
+- heterogeneous branch/join execution, move-only branch input execution, full branch/join graph export, JSON export, fully stabilized observer contracts, optional backend execution, or a stable runtime descriptor
 - exception-policy parity between `run()` and `try_run()` as a fully harmonized runtime guarantee
 - benchmark thresholds or CI-enforced performance budgets
 - fully frozen diagnostics across all future slices
@@ -188,4 +189,4 @@ Use these as the first finite batches when the next 3-agent team resumes:
 2. **Runtime / adapters:** harden one small result/error/observer/adapter edge case, then add targeted runtime coverage.
 3. **Updater / docs:** keep docs, examples, release notes, and this map aligned with the coding batches without promoting roadmap-only features.
 
-The next safe work should continue from shipped MVP surfaces. Sequential branch execution and full graph export remain separate design/implementation phases, not opportunistic follow-ups inside a routine hardening batch.
+The next safe work should continue from shipped MVP surfaces. Heterogeneous branch/join execution, move-only branch input execution, and full graph export remain separate design/implementation phases, not opportunistic follow-ups inside a routine hardening batch.

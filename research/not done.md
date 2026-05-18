@@ -1,68 +1,32 @@
-Checked current `main` again. Current public repo has **384 commits**, still shows **no published releases**, and README still frames it as a **compile-time validated C++20 pipeline-builder foundation**, not a finished full roadmap implementation. ([GitHub][1])
+# Current not-done map against `research/pipeline_builder_cpp_research_plan.md`
 
-## What changed / what you now have
+Updated after the homogeneous sequential branch-execution hardening pass. This file is a local planning/checkpoint artifact, not a release announcement. Prefer the current tree, tests, and docs over older public-repo snapshots when deciding what is supported.
 
-You now have more than the older MVP list:
+## What is now supported / mostly done
 
 ```text
 Done / mostly done:
 - Linear typed pipeline: pb::from<T>::then<S>::to<U>
-- Stage metadata
+- Stage metadata and public introspection helpers
 - Compile-time linear validation
 - Sequential runtime for validated linear pipelines
 - Zero-stage identity pipelines
-- Free-function and function-object adapters
-- Public introspection helpers
-- Compile-pass / compile-fail / runtime / package / benchmark smoke scaffolding
+- Free-function, member-function, and function-object adapters
+- Runtime result / expected-like plumbing
+- Runtime observer callbacks for the sequential executor
+- Linear runtime descriptor helper
+- Narrow linear DOT / JSON metadata-export helpers
+- Compile-pass / compile-fail / runtime / example / package / benchmark smoke scaffolding
+- Homogeneous sequential branch execution with optional join stages
+- Stateful branch predicate/stage storage under pb::runtime::stateful_sequential
+- Branch observer events for selected/skipped cases
+- Branch child fallback identities for unnamed predicates/stages
+- Targeted compile-fail coverage for the move-only branch-input limitation
 ```
 
-The production-readiness doc explicitly lists those as supported today. 
+## Current branch/join support boundary
 
-```text
-Partial / validation-only:
-- Branch marker aliases
-- branch_case_output / branch_outputs metadata
-- branch source compatibility checks
-- branch predicate marker validation
-- homogeneous branch-node input validation
-- branch-output compatibility validation
-- join-consumption validation
-- invalid join-stage diagnostics
-- branch-output marker misuse diagnostics
-- runtime diagnostic projection: error_record / to_record(...)
-- observer callbacks for sequential runtime
-- linear descriptor helper
-- narrow linear DOT helper
-```
-
-The roadmap gap map says branch/join is currently **validation support only**, with non-linear execution and branch routing still unimplemented.  The production-readiness doc also says the linear DOT/export helper is only narrow linear evidence, not full graph export. 
-
-## Still missing compared to the research document
-
-### 1. Sequential branch execution
-
-Status: **partially done**
-
-The branch runtime path is now implemented and tested, but the full public branch/join topology and execution contract is incomplete.
-
-Current progress vs earlier plan:
-
-- Implemented: branch runtime routing, selected-case evaluation, branch predicate execution, branch result/error propagation, runtime branch tests
-- Remaining: verified public `::branch<...>::join<...>` DSL/descriptor/join-execution path and richer branch-execution examples
-
-```text
-- observer callbacks for branch paths (runtime coverage now present)
-- branch execution tests (runtime coverage present)
-- branch execution examples (minimal smoke coverage present; more user-facing examples still needed)
-```
-
-The research document lists sequential branch execution as part of Phase 5.
-
-### 2. Real public branch/join DSL
-
-Status: **missing / marker-only**
-
-Need to implement user-facing syntax close to:
+Sequential branch execution now has an implemented supported slice:
 
 ```cpp
 using P =
@@ -75,34 +39,90 @@ using P =
     ::to<Output>;
 ```
 
-Right now the repo has marker aliases and validation helpers, but the docs say executable branch/join topology remains roadmap-only.  The research doc explicitly includes `::branch<...>::join<...>` as the target DSL. 
+Supported today:
+
+```text
+- public ::branch<...> DSL
+- public ::join<JoinStage> after branch
+- homogeneous branch outputs
+- compile-time branch source/predicate/output validation
+- compile-time join validation
+- first-match-wins sequential branch routing
+- selected branch-stage execution
+- branch result/error propagation
+- observer on_case_selected / on_case_skipped events
+- stateful branch predicates and stages with stateful_sequential
+- unnamed branch-child fallback identities such as branch.case.0.predicate
+- branch runtime tests and branch examples
+```
+
+Still unsupported:
+
+```text
+- heterogeneous branch outputs joined through type_list / variant inputs
+- move-only branch input execution
+- multi-input join execution
+- branch/join graph export
+- JSON graph export for branch/join graphs
+- parallel/backend branch execution
+```
+
+## Still missing compared to the research document
+
+### 1. Heterogeneous branch / join execution
+
+Status: **missing**
+
+The current branch runtime supports homogeneous branch outputs. The research plan still needs heterogeneous branch outputs and richer join contracts.
+
+Need to implement:
+
+```text
+- branch outputs represented as a type_list or variant-like join input
+- join stages that can consume heterogeneous branch outputs safely
+- diagnostics for unsupported / ambiguous heterogeneous joins
+- runtime tests for each heterogeneous route
+- examples explaining homogeneous versus heterogeneous branch support
+```
+
+### 2. Move-only branch input execution
+
+Status: **explicitly unsupported**
+
+`selected_branch_node` currently requires a copy-constructible `input_type` so predicates and the selected branch stage can inspect the same value. This limitation is documented and covered by `tests/compile_fail/branch_move_only_input_unsupported.cpp`.
+
+Need to design before implementing:
+
+```text
+- borrowing/reference policy for predicates
+- selected-case ownership transfer policy
+- diagnostics for unsafe reuse
+- tests for move-only inputs and non-copyable resources
+```
 
 ### 3. Full graph export
 
 Status: **missing**
 
-You have a narrow linear DOT helper, but not full graph export.
+The repo has narrow linear export helpers, but not full graph export.
 
 Need to implement:
 
 ```text
 - branch/join graph export
-- JSON export
 - stable DOT schema
 - stable JSON schema
 - graph export tests
 - graph export examples
-- graph export docs
-- graph export runtime failure/error handling
+- docs for graph export boundaries
+- export behavior for unsupported / future graph shapes
 ```
-
-The research plan calls for `pb::export_dot(...)` and `pb::export_json(...)`.  Current repo docs state that the current DOT helper is only linear and full graph export remains roadmap-only. 
 
 ### 4. Stable runtime descriptor / export contract
 
 Status: **partial, not stable**
 
-Current repo has a linear descriptor helper, but not a stable descriptor/export contract.
+Current repo has linear descriptor helpers, but not a stable descriptor/export contract.
 
 Need to implement:
 
@@ -117,11 +137,11 @@ Need to implement:
 - descriptor-specific tests
 ```
 
-The roadmap gap map says `pb::make_descriptor<Pipeline>()` and `engine.descriptor()` exist as narrow linear helpers, but stable export/compatibility is still roadmap-only. 
-
 ### 5. Optional execution backends
 
 Status: **missing**
+
+The only supported backend remains the standard-library sequential runtime.
 
 Need to implement:
 
@@ -137,11 +157,11 @@ Need to implement:
 - backend benchmarks
 ```
 
-The research plan lists thread-pool, oneTBB, Taskflow, stdexec, and backend feature matrix as Phase 6.  Current repo docs say the only supported backend remains the standard-library sequential runtime. 
-
 ### 6. Full policy DSL
 
-Status: **missing**
+Status: **partial / incomplete**
+
+Some policy seams exist, but the full research-plan policy DSL is not complete.
 
 Need to implement:
 
@@ -151,33 +171,29 @@ Need to implement:
 - exception policy DSL
 - copying / move-only policy
 - reference lifetime policy
-- state storage policy
+- state storage policy beyond the current sequential storage aliases
 - assertion / contract policy
 - diagnostics verbosity policy
 - executor capability policy
 ```
 
-The research document defines policies as type parameters, with examples like `::with<pb::policy::errors::expected>`.  Current repo docs still describe broader exception-policy DSL as future work. 
-
 ### 7. Full stateful stage storage policy
 
-Status: **partial / not public guarantee**
+Status: **partial**
+
+Sequential `stateful_sequential` now preserves stored linear stages and stored branch predicates/stages. The broader public lifetime/ownership policy is still incomplete.
 
 Need to implement and document:
 
 ```text
-- default-construct-per-run policy
-- store-in-engine policy as stable API
 - borrowed reference policy
 - shared ownership policy
 - unique ownership policy
-- move-only state policy
-- reset policy
+- explicit reset policy
 - thread-local policy for future parallel backends
 - state lifetime diagnostics
+- state storage examples for resource-owning stages
 ```
-
-The research plan requires stateful stage storage in Phase 2 and explicit state/lifetime handling in the integration plan.  The current roadmap says explicit stateful stage storage policy is not a current public guarantee. 
 
 ### 8. Full adapter matrix
 
@@ -201,43 +217,40 @@ Need to implement or harden:
 - adapter examples for each supported shape
 ```
 
-The research plan lists free functions, function pointers, stateless/stateful function objects, lambdas, member functions, coroutines, senders, exception-throwing functions, void-returning functions, references, move-only values, and C API wrappers as target user-code shapes. 
-
 ### 9. Runtime trace export
 
-Status: **missing**
+Status: **partial / early surface only**
+
+Trace-related scaffolding exists, but not a complete trace export feature.
 
 Need to implement:
 
 ```text
-- trace event type
+- stable trace event type
 - trace sink interface
 - trace serialization
-- runtime trace export
 - observer-to-trace adapter
 - trace examples
 - trace overhead benchmark
 ```
 
-The research plan includes runtime trace export under Phase 4 diagnostics/tooling.  Current observer support is only partial and sequential-runtime scoped. 
-
 ### 10. Stable diagnostics contract
 
 Status: **partial**
 
+Compile-fail and runtime diagnostic coverage is strong for current boundaries, but the stable diagnostics contract is not complete.
+
 Need to improve:
 
 ```text
-- stable diagnostic wording
+- stable diagnostic wording policy
 - golden diagnostic tests for each major error
 - cross-compiler diagnostic parity checks
 - graph-aware diagnostics
-- machine-readable diagnostic records
+- machine-readable diagnostic records as a stable schema
 - suggested-fix diagnostics
 - source-location-rich diagnostics
 ```
-
-Current docs say public diagnostics are covered by compile-fail smoke tests, but exact wording is still being hardened.  The research plan treats readable diagnostics and compile-fail tests as product features. 
 
 ### 11. Compile-time performance baselines and budgets
 
@@ -257,8 +270,6 @@ Need to implement:
 - threshold failure policy
 ```
 
-The research document requires compile-time baselines, regression tracking, and compile-time benchmarks as release-quality gates.  Current repo docs say benchmark scaffolding exists, but release thresholds and CI regression budgets are not established. 
-
 ### 12. Cross-compiler release matrix
 
 Status: **missing evidence**
@@ -276,8 +287,6 @@ Need to collect:
 - public-header compile checks across compilers
 ```
 
-The research plan requires compiler matrix coverage and public C++20/C++23 support boundaries.  Current repo docs say cross-compiler validation beyond the local configured toolchain remains a release gate. 
-
 ### 13. C++ modules
 
 Status: **missing**
@@ -291,8 +300,6 @@ Need to implement later:
 - module compatibility tests
 - module documentation
 ```
-
-The research document recommends modules later to reduce include cost, while keeping headers available. 
 
 ### 14. C++26 feature gates
 
@@ -309,8 +316,6 @@ Need to implement later:
 - fallback behavior
 ```
 
-The research plan says C++26 reflection, contracts, pack indexing, and better static assertions should stay feature-gated until the compiler matrix proves support. 
-
 ### 15. Graph visualization CLI
 
 Status: **missing**
@@ -326,26 +331,34 @@ Need to implement:
 - CLI docs
 ```
 
-The research checklist includes CLI prototype work under tooling. 
-
 ### 16. Release publication
 
-Status: **missing**
+Status: **not published**
 
-Need to implement / collect:
+Fresh local package-release evidence now exists for this worktree, but publication is still not done.
+
+Collected locally in the latest hardening pass:
 
 ```text
-- fresh package-release-clang-ninja configure evidence
-- fresh build evidence
-- fresh CTest evidence
-- fresh package target evidence
-- package artifact path
-- release notes
+- cmake --preset clang-dev-ninja: passed
+- cmake --build --preset clang-dev-ninja: passed
+- ctest --preset clang-dev-ninja --output-on-failure: passed, 124/124
+- cmake --preset package-release-clang-ninja: passed
+- cmake --build --preset package-release-clang-ninja: passed
+- ctest --preset package-release-clang-ninja --output-on-failure: passed, 124/124
+- cmake --build --preset package-release-clang-ninja --target package: passed
+- package artifact: build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz
+```
+
+Still needed before publishing:
+
+```text
+- final candidate SHA decision
+- release notes matching supported/unsupported boundaries
+- cross-compiler evidence or explicit release limitation
 - v0.1.0 tag
 - published GitHub release
 ```
-
-The research plan ends Phase 7 with package config, docs, CI compiler matrix, and publishing `v0.1.0`.  GitHub currently shows no releases published. ([GitHub][1])
 
 ## What to improve next, in order
 
@@ -353,54 +366,51 @@ The research plan ends Phase 7 with package config, docs, CI compiler matrix, an
 1. Finish run() / try_run() policy hardening.
 2. Add standard std::expected matrix evidence or clear fallback wording.
 3. Record compile-time baselines for 5-stage and 50-stage chains.
-4. Define explicit stateful stage storage policy.
-5. Convert branch/join validation into sequential branch execution.
-6. Add branch execution runtime tests.
-7. Add branch execution examples.
-8. Define stable runtime descriptor schema.
-9. Expand linear DOT helper into tested graph export boundary.
-10. Add JSON export.
-11. Create backend feature matrix.
-12. Prototype thread-pool backend before oneTBB/Taskflow/stdexec.
-13. Harden observer ABI/event ordering/lifecycle docs.
-14. Add release compiler matrix evidence.
-15. Run package-release evidence on exact candidate SHA.
-16. Tag and publish v0.1.0 only after docs match test evidence.
+4. Define the broader stateful stage storage/lifetime policy.
+5. Design heterogeneous branch-output / join semantics.
+6. Design move-only branch input execution policy.
+7. Define stable runtime descriptor schema.
+8. Expand linear DOT helper into tested graph export boundary.
+9. Add JSON graph export.
+10. Create backend feature matrix.
+11. Prototype thread-pool backend before oneTBB/Taskflow/stdexec.
+12. Harden observer ABI/event ordering/lifecycle docs.
+13. Add release compiler matrix evidence.
+14. Decide final candidate SHA and update release notes.
+15. Tag and publish v0.1.0 only after docs match test evidence.
 ```
 
 ## Updated status score
 
 ```text
-Linear MVP foundation:              8.2 / 10
-Runtime/error MVP:                  7.0 / 10
-Diagnostics/validation:             7.2 / 10
-Branch/join validation:             6.5 / 10
-Executable branch/join:             1.5 / 10
-Graph export:                       2.5 / 10
-Stable descriptor/export contract:  3.0 / 10
+Linear MVP foundation:              8.5 / 10
+Runtime/error MVP:                  7.2 / 10
+Diagnostics/validation:             7.6 / 10
+Homogeneous branch/join execution:  8.2 / 10
+Stateful branch storage:            8.0 / 10
+Graph export:                       3.0 / 10
+Stable descriptor/export contract:  3.2 / 10
 Backends beyond sequential:         0.5 / 10
-Release readiness:                  5.5 / 10
-Full research-plan completion:      4.4 / 10
+Release readiness:                  6.5 / 10
+Full research-plan completion:      5.0 / 10
 ```
 
 ## Main conclusion
 
-The repo is no longer just a basic linear MVP. It now has meaningful validation and diagnostic infrastructure around branch/join boundaries, runtime diagnostic identity, observer checks, a linear descriptor helper, and a narrow DOT helper.
+The repo is no longer just a basic linear MVP. It now has a real homogeneous sequential branch/join execution slice with validation, runtime routing, stateful storage, observer events, examples, and tests.
 
-The biggest unfinished research-plan items are still:
+The biggest unfinished research-plan items are now:
 
 ```text
-- sequential branch execution
-- real public branch/join DSL execution
+- heterogeneous branch/join execution
+- move-only branch input execution
 - full graph export
-- JSON export
+- JSON graph export
 - stable runtime descriptor/export contract
 - optional backends
 - full policy DSL
-- stateful stage storage policy
+- broader stateful storage/lifetime policy
 - compile-time performance budgets
 - cross-compiler release evidence
 - v0.1.0 release publication
 ```
-
-[1]: https://github.com/tonytranrp/Pipeline-c- "GitHub - tonytranrp/Pipeline-c-: Pipeline-builder · GitHub"

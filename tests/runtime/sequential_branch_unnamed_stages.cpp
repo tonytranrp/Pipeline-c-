@@ -1,6 +1,8 @@
 #include <pb/pipeline.hpp>
 #include <cassert>
+#include <algorithm>
 #include <string>
+#include <string_view>
 #include <vector>
 
 struct Input { int value{}; };
@@ -66,30 +68,51 @@ int main() {
   RecordingObserver observer;
   engine.set_observer(&observer);
 
-  // All stages are unnamed — stage_key() / stage_name() not defined.
-  // The runtime should generate distinct fallback identities for each predicate
-  // and branch stage so they don't collide.
+  // All predicates and branch stages are unnamed — stage_key() / stage_name()
+  // are not defined. The runtime should generate distinct branch-child
+  // fallback identities so predicate/stage observer events do not collide even
+  // though they share the parent branch node's pipeline StageIndex.
   auto result = engine.run(Input{25});
   assert(result.has_value());
   assert(result.value().result == 50);
+
+  auto second = engine.run(Input{75});
+  assert(second.has_value());
+  assert(second.value().result == 225);
 
   // The branch node always has key="branch"
   assert(contains(observer.events, "start:branch"));
   assert(contains(observer.events, "success:branch"));
 
-  // Predicates and stages get numeric fallback keys from their StageIndex.
-  // They all share the branch node's StageIndex, so they should NOT collide
-  // (each gets a unique identity from the runtime's stage_id_for).
-  // Verify that case_selected and case_skipped events reference distinct
-  // predicate keys (even though they share StageIndex).
-  bool saw_case_selected = false;
-  bool saw_case_skipped = false;
+  assert(contains(observer.events, "start:branch.case.0.predicate"));
+  assert(contains(observer.events, "success:branch.case.0.predicate"));
+  assert(contains(observer.events, "start:branch.case.0.stage"));
+  assert(contains(observer.events, "success:branch.case.0.stage"));
+
+  assert(contains(observer.events, "start:branch.case.1.predicate"));
+  assert(contains(observer.events, "success:branch.case.1.predicate"));
+  assert(contains(observer.events, "start:branch.case.1.stage"));
+  assert(contains(observer.events, "success:branch.case.1.stage"));
+
+  assert(contains(observer.events, "case_selected:branch:0:branch.case.0.predicate"));
+  assert(contains(observer.events, "case_skipped:branch:0:branch.case.0.predicate"));
+  assert(contains(observer.events, "case_selected:branch:1:branch.case.1.predicate"));
+
+  std::vector<std::string> branch_child_keys;
   for (const auto& event : observer.events) {
-    if (event.find("case_selected:branch:") == 0) saw_case_selected = true;
-    if (event.find("case_skipped:branch:") == 0) saw_case_skipped = true;
+    constexpr auto start_prefix = std::string_view{"start:"};
+    constexpr auto success_prefix = std::string_view{"success:"};
+    if (event.rfind(start_prefix, 0) == 0) {
+      branch_child_keys.push_back(event.substr(start_prefix.size()));
+    } else if (event.rfind(success_prefix, 0) == 0) {
+      branch_child_keys.push_back(event.substr(success_prefix.size()));
+    }
   }
-  assert(saw_case_selected);
-  assert(saw_case_skipped);
+  assert(std::find(branch_child_keys.begin(), branch_child_keys.end(), "0") == branch_child_keys.end());
+  assert(std::find(branch_child_keys.begin(), branch_child_keys.end(), "branch.case.0.predicate") !=
+         branch_child_keys.end());
+  assert(std::find(branch_child_keys.begin(), branch_child_keys.end(), "branch.case.1.stage") !=
+         branch_child_keys.end());
 
   return 0;
 }
