@@ -63,17 +63,15 @@ The workflow records the exact commit SHA and tool versions, then runs configure
 
 ## Benchmark smoke targets
 
-Benchmark targets are intentionally opt-in so the default developer presets stay fast. Enable them on an existing preset when you want a local smoke check for header inclusion cost or basic sequential runtime overhead:
+The lightweight compile-time/header smoke targets are available whenever tests are enabled, including the normal `clang-dev-ninja` developer preset. The runtime benchmark target remains opt-in through `PB_BUILD_BENCHMARKS=ON` or the dedicated benchmark presets.
 
 ```bash
+cmake --preset clang-dev-ninja
+cmake --build --preset clang-dev-ninja --target pb_compile_time_benchmarks
+ctest --preset clang-dev-ninja --output-on-failure -R 'benchmark|compile_time|header|bench'
+
 cmake --preset clang-dev-ninja -DPB_BUILD_BENCHMARKS=ON
-cmake --build --preset clang-dev-ninja --target pb_bench_include_pipeline
-cmake --build --preset clang-dev-ninja --target pb_bench_compile_chain_5
-cmake --build --preset clang-dev-ninja --target pb_bench_compile_chain_50
 cmake --build --preset clang-dev-ninja --target pb_bench_sequential_5_stage
-./build/clang-dev-ninja/bench/pb_bench_include_pipeline
-./build/clang-dev-ninja/bench/pb_bench_compile_chain_5
-./build/clang-dev-ninja/bench/pb_bench_compile_chain_50
 ./build/clang-dev-ninja/bench/pb_bench_sequential_5_stage
 ```
 

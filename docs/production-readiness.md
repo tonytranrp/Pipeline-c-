@@ -12,7 +12,7 @@ This project is still an MVP foundation for the roadmap in `research/pipeline_bu
 - Free-function and function-object adapters for legacy code integration.
 - Sequential runtime execution for validated linear pipelines, including zero-stage identity pipelines.
 - Sequential branch execution with optional join stages, observer case events, stateful branch storage, branch-child fallback identities, heterogeneous branch outputs represented as `std::variant`, selected-output type-list joins, and move-only selected-branch input consumption when predicates observe by `const input_type&`. Variant joins preserve duplicate output alternatives by index. Type-list selected-output joins dispatch by C++ type; duplicate same-type branch outputs share the same overload unless the user encodes case identity into the output type.
-- Compile-pass, compile-fail, runtime, example, package, benchmark smoke scaffolding, and cross-compiler validation workflow.
+- Compile-pass, compile-fail, runtime, example, package, compile-time/header benchmark smoke scaffolding, and cross-compiler validation workflow.
 
 ## Current release gate status
 
@@ -40,7 +40,7 @@ cmake --build --preset clang-dev-ninja
 ctest --preset clang-dev-ninja --output-on-failure
 ```
 
-When touching examples or benchmark guidance, also run the relevant smoke targets from [Build and Verification](build.md). Record the preset, compiler, and build type with any benchmark timing because the benchmark targets are not release performance gates yet.
+When touching examples or benchmark guidance, also run the relevant smoke targets from [Build and Verification](build.md). For compile-time/header scaffolding, use `cmake --build --preset clang-dev-ninja --target pb_compile_time_benchmarks` plus `ctest --preset clang-dev-ninja --output-on-failure -R 'benchmark|compile_time|header|bench'`. Record the preset, compiler, and build type with any benchmark timing because the benchmark targets are not release performance gates yet.
 
 ## Package consumer smoke
 
@@ -74,9 +74,9 @@ Before cutting a release candidate, collect evidence for:
 - Public diagnostics are covered by compile-fail smoke tests, but the exact diagnostic wording is still being hardened. See [Diagnostics Roadmap / Status](diagnostics-roadmap.md) for the current supported boundary versus the richer roadmap.
 - Runtime error propagation, `error_record` / `to_record(...)` diagnostic projection, observer callbacks, custom expected-like diagnostic stage identity, and linear descriptor/observer/error identity checks exist for the current sequential path; richer exception policies, `std::expected` integration, exported diagnostic artifacts, and fully stable observer contracts are future slices. Zero-stage identity pipelines have no stage callbacks because no stage executes.
 - Sequential `run()` and `try_run()` currently have tested result/expected-like exception capture paths, while the broader exception-policy DSL remains future work.
-- DOT/JSON export helpers now cover linear and supported branch pipelines and branch-aware helper output is descriptor-record-backed, including branch topology in JSON, DOT label escaping, and helper-output golden regression tests. Stable graph/export compatibility remains roadmap-only until schema decisions, release-grade golden compatibility fixtures, CLI/file behavior, examples, and compatibility tests land.
+- DOT/JSON export helpers now cover linear and selected-output branch pipelines and branch-aware helper output is descriptor-record-backed, including branch topology in JSON, branch case identity fields, DOT label escaping, JSON string escaping, and helper-output golden regression tests for `pb.core.graph.v1`. Stable graph/export compatibility remains roadmap-only until schema decisions, CLI/file behavior, examples, and compatibility tests land.
 - Optional backend support requires a backend feature matrix before implementation claims; the current supported execution backend remains the standard-library sequential runtime.
-- Benchmark scaffolding can prove the targets build and run, but release thresholds and CI regression budgets are not established.
+- Compile-time/header benchmark smoke targets can prove the representative header, 5-stage, and 50-stage translation units build and run from the developer preset, but release timing thresholds and CI regression budgets are not established.
 - Cross-compiler validation has current evidence for GCC C++20/C++23, Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release on code SHA `f56fa54`; rerun on the final tag candidate if additional non-doc code changes land. MSVC C++23, Windows package-release, C++26 gates, and other platform/package-manager matrices remain unclaimed.
 
 ## Small production-readiness slice (safe, immediate)

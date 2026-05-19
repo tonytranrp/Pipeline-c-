@@ -14,14 +14,23 @@ namespace pb::core {
 namespace detail {
 
 inline void append_json_string(std::ostringstream& stream, std::string_view value) {
+  constexpr auto hex_digits = std::string_view{"0123456789abcdef"};
+
   stream << '"';
   for (const auto ch : value) {
+    const auto byte = static_cast<unsigned char>(ch);
     switch (ch) {
     case '"':
       stream << "\\\"";
       break;
     case '\\':
       stream << "\\\\";
+      break;
+    case '\b':
+      stream << "\\b";
+      break;
+    case '\f':
+      stream << "\\f";
       break;
     case '\n':
       stream << "\\n";
@@ -33,7 +42,11 @@ inline void append_json_string(std::ostringstream& stream, std::string_view valu
       stream << "\\t";
       break;
     default:
-      stream << ch;
+      if (byte < 0x20U) {
+        stream << "\\u00" << hex_digits[(byte >> 4U) & 0x0FU] << hex_digits[byte & 0x0FU];
+      } else {
+        stream << ch;
+      }
       break;
     }
   }

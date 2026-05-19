@@ -4,10 +4,10 @@ Status snapshot for the current branch/export hardening and validation batch. Us
 
 ## Candidate snapshot
 
-- Latest pushed cross-compiler validation SHA: `f56fa54399a7a6a4f1dd55433634f13aee9c3174` on `main` / `origin/main`.
+- Latest GitHub cross-compiler validation SHA: `f56fa54399a7a6a4f1dd55433634f13aee9c3174` on `main` / `origin/main` at the time of that run. Newer non-doc commits must rerun this workflow before release tagging.
 - Cross-compiler validation workflow for that SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26070113329> — **passed**.
 - Normal CI workflow for that SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26069390429> — **passed**.
-- This snapshot has fresh GitHub cross-compiler and normal CI evidence for the exact commit SHA above. Rerun both workflows if later non-doc code changes land before release tagging.
+- This snapshot has fresh GitHub cross-compiler and normal CI evidence for the exact commit SHA above. The post-validation local hardening batch adds export-helper escaping/golden coverage and compile-time/header benchmark smoke targets; rerun both workflows on the final pushed SHA before release tagging.
 
 ## What can be claimed with current evidence
 
@@ -17,7 +17,7 @@ Status snapshot for the current branch/export hardening and validation batch. Us
 - Join validation checks the unified branch execution output and also supports selected-output type-list joins whose stage declares the raw branch output `pb::meta::type_list<...>` and overloads every raw output type.
 - Move-only selected-branch input consumption is supported when predicates inspect by `const input_type&`; consuming predicates for move-only inputs remain unsupported and have negative compile-fail coverage.
 - Stateful branch predicates/stages are covered under `pb::runtime::stateful_sequential`, and predicate invocation uses const-input semantics in both per-run and stateful paths.
-- DOT/JSON helpers cover linear and supported branch pipelines, including descriptor-record-backed branch helper rendering, JSON branch topology detection, the current top-level JSON fields (`schema_version`, `topology`, `stage_count`, `edge_count`, `stages`, `edges`), DOT label escaping, and helper-output golden regressions.
+- DOT/JSON helpers cover linear and selected-output branch pipelines, including descriptor-record-backed branch helper rendering, JSON branch topology detection, the current top-level JSON fields (`schema_version`, `topology`, `stage_count`, `edge_count`, `stages`, `edges`), branch case identity fields, DOT label escaping, JSON string escaping, and helper-output golden regressions for `pb.core.graph.v1`.
 - `pb::runtime::thread_pool` is a standalone utility only; it is not a pipeline backend.
 
 ## What must stay roadmap-only
@@ -28,7 +28,7 @@ Status snapshot for the current branch/export hardening and validation batch. Us
 - Thread-pool, oneTBB, Taskflow, or stdexec pipeline executor backends.
 - C++ modules and C++26 reflection/contracts feature integrations.
 - Stable/frozen diagnostic wording across all future features.
-- Benchmark thresholds, dashboards, or CI-enforced compile-time/runtime performance budgets.
+- Benchmark thresholds, dashboards, release timing baselines, or CI-enforced compile-time/runtime performance budgets.
 
 ## Validation evidence collected
 
@@ -67,9 +67,10 @@ See [Cross-Compiler Validation Status](cross-compiler-validation.md) for the det
 
 - Added/validated a cross-compiler workflow covering GCC C++20/C++23, Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release.
 - Added selected-output type-list joins for the supported sequential branch slice and kept true all-branches fan-in/backend joins out of scope.
-- Moved DOT/JSON helper rendering onto descriptor records for supported branch/export shapes while keeping stable descriptor/export schema guarantees out of scope.
+- Hardened DOT/JSON helper regression coverage for supported branch/export shapes while keeping stable descriptor/export schema guarantees out of scope.
+- Added developer-preset compile-time/header benchmark smoke targets and an aggregate `pb_compile_time_benchmarks` target; no timing thresholds are enforced.
 - Fixed MSVC validation portability in the workflow by running CTest under the MSVC compiler environment and keeping package smoke in the dedicated package-release lane.
 
 ## Release note guardrail
 
-Release notes may mention the matrix pass only with exact SHA `f56fa54399a7a6a4f1dd55433634f13aee9c3174` and workflow link <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26070113329>. Rerun the cross-compiler workflow and update this page plus `docs/cross-compiler-validation.md` if later non-doc code changes land before tagging.
+Release notes may mention the matrix pass only with exact SHA `f56fa54399a7a6a4f1dd55433634f13aee9c3174` and workflow link <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26070113329>. Rerun the cross-compiler workflow and update this page plus `docs/cross-compiler-validation.md` because this branch now contains later non-doc hardening changes.

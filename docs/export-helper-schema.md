@@ -5,6 +5,7 @@ This page documents the current helper-output shape produced by
 runtime descriptor records in `include/pb/runtime/descriptor.hpp`.
 
 It is a **helper schema**, not a stable external interchange contract.
+For the currently supported linear and selected-output branch shapes, the helper output is regression-tested as `pb.core.graph.v1`; future fan-in/backend/CLI export remains outside this helper contract.
 
 ## Scope
 
@@ -50,7 +51,9 @@ These are the current top-level field names asserted by the helper tests:
 The helper currently writes only those top-level fields, in that order.
 `schema_version` identifies the helper schema, `topology` distinguishes linear
 from branch graphs, `stage_count` and `edge_count` summarize the graph shape,
-and `stages` / `edges` carry the detailed records.
+and `stages` / `edges` carry the detailed records. String fields are emitted
+with JSON escaping for quotes, backslashes, common control escapes, and remaining
+ASCII control bytes as `\u00xx`.
 
 ### Stage records
 
@@ -217,6 +220,7 @@ The branch-aware rendering is driven by:
 
 The current helper-schema claims are covered by:
 
+- `tests/compile_pass/export_golden.cpp`
 - `tests/compile_pass/export_json_branch.cpp`
 - `tests/compile_pass/export_dot_branch.cpp`
 - `tests/compile_pass/export_json.cpp`
@@ -227,6 +231,8 @@ The current helper-schema claims are covered by:
 
 ## Contract caution
 
-This helper schema documents current output shape only.
-If a future change alters field names, field order, labels, or branch rendering,
-the docs and helper regression tests should be updated together.
+This helper schema documents current output shape only. The regression-tested
+portion covers linear pipelines and selected-output branch pipelines, including
+branch case identity fields and JSON escaping. If a future change alters field
+names, field order, labels, escaping, or branch rendering, the docs and helper
+regression tests should be updated together.

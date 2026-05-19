@@ -265,14 +265,22 @@ Need to improve:
 
 ### 11. Compile-time performance baselines and budgets
 
-Status: **scaffolding only**
+Status: **partial / smoke baseline scaffolding**
 
-Need to implement:
+Now covered for the current developer preset surface:
 
 ```text
-- 5-stage compile-time baseline
-- 50-stage compile-time baseline
-- header inclusion cost baseline
+- header inclusion smoke target: pb_bench_include_pipeline
+- 5-stage compile-time smoke target: pb_bench_compile_chain_5
+- 50-stage compile-time smoke target: pb_bench_compile_chain_50
+- aggregate build target: pb_compile_time_benchmarks
+- CTest labels: benchmark, compile_time, header, bench
+```
+
+Still need to implement before release-grade performance governance:
+
+```text
+- recorded release-candidate timing numbers for 5-stage and 50-stage chains
 - branch/join compile-time baseline
 - CI regression budget
 - ftime-trace aggregation
@@ -392,7 +400,7 @@ Still needed before publishing:
 ```text
 1. Finish run() / try_run() policy hardening.
 2. Add standard std::expected matrix evidence or clear fallback wording.
-3. Record compile-time baselines for 5-stage and 50-stage chains.
+3. Record release-candidate timing numbers for the existing header, 5-stage, and 50-stage compile-time smoke targets.
 4. Define the broader stateful stage storage/lifetime policy.
 5. Finish parallel all-branches fan-in / true backend multi-input join semantics beyond the selected-output sequential slice.
 6. Expand move-only branch input policy beyond const-ref predicates plus selected-stage consumption.

@@ -6,14 +6,24 @@ This project treats benchmarks as smoke and profiling scaffolding, not release g
 The release-facing status for benchmark thresholds and compile-time budgets is summarized in [Research Verification Matrix](research-verification-matrix.md).
 ## Current benchmark surface
 
-When `PB_BUILD_BENCHMARKS=ON`, the repository builds four benchmark-oriented executables under `bench/`:
+When `PB_BUILD_TESTS=ON`, the normal developer presets now build the compile-time/header smoke executables under `bench/` so they can be exercised from the regular CTest surface:
 
 - `pb_bench_include_pipeline` — compile-time/header-surface smoke for `<pb/pipeline.hpp>`.
 - `pb_bench_compile_chain_5` — small compile-time chain smoke.
 - `pb_bench_compile_chain_50` — larger compile-time chain smoke.
+
+The aggregate build target is:
+
+```bash
+cmake --build --preset clang-dev-ninja --target pb_compile_time_benchmarks
+ctest --preset clang-dev-ninja --output-on-failure -R 'benchmark|compile_time|header|bench'
+```
+
+When `PB_BUILD_BENCHMARKS=ON`, the repository also builds the runtime benchmark smoke executable under `bench/`:
+
 - `pb_bench_sequential_5_stage` — runtime smoke for the current sequential executor.
 
-These targets are registered as CTest entries with `benchmark` and `smoke` labels, so the dedicated benchmark presets can run them without enabling the normal test suite.
+These targets are registered as CTest entries with `benchmark` and `smoke` labels. The compile-time/header targets also carry `compile_time` and/or `header` labels so they can be selected independently from runtime benchmark smoke.
 
 When `PB_BUILD_TESTS=ON`, an additional compile-time baseline test is registered:
 
@@ -78,7 +88,7 @@ The current preset surface splits benchmark work into two lanes plus a Clang tim
 | `benchmark-ninja` | `Release` | Release-like benchmark smoke lane with examples/tests disabled and benchmark targets enabled. |
 | `clang-time-trace` | `RelWithDebInfo` | Clang profiling lane with `PB_ENABLE_CLANG_TIME_TRACE=ON`; add `-DPB_BUILD_BENCHMARKS=ON` when you want trace artifacts for benchmark targets. |
 
-The normal developer presets (`dev-ninja`, `clang-dev-ninja`) keep `PB_BUILD_BENCHMARKS=OFF` by default so the common edit-build-test loop stays fast.
+The normal developer presets (`dev-ninja`, `clang-dev-ninja`) keep `PB_BUILD_BENCHMARKS=OFF` by default so the runtime benchmark stays opt-in. The compile-time/header smoke targets are lightweight and are available whenever tests are enabled.
 
 ## Benchmark smoke workflow
 
@@ -101,9 +111,11 @@ Expected outputs today:
 - CTest entries named `pb_bench_include_pipeline`, `pb_bench_compile_chain_5`, `pb_bench_compile_chain_50`, and `pb_bench_sequential_5_stage`.
 - A smoke-only signal: success means the benchmark translation units and the sequential runtime scaffold still build and run.
 
-If you only need one target during a local investigation, build it directly:
+If you only need one target during a local investigation, build it directly. The compile-time targets are available from `clang-dev-ninja`; the runtime benchmark target requires a benchmark preset or `PB_BUILD_BENCHMARKS=ON`:
 
 ```bash
+cmake --build --preset clang-dev-ninja --target pb_compile_time_benchmarks
+cmake --build --preset clang-dev-ninja --target pb_bench_include_pipeline
 cmake --build --preset bench-dev-ninja --target pb_bench_include_pipeline
 cmake --build --preset bench-dev-ninja --target pb_bench_compile_chain_5
 cmake --build --preset bench-dev-ninja --target pb_bench_compile_chain_50

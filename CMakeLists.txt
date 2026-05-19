@@ -111,7 +111,7 @@ if(PB_BUILD_TESTS AND PB_ENABLE_PACKAGE_SMOKE)
   set_tests_properties(pb_package_config_smoke PROPERTIES LABELS "package;smoke")
 endif()
 
-if(PB_BUILD_BENCHMARKS)
+if(PB_BUILD_TESTS OR PB_BUILD_BENCHMARKS)
   add_subdirectory(bench)
 endif()
 
