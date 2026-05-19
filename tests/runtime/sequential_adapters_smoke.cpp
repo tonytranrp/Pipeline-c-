@@ -1,12 +1,21 @@
 #include <pb/pipeline.hpp>
 
-#include <cassert>
+#include <cstdlib>
 #include <exception>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
+
+
+namespace {
+void pb_test_require(bool condition) {
+  if (!condition) {
+    std::abort();
+  }
+}
+}  // namespace
 
 struct Input {
   int value{};
@@ -442,38 +451,38 @@ int main() {
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
 
   auto ok = engine.run(Input{4});
-  assert(ok.has_value());
-  assert(ok.value().value == 11);
+  pb_test_require(ok.has_value());
+  pb_test_require(ok.value().value == 11);
 
   auto direct_member_engine = pb::compile<DirectMemberPipeline>(pb::runtime::sequential{});
   auto direct_member_output = direct_member_engine.run(Input{5});
-  assert(direct_member_output.value == 12);
+  pb_test_require(direct_member_output.value == 12);
 
   auto noexcept_member_output = NoexceptDirectMemberAdapter{}(Parsed{5});
-  assert(noexcept_member_output.value == 11);
+  pb_test_require(noexcept_member_output.value == 11);
 
   auto lvalue_ref_member_engine = pb::compile<LvalueRefQualifiedMemberPipeline>(pb::runtime::sequential{});
   auto lvalue_ref_member_output = lvalue_ref_member_engine.run(Input{5});
-  assert(lvalue_ref_member_output.value == 28);
+  pb_test_require(lvalue_ref_member_output.value == 28);
 
   auto noexcept_lvalue_ref_member_engine =
       pb::compile<NoexceptLvalueRefQualifiedMemberPipeline>(pb::runtime::sequential{});
   auto noexcept_lvalue_ref_member_output = noexcept_lvalue_ref_member_engine.run(Input{5});
-  assert(noexcept_lvalue_ref_member_output.value == 30);
+  pb_test_require(noexcept_lvalue_ref_member_output.value == 30);
 
   auto direct_expected_member_engine = pb::compile<DirectExpectedMemberPipeline>(pb::runtime::sequential{});
   recording_observer expected_observer{};
   direct_expected_member_engine.set_observer(&expected_observer);
 
   auto direct_expected_failed = direct_expected_member_engine.try_run(Input{-5});
-  assert(!direct_expected_failed.has_value());
-  assert(direct_expected_failed.error().category == pb::runtime::error_category::expected_error);
-  assert(direct_expected_failed.error().stage.key == "parse_member");
-  assert(direct_expected_failed.error().stage.name == "parse_member");
-  assert(direct_expected_failed.error().message == "member parse failed");
-  assert(pb::runtime::describe(direct_expected_failed.error()) ==
+  pb_test_require(!direct_expected_failed.has_value());
+  pb_test_require(direct_expected_failed.error().category == pb::runtime::error_category::expected_error);
+  pb_test_require(direct_expected_failed.error().stage.key == "parse_member");
+  pb_test_require(direct_expected_failed.error().stage.name == "parse_member");
+  pb_test_require(direct_expected_failed.error().message == "member parse failed");
+  pb_test_require(pb::runtime::describe(direct_expected_failed.error()) ==
          "expected_error at parse_member: member parse failed");
-  assert((expected_observer.events == std::vector<std::string>{
+  pb_test_require((expected_observer.events == std::vector<std::string>{
                                           "start:parse_member/parse_member",
                                           "failure:parse_member/parse_member:expected_error at parse_member: "
                                           "member parse failed",
@@ -486,17 +495,17 @@ int main() {
 
   auto direct_member_move_only_diagnostic_failed =
       direct_member_move_only_diagnostic_engine.try_run(Input{-5});
-  assert(!direct_member_move_only_diagnostic_failed.has_value());
-  assert(direct_member_move_only_diagnostic_failed.error().category ==
+  pb_test_require(!direct_member_move_only_diagnostic_failed.has_value());
+  pb_test_require(direct_member_move_only_diagnostic_failed.error().category ==
          pb::runtime::error_category::expected_error);
-  assert(direct_member_move_only_diagnostic_failed.error().stage.key ==
+  pb_test_require(direct_member_move_only_diagnostic_failed.error().stage.key ==
          "parse_member_move_only_diagnostic");
-  assert(direct_member_move_only_diagnostic_failed.error().stage.name ==
+  pb_test_require(direct_member_move_only_diagnostic_failed.error().stage.name ==
          "parse_member_move_only_diagnostic");
-  assert(direct_member_move_only_diagnostic_failed.error().message == "move-only member diagnostic failed");
-  assert(pb::runtime::describe(direct_member_move_only_diagnostic_failed.error()) ==
+  pb_test_require(direct_member_move_only_diagnostic_failed.error().message == "move-only member diagnostic failed");
+  pb_test_require(pb::runtime::describe(direct_member_move_only_diagnostic_failed.error()) ==
          "expected_error at parse_member_move_only_diagnostic: move-only member diagnostic failed");
-  assert((direct_member_move_only_diagnostic_observer.events ==
+  pb_test_require((direct_member_move_only_diagnostic_observer.events ==
           std::vector<std::string>{
               "start:parse_member_move_only_diagnostic/parse_member_move_only_diagnostic",
               "failure:parse_member_move_only_diagnostic/parse_member_move_only_diagnostic:"
@@ -506,18 +515,18 @@ int main() {
   direct_member_move_only_diagnostic_observer.events.clear();
   auto direct_member_move_only_diagnostic_raw_failed =
       direct_member_move_only_diagnostic_engine.run(Input{-5});
-  assert(!direct_member_move_only_diagnostic_raw_failed.has_value());
-  assert(direct_member_move_only_diagnostic_raw_failed.error().category ==
+  pb_test_require(!direct_member_move_only_diagnostic_raw_failed.has_value());
+  pb_test_require(direct_member_move_only_diagnostic_raw_failed.error().category ==
          pb::runtime::error_category::expected_error);
-  assert(direct_member_move_only_diagnostic_raw_failed.error().stage.key ==
+  pb_test_require(direct_member_move_only_diagnostic_raw_failed.error().stage.key ==
          "parse_member_move_only_diagnostic");
-  assert(direct_member_move_only_diagnostic_raw_failed.error().stage.name ==
+  pb_test_require(direct_member_move_only_diagnostic_raw_failed.error().stage.name ==
          "parse_member_move_only_diagnostic");
-  assert(direct_member_move_only_diagnostic_raw_failed.error().message ==
+  pb_test_require(direct_member_move_only_diagnostic_raw_failed.error().message ==
          "move-only member diagnostic failed");
-  assert(pb::runtime::describe(direct_member_move_only_diagnostic_raw_failed.error()) ==
+  pb_test_require(pb::runtime::describe(direct_member_move_only_diagnostic_raw_failed.error()) ==
          "expected_error at parse_member_move_only_diagnostic: move-only member diagnostic failed");
-  assert((direct_member_move_only_diagnostic_observer.events ==
+  pb_test_require((direct_member_move_only_diagnostic_observer.events ==
           std::vector<std::string>{
               "start:parse_member_move_only_diagnostic/parse_member_move_only_diagnostic",
               "failure:parse_member_move_only_diagnostic/parse_member_move_only_diagnostic:"
@@ -529,20 +538,20 @@ int main() {
   direct_member_move_only_value_engine.set_observer(&direct_member_move_only_value_observer);
 
   auto direct_member_move_only_value_ok = direct_member_move_only_value_engine.try_run(Input{5});
-  assert(direct_member_move_only_value_ok.has_value());
-  assert(!direct_member_move_only_value_ok.has_error());
-  assert(direct_member_move_only_value_ok.value().value != nullptr);
-  assert(*direct_member_move_only_value_ok.value().value == 22);
+  pb_test_require(direct_member_move_only_value_ok.has_value());
+  pb_test_require(!direct_member_move_only_value_ok.has_error());
+  pb_test_require(direct_member_move_only_value_ok.value().value != nullptr);
+  pb_test_require(*direct_member_move_only_value_ok.value().value == 22);
 
   auto direct_member_move_only_value_failed = direct_member_move_only_value_engine.try_run(Input{-5});
-  assert(!direct_member_move_only_value_failed.has_value());
-  assert(direct_member_move_only_value_failed.error().category == pb::runtime::error_category::expected_error);
-  assert(direct_member_move_only_value_failed.error().stage.key == "parse_member_move_only_value");
-  assert(direct_member_move_only_value_failed.error().stage.name == "parse_member_move_only_value");
-  assert(direct_member_move_only_value_failed.error().message == "member move-only value failed");
-  assert(pb::runtime::describe(direct_member_move_only_value_failed.error()) ==
+  pb_test_require(!direct_member_move_only_value_failed.has_value());
+  pb_test_require(direct_member_move_only_value_failed.error().category == pb::runtime::error_category::expected_error);
+  pb_test_require(direct_member_move_only_value_failed.error().stage.key == "parse_member_move_only_value");
+  pb_test_require(direct_member_move_only_value_failed.error().stage.name == "parse_member_move_only_value");
+  pb_test_require(direct_member_move_only_value_failed.error().message == "member move-only value failed");
+  pb_test_require(pb::runtime::describe(direct_member_move_only_value_failed.error()) ==
          "expected_error at parse_member_move_only_value: member move-only value failed");
-  assert((direct_member_move_only_value_observer.events ==
+  pb_test_require((direct_member_move_only_value_observer.events ==
           std::vector<std::string>{
               "start:parse_member_move_only_value/parse_member_move_only_value",
               "success:parse_member_move_only_value/parse_member_move_only_value",
@@ -552,10 +561,10 @@ int main() {
           }));
 
   auto direct_member_move_only_value_raw_ok = direct_member_move_only_value_engine.run(Input{7});
-  assert(direct_member_move_only_value_raw_ok.has_value());
-  assert(!direct_member_move_only_value_raw_ok.has_error());
-  assert(direct_member_move_only_value_raw_ok.value().value != nullptr);
-  assert(*direct_member_move_only_value_raw_ok.value().value == 24);
+  pb_test_require(direct_member_move_only_value_raw_ok.has_value());
+  pb_test_require(!direct_member_move_only_value_raw_ok.has_error());
+  pb_test_require(direct_member_move_only_value_raw_ok.value().value != nullptr);
+  pb_test_require(*direct_member_move_only_value_raw_ok.value().value == 24);
 
   auto direct_member_move_only_handoff_engine =
       pb::compile<DirectMemberMoveOnlyValueHandoffPipeline>(pb::runtime::sequential{});
@@ -563,18 +572,18 @@ int main() {
   direct_member_move_only_handoff_engine.set_observer(&direct_member_move_only_handoff_observer);
 
   auto direct_member_move_only_handoff_ok = direct_member_move_only_handoff_engine.try_run(Input{5});
-  assert(direct_member_move_only_handoff_ok.has_value());
-  assert(!direct_member_move_only_handoff_ok.has_error());
-  assert(direct_member_move_only_handoff_ok.value().value != nullptr);
-  assert(*direct_member_move_only_handoff_ok.value().value == 26);
+  pb_test_require(direct_member_move_only_handoff_ok.has_value());
+  pb_test_require(!direct_member_move_only_handoff_ok.has_error());
+  pb_test_require(direct_member_move_only_handoff_ok.value().value != nullptr);
+  pb_test_require(*direct_member_move_only_handoff_ok.value().value == 26);
 
   auto direct_member_move_only_handoff_failed = direct_member_move_only_handoff_engine.try_run(Input{-5});
-  assert(!direct_member_move_only_handoff_failed.has_value());
-  assert(direct_member_move_only_handoff_failed.error().category == pb::runtime::error_category::expected_error);
-  assert(direct_member_move_only_handoff_failed.error().stage.key == "parse_member_move_only_value");
-  assert(direct_member_move_only_handoff_failed.error().stage.name == "parse_member_move_only_value");
-  assert(direct_member_move_only_handoff_failed.error().message == "member move-only value failed");
-  assert((direct_member_move_only_handoff_observer.events ==
+  pb_test_require(!direct_member_move_only_handoff_failed.has_value());
+  pb_test_require(direct_member_move_only_handoff_failed.error().category == pb::runtime::error_category::expected_error);
+  pb_test_require(direct_member_move_only_handoff_failed.error().stage.key == "parse_member_move_only_value");
+  pb_test_require(direct_member_move_only_handoff_failed.error().stage.name == "parse_member_move_only_value");
+  pb_test_require(direct_member_move_only_handoff_failed.error().message == "member move-only value failed");
+  pb_test_require((direct_member_move_only_handoff_observer.events ==
           std::vector<std::string>{
               "start:parse_member_move_only_value/parse_member_move_only_value",
               "success:parse_member_move_only_value/parse_member_move_only_value",
@@ -586,24 +595,24 @@ int main() {
           }));
 
   auto direct_member_move_only_handoff_raw_ok = direct_member_move_only_handoff_engine.run(Input{7});
-  assert(direct_member_move_only_handoff_raw_ok.has_value());
-  assert(!direct_member_move_only_handoff_raw_ok.has_error());
-  assert(direct_member_move_only_handoff_raw_ok.value().value != nullptr);
-  assert(*direct_member_move_only_handoff_raw_ok.value().value == 28);
+  pb_test_require(direct_member_move_only_handoff_raw_ok.has_value());
+  pb_test_require(!direct_member_move_only_handoff_raw_ok.has_error());
+  pb_test_require(direct_member_move_only_handoff_raw_ok.value().value != nullptr);
+  pb_test_require(*direct_member_move_only_handoff_raw_ok.value().value == 28);
 
   auto expected_functor_engine = pb::compile<ExpectedFunctorPipeline>(pb::runtime::sequential{});
   recording_observer functor_observer{};
   expected_functor_engine.set_observer(&functor_observer);
 
   auto expected_functor_failed = expected_functor_engine.try_run(Input{-5});
-  assert(!expected_functor_failed.has_value());
-  assert(expected_functor_failed.error().category == pb::runtime::error_category::expected_error);
-  assert(expected_functor_failed.error().stage.key == "parse_functor");
-  assert(expected_functor_failed.error().stage.name == "parse_functor");
-  assert(expected_functor_failed.error().message == "functor parse failed");
-  assert(pb::runtime::describe(expected_functor_failed.error()) ==
+  pb_test_require(!expected_functor_failed.has_value());
+  pb_test_require(expected_functor_failed.error().category == pb::runtime::error_category::expected_error);
+  pb_test_require(expected_functor_failed.error().stage.key == "parse_functor");
+  pb_test_require(expected_functor_failed.error().stage.name == "parse_functor");
+  pb_test_require(expected_functor_failed.error().message == "functor parse failed");
+  pb_test_require(pb::runtime::describe(expected_functor_failed.error()) ==
          "expected_error at parse_functor: functor parse failed");
-  assert((functor_observer.events == std::vector<std::string>{
+  pb_test_require((functor_observer.events == std::vector<std::string>{
                                          "start:parse_functor/parse_functor",
                                          "failure:parse_functor/parse_functor:expected_error at parse_functor: "
                                          "functor parse failed",
@@ -615,14 +624,14 @@ int main() {
   functor_move_only_diagnostic_engine.set_observer(&functor_move_only_diagnostic_observer);
 
   auto functor_move_only_diagnostic_failed = functor_move_only_diagnostic_engine.try_run(Input{-5});
-  assert(!functor_move_only_diagnostic_failed.has_value());
-  assert(functor_move_only_diagnostic_failed.error().category == pb::runtime::error_category::expected_error);
-  assert(functor_move_only_diagnostic_failed.error().stage.key == "parse_functor_move_only_diagnostic");
-  assert(functor_move_only_diagnostic_failed.error().stage.name == "parse_functor_move_only_diagnostic");
-  assert(functor_move_only_diagnostic_failed.error().message == "move-only functor diagnostic failed");
-  assert(pb::runtime::describe(functor_move_only_diagnostic_failed.error()) ==
+  pb_test_require(!functor_move_only_diagnostic_failed.has_value());
+  pb_test_require(functor_move_only_diagnostic_failed.error().category == pb::runtime::error_category::expected_error);
+  pb_test_require(functor_move_only_diagnostic_failed.error().stage.key == "parse_functor_move_only_diagnostic");
+  pb_test_require(functor_move_only_diagnostic_failed.error().stage.name == "parse_functor_move_only_diagnostic");
+  pb_test_require(functor_move_only_diagnostic_failed.error().message == "move-only functor diagnostic failed");
+  pb_test_require(pb::runtime::describe(functor_move_only_diagnostic_failed.error()) ==
          "expected_error at parse_functor_move_only_diagnostic: move-only functor diagnostic failed");
-  assert((functor_move_only_diagnostic_observer.events ==
+  pb_test_require((functor_move_only_diagnostic_observer.events ==
           std::vector<std::string>{
               "start:parse_functor_move_only_diagnostic/parse_functor_move_only_diagnostic",
               "failure:parse_functor_move_only_diagnostic/parse_functor_move_only_diagnostic:"
@@ -630,14 +639,14 @@ int main() {
           }));
 
   auto functor_move_only_diagnostic_raw_failed = functor_move_only_diagnostic_engine.run(Input{-5});
-  assert(!functor_move_only_diagnostic_raw_failed.has_value());
-  assert(functor_move_only_diagnostic_raw_failed.error().category ==
+  pb_test_require(!functor_move_only_diagnostic_raw_failed.has_value());
+  pb_test_require(functor_move_only_diagnostic_raw_failed.error().category ==
          pb::runtime::error_category::expected_error);
-  assert(functor_move_only_diagnostic_raw_failed.error().stage.key ==
+  pb_test_require(functor_move_only_diagnostic_raw_failed.error().stage.key ==
          "parse_functor_move_only_diagnostic");
-  assert(functor_move_only_diagnostic_raw_failed.error().stage.name ==
+  pb_test_require(functor_move_only_diagnostic_raw_failed.error().stage.name ==
          "parse_functor_move_only_diagnostic");
-  assert(functor_move_only_diagnostic_raw_failed.error().message ==
+  pb_test_require(functor_move_only_diagnostic_raw_failed.error().message ==
          "move-only functor diagnostic failed");
 
   auto opaque_error_engine = pb::compile<OpaqueErrorPipeline>(pb::runtime::sequential{});
@@ -645,14 +654,14 @@ int main() {
   opaque_error_engine.set_observer(&opaque_observer);
 
   auto opaque_failed = opaque_error_engine.try_run(Input{-5});
-  assert(!opaque_failed.has_value());
-  assert(opaque_failed.error().category == pb::runtime::error_category::expected_error);
-  assert(opaque_failed.error().stage.key == "parse_opaque");
-  assert(opaque_failed.error().stage.name == "parse_opaque");
-  assert(opaque_failed.error().message == "expected-like object reported an error");
-  assert(pb::runtime::describe(opaque_failed.error()) ==
+  pb_test_require(!opaque_failed.has_value());
+  pb_test_require(opaque_failed.error().category == pb::runtime::error_category::expected_error);
+  pb_test_require(opaque_failed.error().stage.key == "parse_opaque");
+  pb_test_require(opaque_failed.error().stage.name == "parse_opaque");
+  pb_test_require(opaque_failed.error().message == "expected-like object reported an error");
+  pb_test_require(pb::runtime::describe(opaque_failed.error()) ==
          "expected_error at parse_opaque: expected-like object reported an error");
-  assert((opaque_observer.events == std::vector<std::string>{
+  pb_test_require((opaque_observer.events == std::vector<std::string>{
                                            "start:parse_opaque/parse_opaque",
                                            "failure:parse_opaque/parse_opaque:expected_error at parse_opaque: "
                                            "expected-like object reported an error",
@@ -663,14 +672,14 @@ int main() {
   diagnostic_error_engine.set_observer(&diagnostic_observer);
 
   auto diagnostic_failed = diagnostic_error_engine.try_run(Input{-5});
-  assert(!diagnostic_failed.has_value());
-  assert(diagnostic_failed.error().category == pb::runtime::error_category::expected_error);
-  assert(diagnostic_failed.error().stage.key == "parse_diagnostic");
-  assert(diagnostic_failed.error().stage.name == "parse_diagnostic");
-  assert(diagnostic_failed.error().message == "diagnostic parse failed");
-  assert(pb::runtime::describe(diagnostic_failed.error()) ==
+  pb_test_require(!diagnostic_failed.has_value());
+  pb_test_require(diagnostic_failed.error().category == pb::runtime::error_category::expected_error);
+  pb_test_require(diagnostic_failed.error().stage.key == "parse_diagnostic");
+  pb_test_require(diagnostic_failed.error().stage.name == "parse_diagnostic");
+  pb_test_require(diagnostic_failed.error().message == "diagnostic parse failed");
+  pb_test_require(pb::runtime::describe(diagnostic_failed.error()) ==
          "expected_error at parse_diagnostic: diagnostic parse failed");
-  assert((diagnostic_observer.events == std::vector<std::string>{
+  pb_test_require((diagnostic_observer.events == std::vector<std::string>{
                                                "start:parse_diagnostic/parse_diagnostic",
                                                "failure:parse_diagnostic/parse_diagnostic:expected_error at "
                                                "parse_diagnostic: diagnostic parse failed",
@@ -681,14 +690,14 @@ int main() {
   result_move_only_error_engine.set_observer(&result_move_only_error_observer);
 
   auto result_move_only_error_try_failed = result_move_only_error_engine.try_run(Input{-5});
-  assert(!result_move_only_error_try_failed.has_value());
-  assert(result_move_only_error_try_failed.error().category == pb::runtime::error_category::expected_error);
-  assert(result_move_only_error_try_failed.error().stage.key == "parse_result_move_only_error");
-  assert(result_move_only_error_try_failed.error().stage.name == "parse_result_move_only_error");
-  assert(result_move_only_error_try_failed.error().message == "move-only result diagnostic failed");
-  assert(pb::runtime::describe(result_move_only_error_try_failed.error()) ==
+  pb_test_require(!result_move_only_error_try_failed.has_value());
+  pb_test_require(result_move_only_error_try_failed.error().category == pb::runtime::error_category::expected_error);
+  pb_test_require(result_move_only_error_try_failed.error().stage.key == "parse_result_move_only_error");
+  pb_test_require(result_move_only_error_try_failed.error().stage.name == "parse_result_move_only_error");
+  pb_test_require(result_move_only_error_try_failed.error().message == "move-only result diagnostic failed");
+  pb_test_require(pb::runtime::describe(result_move_only_error_try_failed.error()) ==
          "expected_error at parse_result_move_only_error: move-only result diagnostic failed");
-  assert((result_move_only_error_observer.events ==
+  pb_test_require((result_move_only_error_observer.events ==
           std::vector<std::string>{
               "start:parse_result_move_only_error/parse_result_move_only_error",
               "failure:parse_result_move_only_error/parse_result_move_only_error:"
@@ -696,32 +705,32 @@ int main() {
           }));
 
   auto result_move_only_error_raw_failed = result_move_only_error_engine.run(Input{-5});
-  assert(!result_move_only_error_raw_failed.has_value());
-  assert(result_move_only_error_raw_failed.error().diagnostic.stage.key == "external.result");
-  assert(result_move_only_error_raw_failed.error().diagnostic.stage.name == "ExternalResult");
-  assert(result_move_only_error_raw_failed.error().diagnostic.category ==
+  pb_test_require(!result_move_only_error_raw_failed.has_value());
+  pb_test_require(result_move_only_error_raw_failed.error().diagnostic.stage.key == "external.result");
+  pb_test_require(result_move_only_error_raw_failed.error().diagnostic.stage.name == "ExternalResult");
+  pb_test_require(result_move_only_error_raw_failed.error().diagnostic.category ==
          pb::runtime::error_category::stage_failure);
-  assert(result_move_only_error_raw_failed.error().diagnostic.message == "move-only result diagnostic failed");
-  assert(result_move_only_error_raw_failed.error().token != nullptr);
-  assert(*result_move_only_error_raw_failed.error().token == 31);
+  pb_test_require(result_move_only_error_raw_failed.error().diagnostic.message == "move-only result diagnostic failed");
+  pb_test_require(result_move_only_error_raw_failed.error().token != nullptr);
+  pb_test_require(*result_move_only_error_raw_failed.error().token == 31);
 
   auto void_expected_engine = pb::compile<VoidExpectedPipeline>(pb::runtime::sequential{});
   recording_observer void_observer{};
   void_expected_engine.set_observer(&void_observer);
 
   auto void_ok = void_expected_engine.try_run(Input{5});
-  assert(void_ok.has_value());
-  assert(!void_ok.has_error());
+  pb_test_require(void_ok.has_value());
+  pb_test_require(!void_ok.has_error());
 
   auto void_failed = void_expected_engine.try_run(Input{-5});
-  assert(!void_failed.has_value());
-  assert(void_failed.error().category == pb::runtime::error_category::expected_error);
-  assert(void_failed.error().stage.key == "consume_void");
-  assert(void_failed.error().stage.name == "consume_void");
-  assert(void_failed.error().message == "expected-like object reported an error");
-  assert(pb::runtime::describe(void_failed.error()) ==
+  pb_test_require(!void_failed.has_value());
+  pb_test_require(void_failed.error().category == pb::runtime::error_category::expected_error);
+  pb_test_require(void_failed.error().stage.key == "consume_void");
+  pb_test_require(void_failed.error().stage.name == "consume_void");
+  pb_test_require(void_failed.error().message == "expected-like object reported an error");
+  pb_test_require(pb::runtime::describe(void_failed.error()) ==
          "expected_error at consume_void: expected-like object reported an error");
-  assert((void_observer.events == std::vector<std::string>{
+  pb_test_require((void_observer.events == std::vector<std::string>{
                                         "start:consume_void/consume_void",
                                         "success:consume_void/consume_void",
                                         "start:consume_void/consume_void",
@@ -730,58 +739,58 @@ int main() {
                                     }));
 
   auto void_raw_ok = void_expected_engine.run(Input{5});
-  assert(void_raw_ok.has_value());
-  assert(!void_raw_ok.has_error());
+  pb_test_require(void_raw_ok.has_value());
+  pb_test_require(!void_raw_ok.has_error());
 
   auto void_raw_failed = void_expected_engine.run(Input{-5});
-  assert(!void_raw_failed.has_value());
-  assert(void_raw_failed.error().category == pb::runtime::error_category::expected_error);
-  assert(void_raw_failed.error().stage.key == "consume_void");
-  assert(void_raw_failed.error().stage.name == "consume_void");
-  assert(void_raw_failed.error().message == "expected-like object reported an error");
+  pb_test_require(!void_raw_failed.has_value());
+  pb_test_require(void_raw_failed.error().category == pb::runtime::error_category::expected_error);
+  pb_test_require(void_raw_failed.error().stage.key == "consume_void");
+  pb_test_require(void_raw_failed.error().stage.name == "consume_void");
+  pb_test_require(void_raw_failed.error().message == "expected-like object reported an error");
 
   auto void_move_only_engine = pb::compile<VoidMoveOnlyExpectedPipeline>(pb::runtime::sequential{});
   recording_observer void_move_only_observer{};
   void_move_only_engine.set_observer(&void_move_only_observer);
 
   auto void_move_only_failed = void_move_only_engine.try_run(Input{-5});
-  assert(!void_move_only_failed.has_value());
-  assert(void_move_only_failed.error().category == pb::runtime::error_category::expected_error);
-  assert(void_move_only_failed.error().stage.key == "consume_void_move_only");
-  assert(void_move_only_failed.error().stage.name == "consume_void_move_only");
-  assert(void_move_only_failed.error().message == "expected-like object reported an error");
-  assert(pb::runtime::describe(void_move_only_failed.error()) ==
+  pb_test_require(!void_move_only_failed.has_value());
+  pb_test_require(void_move_only_failed.error().category == pb::runtime::error_category::expected_error);
+  pb_test_require(void_move_only_failed.error().stage.key == "consume_void_move_only");
+  pb_test_require(void_move_only_failed.error().stage.name == "consume_void_move_only");
+  pb_test_require(void_move_only_failed.error().message == "expected-like object reported an error");
+  pb_test_require(pb::runtime::describe(void_move_only_failed.error()) ==
          "expected_error at consume_void_move_only: expected-like object reported an error");
-  assert((void_move_only_observer.events == std::vector<std::string>{
+  pb_test_require((void_move_only_observer.events == std::vector<std::string>{
                                                   "start:consume_void_move_only/consume_void_move_only",
                                                   "failure:consume_void_move_only/consume_void_move_only:expected_error "
                                                   "at consume_void_move_only: expected-like object reported an error",
                                               }));
 
   auto void_move_only_raw_failed = void_move_only_engine.run(Input{-5});
-  assert(!void_move_only_raw_failed.has_value());
-  assert(void_move_only_raw_failed.error().category == pb::runtime::error_category::expected_error);
-  assert(void_move_only_raw_failed.error().stage.key == "consume_void_move_only");
-  assert(void_move_only_raw_failed.error().stage.name == "consume_void_move_only");
-  assert(void_move_only_raw_failed.error().message == "expected-like object reported an error");
+  pb_test_require(!void_move_only_raw_failed.has_value());
+  pb_test_require(void_move_only_raw_failed.error().category == pb::runtime::error_category::expected_error);
+  pb_test_require(void_move_only_raw_failed.error().stage.key == "consume_void_move_only");
+  pb_test_require(void_move_only_raw_failed.error().stage.name == "consume_void_move_only");
+  pb_test_require(void_move_only_raw_failed.error().message == "expected-like object reported an error");
 
   auto direct_member_void_engine = pb::compile<DirectMemberVoidExpectedPipeline>(pb::runtime::sequential{});
   recording_observer direct_member_void_observer{};
   direct_member_void_engine.set_observer(&direct_member_void_observer);
 
   auto direct_member_void_ok = direct_member_void_engine.try_run(Input{5});
-  assert(direct_member_void_ok.has_value());
-  assert(!direct_member_void_ok.has_error());
+  pb_test_require(direct_member_void_ok.has_value());
+  pb_test_require(!direct_member_void_ok.has_error());
 
   auto direct_member_void_failed = direct_member_void_engine.try_run(Input{-5});
-  assert(!direct_member_void_failed.has_value());
-  assert(direct_member_void_failed.error().category == pb::runtime::error_category::expected_error);
-  assert(direct_member_void_failed.error().stage.key == "direct_member_consume_void");
-  assert(direct_member_void_failed.error().stage.name == "direct_member_consume_void");
-  assert(direct_member_void_failed.error().message == "member consume failed");
-  assert(pb::runtime::describe(direct_member_void_failed.error()) ==
+  pb_test_require(!direct_member_void_failed.has_value());
+  pb_test_require(direct_member_void_failed.error().category == pb::runtime::error_category::expected_error);
+  pb_test_require(direct_member_void_failed.error().stage.key == "direct_member_consume_void");
+  pb_test_require(direct_member_void_failed.error().stage.name == "direct_member_consume_void");
+  pb_test_require(direct_member_void_failed.error().message == "member consume failed");
+  pb_test_require(pb::runtime::describe(direct_member_void_failed.error()) ==
          "expected_error at direct_member_consume_void: member consume failed");
-  assert((direct_member_void_observer.events == std::vector<std::string>{
+  pb_test_require((direct_member_void_observer.events == std::vector<std::string>{
                                                    "start:direct_member_consume_void/direct_member_consume_void",
                                                    "success:direct_member_consume_void/direct_member_consume_void",
                                                    "start:direct_member_consume_void/direct_member_consume_void",
@@ -790,33 +799,33 @@ int main() {
                                                }));
 
   auto direct_member_void_raw_ok = direct_member_void_engine.run(Input{5});
-  assert(direct_member_void_raw_ok.has_value());
-  assert(!direct_member_void_raw_ok.has_error());
+  pb_test_require(direct_member_void_raw_ok.has_value());
+  pb_test_require(!direct_member_void_raw_ok.has_error());
 
   auto direct_member_void_raw_failed = direct_member_void_engine.run(Input{-5});
-  assert(!direct_member_void_raw_failed.has_value());
-  assert(direct_member_void_raw_failed.error().category == pb::runtime::error_category::expected_error);
-  assert(direct_member_void_raw_failed.error().stage.key == "direct_member_consume_void");
-  assert(direct_member_void_raw_failed.error().stage.name == "direct_member_consume_void");
-  assert(direct_member_void_raw_failed.error().message == "member consume failed");
+  pb_test_require(!direct_member_void_raw_failed.has_value());
+  pb_test_require(direct_member_void_raw_failed.error().category == pb::runtime::error_category::expected_error);
+  pb_test_require(direct_member_void_raw_failed.error().stage.key == "direct_member_consume_void");
+  pb_test_require(direct_member_void_raw_failed.error().stage.name == "direct_member_consume_void");
+  pb_test_require(direct_member_void_raw_failed.error().message == "member consume failed");
 
   auto failed = engine.run(Input{-2});
-  assert(!failed.has_value());
-  assert(failed.error().stage.key == "emit");
-  assert(failed.error().stage.name == "emit_result");
-  assert(failed.error().category == pb::runtime::error_category::stage_failure);
-  assert(failed.error().message == "invalid parsed value");
+  pb_test_require(!failed.has_value());
+  pb_test_require(failed.error().stage.key == "emit");
+  pb_test_require(failed.error().stage.name == "emit_result");
+  pb_test_require(failed.error().category == pb::runtime::error_category::stage_failure);
+  pb_test_require(failed.error().message == "invalid parsed value");
 
   auto throwing_result_engine = pb::compile<ThrowingPipeline>(pb::runtime::sequential{});
   recording_observer observer{};
   throwing_result_engine.set_observer(&observer);
 
   auto result_caught = throwing_result_engine.try_run(Input{-200});
-  assert(!result_caught.has_value());
-  assert(result_caught.error().category == pb::runtime::error_category::exception);
-  assert(result_caught.error().stage.name == "parse_input");
-  assert(result_caught.error().stage.key == "parse_input");
-  assert(result_caught.error().message == "parse_input_throwing failed");
+  pb_test_require(!result_caught.has_value());
+  pb_test_require(result_caught.error().category == pb::runtime::error_category::exception);
+  pb_test_require(result_caught.error().stage.name == "parse_input");
+  pb_test_require(result_caught.error().stage.key == "parse_input");
+  pb_test_require(result_caught.error().message == "parse_input_throwing failed");
 
   auto throwing_raw_engine = pb::compile<ThrowingPipelineRaw>(pb::runtime::sequential{});
   throwing_raw_engine.set_observer(&observer);
@@ -825,10 +834,10 @@ int main() {
     (void)throwing_raw_engine.run(Input{-200});
     return 1;
   } catch (const std::runtime_error& error) {
-    assert(std::string_view{error.what()} == "parse_input_throwing failed");
+    pb_test_require(std::string_view{error.what()} == "parse_input_throwing failed");
   }
 
-  assert((observer.events == std::vector<std::string>{
+  pb_test_require((observer.events == std::vector<std::string>{
               "start:parse_input/parse_input",
               "exception:parse_input/parse_input:parse_input_throwing failed",
               "start:parse_input/parse_input",

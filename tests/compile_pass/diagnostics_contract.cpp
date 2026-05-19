@@ -1,12 +1,21 @@
 #include <pb/core/diagnostics.hpp>
 
-#include <cassert>
+#include <cstdlib>
 #include <cstddef>
 #include <source_location>
 #include <string>
 #include <string_view>
 #include <type_traits>
 #include <utility>
+
+
+namespace {
+void pb_test_require(bool condition) {
+  if (!condition) {
+    std::abort();
+  }
+}
+}  // namespace
 
 // ── Schema version ────────────────────────────────────────────────────────
 
@@ -77,14 +86,14 @@ int main() {
         .suggestion = "Check input type",
     };
 
-    assert(rec.level == pb::diagnostics::severity::error);
-    assert(rec.code == "PB-TEST-001");
-    assert(rec.message == "test diagnostic");
-    assert(rec.file == "diagnostics_contract.cpp");
-    assert(rec.line == 42);
-    assert(rec.column == 7);
-    assert(rec.stage_key == "parse");
-    assert(rec.suggestion == "Check input type");
+    pb_test_require(rec.level == pb::diagnostics::severity::error);
+    pb_test_require(rec.code == "PB-TEST-001");
+    pb_test_require(rec.message == "test diagnostic");
+    pb_test_require(rec.file == "diagnostics_contract.cpp");
+    pb_test_require(rec.line == 42);
+    pb_test_require(rec.column == 7);
+    pb_test_require(rec.stage_key == "parse");
+    pb_test_require(rec.suggestion == "Check input type");
   }
 
   // --- collector::add with source_location ---
@@ -93,20 +102,20 @@ int main() {
                 "PB-WARN-001",
                 "something looks suspicious");
 
-  assert(collector.records.size() == 1);
+  pb_test_require(collector.records.size() == 1);
   const auto& rec = collector.records[0];
-  assert(rec.level == pb::diagnostics::severity::warning);
-  assert(rec.code == "PB-WARN-001");
-  assert(rec.message == "something looks suspicious");
+  pb_test_require(rec.level == pb::diagnostics::severity::warning);
+  pb_test_require(rec.code == "PB-WARN-001");
+  pb_test_require(rec.message == "something looks suspicious");
 
   // source_location should capture this file's name
-  assert(rec.file.find("diagnostics_contract.cpp") != std::string::npos);
-  assert(rec.line > 0);    // line must be populated
-  assert(rec.column > 0);  // column must be populated
+  pb_test_require(rec.file.find("diagnostics_contract.cpp") != std::string::npos);
+  pb_test_require(rec.line > 0);    // line must be populated
+  pb_test_require(rec.column > 0);  // column must be populated
 
   // Empty stage_key and suggestion by default
-  assert(rec.stage_key.empty());
-  assert(rec.suggestion.empty());
+  pb_test_require(rec.stage_key.empty());
+  pb_test_require(rec.suggestion.empty());
 
   // --- collector::add with stage_key and suggestion ---
   pb::diagnostics::diagnostic_collector collector2;
@@ -124,12 +133,12 @@ int main() {
     collector2.records.push_back(std::move(rec2));
   }
 
-  assert(collector2.records.size() == 1);
+  pb_test_require(collector2.records.size() == 1);
   const auto& rec2 = collector2.records[0];
-  assert(rec2.level == pb::diagnostics::severity::error);
-  assert(rec2.code == "PB-EDGE-001");
-  assert(rec2.stage_key == "normalize");
-  assert(rec2.suggestion == pb::diagnostics::suggestions::type_mismatch);
+  pb_test_require(rec2.level == pb::diagnostics::severity::error);
+  pb_test_require(rec2.code == "PB-EDGE-001");
+  pb_test_require(rec2.stage_key == "normalize");
+  pb_test_require(rec2.suggestion == pb::diagnostics::suggestions::type_mismatch);
 
   // --- multiple records ---
   collector.add(pb::diagnostics::severity::info,
@@ -139,7 +148,7 @@ int main() {
                 "PB-SUGG-001",
                 "consider adding a sink stage");
 
-  assert(collector.records.size() == 3);
+  pb_test_require(collector.records.size() == 3);
 
   return 0;
 }

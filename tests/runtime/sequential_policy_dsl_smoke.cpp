@@ -1,7 +1,16 @@
 #include <pb/pipeline.hpp>
 
-#include <cassert>
+#include <cstdlib>
 #include <type_traits>
+
+
+namespace {
+void pb_test_require(bool condition) {
+  if (!condition) {
+    std::abort();
+  }
+}
+}  // namespace
 
 struct Input {
   int value{};
@@ -32,9 +41,9 @@ int main() {
 
   const auto per_run_first = per_run.run(Input{10});
   const auto per_run_second = per_run.try_run(Input{10});
-  assert(per_run_second.has_value());
-  assert(per_run_first.value == 11);
-  assert(per_run_second.value().value == 11);
+  pb_test_require(per_run_second.has_value());
+  pb_test_require(per_run_first.value == 11);
+  pb_test_require(per_run_second.value().value == 11);
 
   auto stateful = pb::compile<Pipeline>(pb::runtime::policy::sequential<pb::runtime::policy::storage::store_in_engine>{});
   using StatefulEngine = decltype(stateful);
@@ -43,8 +52,8 @@ int main() {
   const auto stateful_first = stateful.run(Input{10});
   const auto stateful_second = stateful.try_run(Input{10});
   const auto stateful_third = stateful.run(Input{10});
-  assert(stateful_second.has_value());
-  assert(stateful_first.value == 11);
-  assert(stateful_second.value().value == 12);
-  assert(stateful_third.value == 13);
+  pb_test_require(stateful_second.has_value());
+  pb_test_require(stateful_first.value == 11);
+  pb_test_require(stateful_second.value().value == 12);
+  pb_test_require(stateful_third.value == 13);
 }

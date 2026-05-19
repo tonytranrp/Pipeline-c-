@@ -1,8 +1,17 @@
 #include <pb/pipeline.hpp>
 
-#include <cassert>
+#include <cstdlib>
 #include <stdexcept>
 #include <string>
+
+
+namespace {
+void pb_test_require(bool condition) {
+  if (!condition) {
+    std::abort();
+  }
+}
+}  // namespace
 
 struct Input {
   int value{};
@@ -43,20 +52,20 @@ static_assert(!noexcept(ThrowingConstAdapter{}(Input{1})));
 int main() {
   auto const_engine = pb::compile<ConstPipeline>(pb::runtime::sequential{});
   auto const_output = const_engine.run(Input{7});
-  assert(const_output.value == 8);
+  pb_test_require(const_output.value == 8);
 
   auto noexcept_engine = pb::compile<ConstNoexceptPipeline>(pb::runtime::sequential{});
   auto noexcept_output = noexcept_engine.run(Input{7});
-  assert(noexcept_output.value == 17);
+  pb_test_require(noexcept_output.value == 17);
 
   auto throwing_engine = pb::compile<ThrowingConstPipeline>(pb::runtime::sequential{});
   auto throw_success = throwing_engine.run(Input{3});
-  assert(throw_success.value == 103);
+  pb_test_require(throw_success.value == 103);
 
   auto throw_failure = throwing_engine.try_run(Input{-1});
-  assert(!throw_failure.has_value());
-  assert(throw_failure.error().category == pb::runtime::error_category::exception);
-  assert(throw_failure.error().message.find("const parse failed") != std::string::npos);
+  pb_test_require(!throw_failure.has_value());
+  pb_test_require(throw_failure.error().category == pb::runtime::error_category::exception);
+  pb_test_require(throw_failure.error().message.find("const parse failed") != std::string::npos);
 
   return 0;
 }

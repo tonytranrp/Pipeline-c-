@@ -1,12 +1,21 @@
 #include <pb/pipeline.hpp>
 
 #include <algorithm>
-#include <cassert>
+#include <cstdlib>
 #include <string_view>
+
+
+namespace {
+void pb_test_require(bool condition) {
+  if (!condition) {
+    std::abort();
+  }
+}
+}  // namespace
 
 int main() {
   const auto features = pb::backend_features();
-  assert(features.size() == pb::backend_feature_matrix.size());
+  pb_test_require(features.size() == pb::backend_feature_matrix.size());
 
   const auto named = [&](std::string_view name) {
     return std::find_if(features.begin(), features.end(), [&](const pb::backend_feature& feature) {
@@ -15,27 +24,27 @@ int main() {
   };
 
   const auto sequential = named("sequential");
-  assert(sequential != features.end());
-  assert(sequential->support == pb::backend_support::supported);
-  assert(sequential->execution_model == pb::backend_execution_model::sequential);
-  assert(!sequential->external_dependency);
-  assert(sequential->default_build);
-  assert(pb::backend_supported("sequential"));
+  pb_test_require(sequential != features.end());
+  pb_test_require(sequential->support == pb::backend_support::supported);
+  pb_test_require(sequential->execution_model == pb::backend_execution_model::sequential);
+  pb_test_require(!sequential->external_dependency);
+  pb_test_require(sequential->default_build);
+  pb_test_require(pb::backend_supported("sequential"));
 
   const auto thread_pool = named("thread_pool");
-  assert(thread_pool != features.end());
-  assert(thread_pool->support == pb::backend_support::roadmap);
-  assert(thread_pool->execution_model == pb::backend_execution_model::thread_pool);
-  assert(!thread_pool->external_dependency);
-  assert(!thread_pool->default_build);
-  assert(!pb::backend_supported("thread_pool"));
+  pb_test_require(thread_pool != features.end());
+  pb_test_require(thread_pool->support == pb::backend_support::roadmap);
+  pb_test_require(thread_pool->execution_model == pb::backend_execution_model::thread_pool);
+  pb_test_require(!thread_pool->external_dependency);
+  pb_test_require(!thread_pool->default_build);
+  pb_test_require(!pb::backend_supported("thread_pool"));
 
   for (const auto backend : {"taskflow", "oneTBB", "stdexec"}) {
     const auto feature = named(backend);
-    assert(feature != features.end());
-    assert(!feature->default_build);
-    assert(!pb::backend_supported(backend));
+    pb_test_require(feature != features.end());
+    pb_test_require(!feature->default_build);
+    pb_test_require(!pb::backend_supported(backend));
   }
 
-  assert(!pb::backend_supported("unknown"));
+  pb_test_require(!pb::backend_supported("unknown"));
 }

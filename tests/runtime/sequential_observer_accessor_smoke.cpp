@@ -1,6 +1,15 @@
 #include <pb/pipeline.hpp>
 
-#include <cassert>
+#include <cstdlib>
+
+
+namespace {
+void pb_test_require(bool condition) {
+  if (!condition) {
+    std::abort();
+  }
+}
+}  // namespace
 
 struct Input {
   int value{};
@@ -59,24 +68,24 @@ using FailingPipeline = pb::from<Input>::then<AddOne>::then<CheckedDouble>::to<O
 int main() {
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
 
-  assert(engine.get_observer() == nullptr);
+  pb_test_require(engine.get_observer() == nullptr);
 
   const auto descriptor = engine.describe();
   static_assert(decltype(engine)::stage_count == 1);
-  assert(descriptor.size() == 1);
-  assert(descriptor[0].key == "add_one");
-  assert(descriptor[0].name == "add_one");
+  pb_test_require(descriptor.size() == 1);
+  pb_test_require(descriptor[0].key == "add_one");
+  pb_test_require(descriptor[0].name == "add_one");
 
   NullObserver observer{};
   engine.set_observer(&observer);
-  assert(engine.get_observer() == &observer);
+  pb_test_require(engine.get_observer() == &observer);
 
   auto ok = engine.try_run(Input{10});
-  assert(ok.has_value());
-  assert(ok.value().value == 11);
+  pb_test_require(ok.has_value());
+  pb_test_require(ok.value().value == 11);
 
   engine.set_observer(nullptr);
-  assert(engine.get_observer() == nullptr);
+  pb_test_require(engine.get_observer() == nullptr);
 
   auto output = engine.run(Input{20});
   if (output.value != 21) {
@@ -87,39 +96,39 @@ int main() {
   CountingObserver second_observer{};
   auto failing_engine = pb::compile<FailingPipeline>(pb::runtime::sequential{});
   const auto failing_descriptor = failing_engine.describe();
-  assert(failing_descriptor.size() == 2);
-  assert(failing_descriptor[0].key == "add_one");
-  assert(failing_descriptor[1].key == "checked_double");
+  pb_test_require(failing_descriptor.size() == 2);
+  pb_test_require(failing_descriptor[0].key == "add_one");
+  pb_test_require(failing_descriptor[1].key == "checked_double");
 
   failing_engine.set_observer(&first_observer);
   auto first_pass = failing_engine.try_run(Input{-2});
-  assert(!first_pass.has_value());
-  assert(first_observer.starts > 0);
-  assert(first_observer.failures > 0);
-  assert(first_pass.error().stage.key == failing_descriptor[1].key);
-  assert(first_pass.error().stage.name == failing_descriptor[1].name);
-  assert(first_observer.last_failure_stage.key == failing_descriptor[1].key);
-  assert(first_observer.last_failure_stage.name == failing_descriptor[1].name);
-  assert(first_observer.last_failure_error.stage.key == failing_descriptor[1].key);
-  assert(first_observer.last_failure_error.stage.name == failing_descriptor[1].name);
+  pb_test_require(!first_pass.has_value());
+  pb_test_require(first_observer.starts > 0);
+  pb_test_require(first_observer.failures > 0);
+  pb_test_require(first_pass.error().stage.key == failing_descriptor[1].key);
+  pb_test_require(first_pass.error().stage.name == failing_descriptor[1].name);
+  pb_test_require(first_observer.last_failure_stage.key == failing_descriptor[1].key);
+  pb_test_require(first_observer.last_failure_stage.name == failing_descriptor[1].name);
+  pb_test_require(first_observer.last_failure_error.stage.key == failing_descriptor[1].key);
+  pb_test_require(first_observer.last_failure_error.stage.name == failing_descriptor[1].name);
   const auto first_starts = first_observer.starts;
 
   failing_engine.set_observer(&second_observer);
   auto second_pass = failing_engine.try_run(Input{15});
-  assert(second_pass.has_value());
-  assert(second_pass.value().value == 32);
-  assert(second_observer.starts > 0);
-  assert(first_observer.starts == first_starts);
-  assert(first_observer.exceptions == 0);
-  assert(first_observer.failures >= 1);
+  pb_test_require(second_pass.has_value());
+  pb_test_require(second_pass.value().value == 32);
+  pb_test_require(second_observer.starts > 0);
+  pb_test_require(first_observer.starts == first_starts);
+  pb_test_require(first_observer.exceptions == 0);
+  pb_test_require(first_observer.failures >= 1);
   const auto second_starts = second_observer.starts;
 
   failing_engine.set_observer(nullptr);
   auto silent_run = failing_engine.try_run(Input{15});
-  assert(silent_run.has_value());
-  assert(silent_run.value().value == 32);
-  assert(first_observer.starts == first_starts);
-  assert(second_observer.starts == second_starts);
+  pb_test_require(silent_run.has_value());
+  pb_test_require(silent_run.value().value == 32);
+  pb_test_require(first_observer.starts == first_starts);
+  pb_test_require(second_observer.starts == second_starts);
 
   return 0;
 }

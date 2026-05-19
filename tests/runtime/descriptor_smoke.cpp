@@ -1,7 +1,16 @@
 #include <pb/pipeline.hpp>
 
-#include <cassert>
+#include <cstdlib>
 #include <string_view>
+
+
+namespace {
+void pb_test_require(bool condition) {
+  if (!condition) {
+    std::abort();
+  }
+}
+}  // namespace
 
 // ---------------------------------------------------------------------------
 // Linear pipeline stages (existing)
@@ -174,33 +183,33 @@ int main() {
   // Runtime engine descriptor
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
   const auto runtime_descriptor = engine.descriptor();
-  assert(runtime_descriptor.schema_version == descriptor.schema_version);
-  assert(runtime_descriptor.topology == descriptor.topology);
-  assert(runtime_descriptor.stage_records().size() == descriptor.stage_records().size());
-  assert(runtime_descriptor.edge_records().size() == descriptor.edge_records().size());
-  assert(runtime_descriptor.stage_records().size() == 2);
-  assert(runtime_descriptor.edge_records().size() == 1);
-  assert(runtime_descriptor.stage_records()[0].index == descriptor.stage_records()[0].index);
-  assert(runtime_descriptor.stage_records()[0].key == descriptor.stage_records()[0].key);
-  assert(runtime_descriptor.stage_records()[0].name == descriptor.stage_records()[0].name);
-  assert(runtime_descriptor.stage_records()[1].index == descriptor.stage_records()[1].index);
-  assert(runtime_descriptor.stage_records()[1].key == descriptor.stage_records()[1].key);
-  assert(runtime_descriptor.stage_records()[1].name == descriptor.stage_records()[1].name);
-  assert(runtime_descriptor.edge_records()[0].index == descriptor.edge_records()[0].index);
-  assert(runtime_descriptor.edge_records()[0].from_stage_index == descriptor.edge_records()[0].from_stage_index);
-  assert(runtime_descriptor.edge_records()[0].to_stage_index == descriptor.edge_records()[0].to_stage_index);
-  assert(runtime_descriptor.edge_records()[0].from_key == descriptor.edge_records()[0].from_key);
-  assert(runtime_descriptor.edge_records()[0].from_name == descriptor.edge_records()[0].from_name);
-  assert(runtime_descriptor.edge_records()[0].to_key == descriptor.edge_records()[0].to_key);
-  assert(runtime_descriptor.edge_records()[0].to_name == descriptor.edge_records()[0].to_name);
+  pb_test_require(runtime_descriptor.schema_version == descriptor.schema_version);
+  static_assert(decltype(runtime_descriptor)::topology == decltype(descriptor)::topology);
+  pb_test_require(runtime_descriptor.stage_records().size() == descriptor.stage_records().size());
+  pb_test_require(runtime_descriptor.edge_records().size() == descriptor.edge_records().size());
+  pb_test_require(runtime_descriptor.stage_records().size() == 2);
+  pb_test_require(runtime_descriptor.edge_records().size() == 1);
+  pb_test_require(runtime_descriptor.stage_records()[0].index == descriptor.stage_records()[0].index);
+  pb_test_require(runtime_descriptor.stage_records()[0].key == descriptor.stage_records()[0].key);
+  pb_test_require(runtime_descriptor.stage_records()[0].name == descriptor.stage_records()[0].name);
+  pb_test_require(runtime_descriptor.stage_records()[1].index == descriptor.stage_records()[1].index);
+  pb_test_require(runtime_descriptor.stage_records()[1].key == descriptor.stage_records()[1].key);
+  pb_test_require(runtime_descriptor.stage_records()[1].name == descriptor.stage_records()[1].name);
+  pb_test_require(runtime_descriptor.edge_records()[0].index == descriptor.edge_records()[0].index);
+  pb_test_require(runtime_descriptor.edge_records()[0].from_stage_index == descriptor.edge_records()[0].from_stage_index);
+  pb_test_require(runtime_descriptor.edge_records()[0].to_stage_index == descriptor.edge_records()[0].to_stage_index);
+  pb_test_require(runtime_descriptor.edge_records()[0].from_key == descriptor.edge_records()[0].from_key);
+  pb_test_require(runtime_descriptor.edge_records()[0].from_name == descriptor.edge_records()[0].from_name);
+  pb_test_require(runtime_descriptor.edge_records()[0].to_key == descriptor.edge_records()[0].to_key);
+  pb_test_require(runtime_descriptor.edge_records()[0].to_name == descriptor.edge_records()[0].to_name);
 
-  assert(runtime_descriptor.stage_records()[0].name == "parse");
-  assert(runtime_descriptor.stage_records()[0].key == "order.parse");
-  assert(runtime_descriptor.stage_records()[1].key == "order.finish");
-  assert(runtime_descriptor.edge_records()[0].to_name == "finish");
-  assert(runtime_descriptor.edge_records()[0].from_key == "order.parse");
-  assert(runtime_descriptor.edge_records()[0].from_name == "parse");
-  assert(runtime_descriptor.edge_records()[0].to_key == "order.finish");
+  pb_test_require(runtime_descriptor.stage_records()[0].name == "parse");
+  pb_test_require(runtime_descriptor.stage_records()[0].key == "order.parse");
+  pb_test_require(runtime_descriptor.stage_records()[1].key == "order.finish");
+  pb_test_require(runtime_descriptor.edge_records()[0].to_name == "finish");
+  pb_test_require(runtime_descriptor.edge_records()[0].from_key == "order.parse");
+  pb_test_require(runtime_descriptor.edge_records()[0].from_name == "parse");
+  pb_test_require(runtime_descriptor.edge_records()[0].to_key == "order.finish");
   static_assert(std::same_as<decltype(runtime_descriptor), const pb::runtime::descriptor_view<2>>);
 
   // Empty pipeline
@@ -211,14 +220,14 @@ int main() {
   static_assert(decltype(empty_runtime_descriptor)::edge_count == 0);
   static_assert(decltype(empty_runtime_descriptor)::empty);
   static_assert(empty_descriptor.schema_version == pb::runtime::descriptor_schema_version);
-  assert(empty_runtime_descriptor.schema_version == empty_descriptor.schema_version);
-  assert(empty_runtime_descriptor.topology == empty_descriptor.topology);
-  assert(empty_runtime_descriptor.stage_records().empty());
-  assert(empty_runtime_descriptor.edge_records().empty());
+  pb_test_require(empty_runtime_descriptor.schema_version == empty_descriptor.schema_version);
+  static_assert(decltype(empty_runtime_descriptor)::topology == decltype(empty_descriptor)::topology);
+  pb_test_require(empty_runtime_descriptor.stage_records().empty());
+  pb_test_require(empty_runtime_descriptor.edge_records().empty());
 
   // Runtime execution still works
   auto result = engine.run(Input{20});
-  assert(result.value == 42);
+  pb_test_require(result.value == 42);
 
   // =========================================================================
   // Section 2 — Branch descriptor tests (new)
@@ -288,42 +297,42 @@ int main() {
   // Runtime branch engine descriptor
   auto branch_engine = pb::compile<BranchPipeline>(pb::runtime::sequential{});
   const auto runtime_branch_descriptor = branch_engine.descriptor();
-  assert(runtime_branch_descriptor.schema_version == pb::runtime::descriptor_schema_version);
-  assert(runtime_branch_descriptor.topology == pb::descriptor_topology::branch);
-  assert(runtime_branch_descriptor.stage_records().size() == 2);
-  assert(runtime_branch_descriptor.branch_case_records().size() == 2);
-  assert(runtime_branch_descriptor.stage_records()[0].key == "branch");
-  assert(runtime_branch_descriptor.stage_records()[0].name == "branch");
-  assert(runtime_branch_descriptor.stage_records()[1].key == "finalize");
-  assert(runtime_branch_descriptor.stage_records()[1].name == "finalize");
-  assert(runtime_branch_descriptor.branch_case_records()[0].branch_stage_index == 0);
-  assert(runtime_branch_descriptor.branch_case_records()[0].case_id == "branch.0.case.0");
-  assert(runtime_branch_descriptor.branch_case_records()[0].case_key == "branch.0.case.0");
-  assert(runtime_branch_descriptor.branch_case_records()[0].case_label.empty());
-  assert(runtime_branch_descriptor.branch_case_records()[0].predicate_node_id == "branch.0.case.0.predicate");
-  assert(runtime_branch_descriptor.branch_case_records()[0].stage_node_id == "branch.0.case.0.stage");
-  assert(runtime_branch_descriptor.branch_case_records()[0].predicate_key == "is-invoice");
-  assert(runtime_branch_descriptor.branch_case_records()[0].predicate_name == "is-invoice");
-  assert(runtime_branch_descriptor.branch_case_records()[0].stage_key == "process-invoice");
-  assert(runtime_branch_descriptor.branch_case_records()[0].stage_name == "process-invoice");
-  assert(runtime_branch_descriptor.branch_case_records()[1].case_id == "branch.0.case.1");
-  assert(runtime_branch_descriptor.branch_case_records()[1].case_key == "branch.0.case.1");
-  assert(runtime_branch_descriptor.branch_case_records()[1].case_label.empty());
-  assert(runtime_branch_descriptor.branch_case_records()[1].predicate_node_id == "branch.0.case.1.predicate");
-  assert(runtime_branch_descriptor.branch_case_records()[1].stage_node_id == "branch.0.case.1.stage");
-  assert(runtime_branch_descriptor.branch_case_records()[1].predicate_key == "is-report");
-  assert(runtime_branch_descriptor.branch_case_records()[1].predicate_name == "is-report");
-  assert(runtime_branch_descriptor.branch_case_records()[1].stage_key == "process-report");
-  assert(runtime_branch_descriptor.branch_case_records()[1].stage_name == "process-report");
+  pb_test_require(runtime_branch_descriptor.schema_version == pb::runtime::descriptor_schema_version);
+  pb_test_require(runtime_branch_descriptor.topology == pb::descriptor_topology::branch);
+  pb_test_require(runtime_branch_descriptor.stage_records().size() == 2);
+  pb_test_require(runtime_branch_descriptor.branch_case_records().size() == 2);
+  pb_test_require(runtime_branch_descriptor.stage_records()[0].key == "branch");
+  pb_test_require(runtime_branch_descriptor.stage_records()[0].name == "branch");
+  pb_test_require(runtime_branch_descriptor.stage_records()[1].key == "finalize");
+  pb_test_require(runtime_branch_descriptor.stage_records()[1].name == "finalize");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[0].branch_stage_index == 0);
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[0].case_id == "branch.0.case.0");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[0].case_key == "branch.0.case.0");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[0].case_label.empty());
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[0].predicate_node_id == "branch.0.case.0.predicate");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[0].stage_node_id == "branch.0.case.0.stage");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[0].predicate_key == "is-invoice");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[0].predicate_name == "is-invoice");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[0].stage_key == "process-invoice");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[0].stage_name == "process-invoice");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[1].case_id == "branch.0.case.1");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[1].case_key == "branch.0.case.1");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[1].case_label.empty());
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[1].predicate_node_id == "branch.0.case.1.predicate");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[1].stage_node_id == "branch.0.case.1.stage");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[1].predicate_key == "is-report");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[1].predicate_name == "is-report");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[1].stage_key == "process-report");
+  pb_test_require(runtime_branch_descriptor.branch_case_records()[1].stage_name == "process-report");
 
   // Runtime execution
   auto br_result = branch_engine.run(Document{1});
-  assert(br_result.has_value());
-  assert(br_result.value() == 10);  // Invoice: id=1 → 1*10 = 10
+  pb_test_require(br_result.has_value());
+  pb_test_require(br_result.value() == 10);  // Invoice: id=1 → 1*10 = 10
 
   auto br_result2 = branch_engine.run(Document{2});
-  assert(br_result2.has_value());
-  assert(br_result2.value() == 40); // Report: id=2 → 2*20 = 40
+  pb_test_require(br_result2.has_value());
+  pb_test_require(br_result2.value() == 40); // Report: id=2 → 2*20 = 40
 
   // =========================================================================
   // Section 3 — type_name utility tests

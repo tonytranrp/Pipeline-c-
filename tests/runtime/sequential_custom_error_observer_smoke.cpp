@@ -1,9 +1,18 @@
 #include <pb/pipeline.hpp>
 
-#include <cassert>
+#include <cstdlib>
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+
+namespace {
+void pb_test_require(bool condition) {
+  if (!condition) {
+    std::abort();
+  }
+}
+}  // namespace
 
 struct Input {
   int value{};
@@ -62,45 +71,45 @@ struct recording_observer final : pb::runtime::observer {
 };
 
 void assert_record_matches_stage(const pb::runtime::error_record& record, const pb::runtime::stage_id& stage) {
-  assert(record.stage_key == stage.key);
-  assert(record.stage_name == stage.name);
+  pb_test_require(record.stage_key == stage.key);
+  pb_test_require(record.stage_name == stage.name);
 }
 
 int main() {
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
   const auto descriptor = engine.describe();
   static_assert(decltype(engine)::stage_count == 1);
-  assert(descriptor.size() == 1);
-  assert(descriptor[0].key == "runtime.checked");
-  assert(descriptor[0].name == "checked_stage");
+  pb_test_require(descriptor.size() == 1);
+  pb_test_require(descriptor[0].key == "runtime.checked");
+  pb_test_require(descriptor[0].name == "checked_stage");
 
   recording_observer observer{};
   engine.set_observer(&observer);
 
   auto failed = engine.run(Input{0});
-  assert(!failed.has_value());
-  assert(failed.error().diagnostic.message == "custom failure");
+  pb_test_require(!failed.has_value());
+  pb_test_require(failed.error().diagnostic.message == "custom failure");
   assert_record_matches_stage(pb::runtime::to_record(failed.error().diagnostic), descriptor[0]);
-  assert(observer.events.size() == 1);
-  assert(observer.events[0].find("failure:") == 0);
-  assert(observer.events[0].find("stage_failure at") != std::string::npos);
-  assert(observer.events[0].find("custom failure") != std::string::npos);
-  assert(observer.last_stage.key == descriptor[0].key);
-  assert(observer.last_stage.name == descriptor[0].name);
+  pb_test_require(observer.events.size() == 1);
+  pb_test_require(observer.events[0].find("failure:") == 0);
+  pb_test_require(observer.events[0].find("stage_failure at") != std::string::npos);
+  pb_test_require(observer.events[0].find("custom failure") != std::string::npos);
+  pb_test_require(observer.last_stage.key == descriptor[0].key);
+  pb_test_require(observer.last_stage.name == descriptor[0].name);
   assert_record_matches_stage(pb::runtime::to_record(observer.last_error), descriptor[0]);
 
   observer.events.clear();
   auto thrown = engine.run(Input{-1});
-  assert(!thrown.has_value());
-  assert(thrown.error().diagnostic.category == pb::runtime::error_category::exception);
+  pb_test_require(!thrown.has_value());
+  pb_test_require(thrown.error().diagnostic.category == pb::runtime::error_category::exception);
   assert_record_matches_stage(pb::runtime::to_record(thrown.error().diagnostic), descriptor[0]);
-  assert(thrown.error().diagnostic.message == "custom exception");
-  assert(observer.events.size() == 1);
-  assert(observer.events[0].find("exception:") == 0);
-  assert(observer.events[0].find("exception at") != std::string::npos);
-  assert(observer.events[0].find("custom exception") != std::string::npos);
-  assert(observer.last_stage.key == descriptor[0].key);
-  assert(observer.last_stage.name == descriptor[0].name);
+  pb_test_require(thrown.error().diagnostic.message == "custom exception");
+  pb_test_require(observer.events.size() == 1);
+  pb_test_require(observer.events[0].find("exception:") == 0);
+  pb_test_require(observer.events[0].find("exception at") != std::string::npos);
+  pb_test_require(observer.events[0].find("custom exception") != std::string::npos);
+  pb_test_require(observer.last_stage.key == descriptor[0].key);
+  pb_test_require(observer.last_stage.name == descriptor[0].name);
   assert_record_matches_stage(pb::runtime::to_record(observer.last_error), descriptor[0]);
 
   return 0;
