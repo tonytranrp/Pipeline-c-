@@ -1,16 +1,16 @@
 # Current PR / Release Summary
 
-Status snapshot for the current branch/export, compile-time benchmark, sequential fan-in, Release/NDEBUG smoke hardening, and validation batch. Use this page as a compact handoff note before copying details into a PR body or release evidence record.
+Status snapshot for the current branch/export, compile-time benchmark, sequential fan-in hardening, Release/NDEBUG smoke coverage, and validation batch. Use this page as a compact handoff note before copying details into a PR body or release evidence record.
 
 ## Candidate snapshot
 
 - Current branch: `main`.
-- Current validated code SHA: `2751238f80ba102e559b395cef3e83406b21cb17` (`Keep Release smoke tests meaningful under NDEBUG`).
+- Current validated code SHA: `8ae7d596facc59873dc75a31d5c23cdc8cf06763` (`Harden fan-in so joins can inspect every case`).
 - Parent fan-in feature SHA: `cfaa7e96b50e54aa83e26c5fa70a858caf270880` (`Add explicit fan-in to close the branch graph gap`).
-- GitHub cross-compiler validation: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26130353198> — **passed**.
-- Normal CI workflow: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26130353599> — **passed**.
+- GitHub cross-compiler validation: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132278315> — **passed**.
+- Normal CI workflow: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132264545> — **passed**.
 - Local verification paired with this code: Clang developer full CTest `162/162`, GCC/default developer full CTest `162/162`, package-release full CTest `162/162`, and package artifact `build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz`.
-- Compiler-warning audit: cross-compiler and CI logs had no compiler-style `warning:` diagnostics after Release smoke tests were converted away from assert-only checks.
+- Compiler-warning audit: cross-compiler and CI logs for this candidate had no compiler-style `warning:` diagnostics; GitHub still emits a hosted-runner Node 20 action annotation unrelated to project compiler warnings.
 
 ## What can be claimed with current evidence
 
@@ -39,7 +39,7 @@ Status snapshot for the current branch/export, compile-time benchmark, sequentia
 
 ## Validation evidence collected
 
-Current local verification for validated code SHA `2751238f80ba102e559b395cef3e83406b21cb17`:
+Current local verification for validated code SHA `8ae7d596facc59873dc75a31d5c23cdc8cf06763`:
 
 ```text
 git diff --check: passed
@@ -53,12 +53,12 @@ cmake --build --preset package-release-clang-ninja --target package: passed
 package artifact: build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz
 ```
 
-Latest exact-SHA GitHub cross-compiler validation run `26130353198` passed for `2751238f80ba102e559b395cef3e83406b21cb17`:
+Latest exact-SHA GitHub cross-compiler validation run `26132278315` passed for `8ae7d596facc59873dc75a31d5c23cdc8cf06763`:
 
 ```text
 workflow:           Cross Compiler Validation
-run:                https://github.com/tonytranrp/Pipeline-c-/actions/runs/26130353198
-validated SHA:      2751238f80ba102e559b395cef3e83406b21cb17
+run:                https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132278315
+validated SHA:      8ae7d596facc59873dc75a31d5c23cdc8cf06763
 GCC C++20:          passed, 162/162, g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
 GCC C++23:          passed, 162/162, g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
 Clang C++20:        passed, 162/162, Ubuntu clang version 18.1.3 (1ubuntu1)
@@ -66,17 +66,17 @@ Clang C++23:        passed, 162/162, Ubuntu clang version 18.1.3 (1ubuntu1)
 MSVC C++20:         passed, 161/161, Visual Studio 2022 Enterprise, MSVC 19.44.35226
 Package release:    passed, 162/162, package TGZ generated
 CMake:              3.31.6 in all GitHub Actions lanes
-Ninja:              1.13.2 in GitHub Actions Linux lanes
+Ninja:              1.11.1 in GitHub Actions Linux lanes
 package artifact:   /home/runner/work/Pipeline-c-/Pipeline-c-/build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz
 ```
 
-Normal CI also passed on the same SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26130353599>.
+Normal CI also passed on the same SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132264545>.
 
 See [Cross-Compiler Validation Status](cross-compiler-validation.md) for the detailed matrix and workflow notes.
 
 ## PR summary draft
 
-- Added and hardened the explicit sequential fan-in slice while preserving selected-output branch/join behavior; backend/parallel fan-in joins and backend cancellation/scheduling policies remain out of scope.
+- Hardened the explicit sequential fan-in slice with failed-case aggregation, void-output case aggregation, borrowed move-only fan-in, and case-failure observer/trace coverage while preserving selected-output branch/join behavior; backend/parallel fan-in joins and backend cancellation/scheduling policies remain out of scope.
 - Hardened DOT/JSON helper output for supported linear and selected-output branch shapes, including branch identity metadata and JSON/DOT escaping coverage.
 - Added developer-preset compile-time/header benchmark smoke targets and the aggregate `pb_compile_time_benchmarks` target; no timing thresholds are enforced.
 - Converted Release smoke tests from assert-only checks to explicit aborting test helpers, keeping Release/NDEBUG checks meaningful and warning-clean.
@@ -84,4 +84,4 @@ See [Cross-Compiler Validation Status](cross-compiler-validation.md) for the det
 
 ## Release note guardrail
 
-Release notes may mention the GitHub cross-compiler matrix pass only with exact code SHA `2751238f80ba102e559b395cef3e83406b21cb17` and workflow link <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26130353198>. If later non-doc code changes land, rerun the cross-compiler workflow and update this page before tagging.
+Release notes may mention the GitHub cross-compiler matrix pass only with exact code SHA `8ae7d596facc59873dc75a31d5c23cdc8cf06763` and workflow link <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132278315>. If later non-doc code changes land, rerun the cross-compiler workflow and update this page before tagging.

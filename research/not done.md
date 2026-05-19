@@ -2,11 +2,11 @@
 
 This file tracks what is done, partially done, still missing, and what must be finished before Pipeline-c++ can claim the full original research-plan vision.
 
-Updated after the sequential fan-in hardening slice that adds failed-case aggregation, void-output case aggregation, borrowed move-only fan-in support, and fan-in case-failure observer/trace coverage. The latest exact-SHA cross-compiler evidence in this file still refers to `2751238f80ba102e559b395cef3e83406b21cb17`; rerun and refresh the validation block after this non-doc code slice is committed.
+Updated after the sequential fan-in hardening slice that adds failed-case aggregation, void-output case aggregation, borrowed move-only fan-in support, and fan-in case-failure observer/trace coverage. The latest exact-SHA cross-compiler evidence in this file is current for code SHA `8ae7d596facc59873dc75a31d5c23cdc8cf06763` after the fan-in hardening slice.
 
 ## Latest evidence snapshot
 
-Current local evidence for validated code SHA `2751238f80ba102e559b395cef3e83406b21cb17`:
+Current local evidence for validated code SHA `8ae7d596facc59873dc75a31d5c23cdc8cf06763`:
 
 ```text
 - git diff --check: passed
@@ -29,8 +29,8 @@ Latest GitHub validation for the same code SHA is current:
 
 ```text
 - workflow: Cross Compiler Validation
-- run: https://github.com/tonytranrp/Pipeline-c-/actions/runs/26130353198
-- validated SHA: 2751238f80ba102e559b395cef3e83406b21cb17
+- run: https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132278315
+- validated SHA: 8ae7d596facc59873dc75a31d5c23cdc8cf06763
 - GCC C++20/C++23: passed, 162/162
 - Clang C++20/C++23: passed, 162/162
 - MSVC C++20: passed, 161/161
@@ -38,7 +38,7 @@ Latest GitHub validation for the same code SHA is current:
 - package artifact path in runner: /home/runner/work/Pipeline-c-/Pipeline-c-/build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz
 ```
 
-Normal CI also passed on the same SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26130353599>. The cross-compiler and CI logs had no compiler-style `warning:` diagnostics after the Release/NDEBUG smoke-test cleanup; GitHub still emits a hosted-runner Node 20 action annotation unrelated to compiler warnings.
+Normal CI also passed on the same SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132264545>. The cross-compiler and CI logs for this candidate had no compiler-style `warning:` diagnostics; GitHub still emits a hosted-runner Node 20 action annotation unrelated to compiler warnings.
 
 ## Done / production-grade for the current supported scope
 
@@ -79,7 +79,7 @@ These areas work in meaningful slices, but should not be described as fully prod
 | Stateful stage storage | Sequential stateful storage preserves linear stages and branch predicates/stages under the current policies. | Borrowed/shared/unique ownership policies, reset policy, thread-local future-backend storage, external-resource cleanup policy, and public lifetime diagnostics. |
 | Adapters | Free-function, member-function, function-object/functor, expected-like/result paths, and current void/error behavior are covered. | Coroutine adapter, sender/receiver adapter, C API ownership/error adapter, runtime-bound callable adapter, full overloaded/ref-qualified member handling, reference-lifetime adapter, and policy docs. |
 | Compile-time performance | Smoke targets prove representative translation units build; CMake has time-trace support. | Recorded release timing baselines, branch/join compile-time benchmark, thresholds, CI regression budget, ftime-trace aggregation, compile-time dashboard, and IWYU enforcement. |
-| Cross-compiler validation | GitHub workflow covers GCC/Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release for validated code SHA `2751238`. | MSVC C++23 if supported; Windows package-release; experimental C++26 feature-gate evidence if those gates are claimed; rerun if later non-doc code changes land. |
+| Cross-compiler validation | GitHub workflow covers GCC/Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release for validated code SHA `8ae7d59`. | MSVC C++23 if supported; Windows package-release; experimental C++26 feature-gate evidence if those gates are claimed; rerun if later non-doc code changes land. |
 
 ## Not implemented yet / roadmap-only
 
