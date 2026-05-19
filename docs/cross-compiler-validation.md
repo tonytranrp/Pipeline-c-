@@ -5,31 +5,31 @@ This page records the latest completed GitHub cross-compiler pass. It is evidenc
 ## Latest completed validation run
 
 ```text
-validated_code_sha=6805543ede6946aa283be7f24fb3736c762f47b2
-date_utc=2026-05-18
+validated_code_sha=f56fa54399a7a6a4f1dd55433634f13aee9c3174
+date_utc=2026-05-19
 workflow=Cross Compiler Validation
-run=https://github.com/tonytranrp/Pipeline-c-/actions/runs/26058848575
+run=https://github.com/tonytranrp/Pipeline-c-/actions/runs/26070113329
 result=PASS
 ```
 
-The workflow was added specifically for validation coverage. It configures, builds, and runs CTest for Linux GCC/Clang C++20 and C++23, validates MSVC C++20 on Windows, and runs the package-release preset in a clean Ubuntu job. Current local branch-completion work after this SHA changes public headers/tests, so the workflow must be rerun on the final candidate before release tagging.
+The workflow was added specifically for validation coverage. It configures, builds, and runs CTest for Linux GCC/Clang C++20 and C++23, validates MSVC C++20 on Windows, and runs the package-release preset in a clean Ubuntu job. This run is the exact-SHA refresh for commit `f56fa54399a7a6a4f1dd55433634f13aee9c3174`; rerun it if later non-doc code changes land before release tagging.
 
 ## Matrix results
 
 | Lane | Environment | Result | Test summary | Compiler/tool evidence |
 | --- | --- | --- | --- | --- |
-| GCC C++20 | Ubuntu GitHub Actions, Ninja Debug | PASS | `150/150` | `g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0`, CMake `3.31.6`, Ninja `1.13.2` |
-| GCC C++23 | Ubuntu GitHub Actions, Ninja Debug | PASS | `150/150` | `g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0`, CMake `3.31.6`, Ninja `1.13.2` |
-| Clang C++20 | Ubuntu GitHub Actions, Ninja Debug | PASS | `150/150` | `Ubuntu clang version 18.1.3 (1ubuntu1)`, CMake `3.31.6`, Ninja `1.13.2` |
-| Clang C++23 | Ubuntu GitHub Actions, Ninja Debug | PASS | `150/150` | `Ubuntu clang version 18.1.3 (1ubuntu1)`, CMake `3.31.6`, Ninja `1.13.2` |
-| MSVC C++20 | Windows GitHub Actions, Visual Studio 2022 Debug | PASS | `149/149` | Visual Studio 2022 Enterprise, MSVC `19.44.35226`, CMake `3.31.6` |
-| Package release clean Ubuntu | `package-release-clang-ninja` preset | PASS | `150/150` + TGZ package generated | `Ubuntu clang version 18.1.3 (1ubuntu1)`, CMake `3.31.6`, Ninja `1.13.2`; generated `pipebuilder-0.1.0-Linux.tar.gz` |
+| GCC C++20 | Ubuntu GitHub Actions, Ninja Debug | PASS | `153/153` | `g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0`, CMake `3.31.6`, Ninja `1.13.2` |
+| GCC C++23 | Ubuntu GitHub Actions, Ninja Debug | PASS | `153/153` | `g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0`, CMake `3.31.6`, Ninja `1.13.2` |
+| Clang C++20 | Ubuntu GitHub Actions, Ninja Debug | PASS | `153/153` | `Ubuntu clang version 18.1.3 (1ubuntu1)`, CMake `3.31.6`, Ninja `1.13.2` |
+| Clang C++23 | Ubuntu GitHub Actions, Ninja Debug | PASS | `153/153` | `Ubuntu clang version 18.1.3 (1ubuntu1)`, CMake `3.31.6`, Ninja `1.13.2` |
+| MSVC C++20 | Windows GitHub Actions, Visual Studio 2022 Debug | PASS | `152/152` | Visual Studio 2022 Enterprise, MSVC `19.44.35226`, CMake `3.31.6` |
+| Package release clean Ubuntu | `package-release-clang-ninja` preset | PASS | `153/153` + TGZ package generated | `Ubuntu clang version 18.1.3 (1ubuntu1)`, CMake `3.31.6`, Ninja `1.13.2`; generated `build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz` (`/home/runner/work/Pipeline-c-/Pipeline-c-/build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz` in the runner workspace) |
 
 The normal CI workflow also passed on the same SHA:
 
 ```text
 workflow=CI
-run=https://github.com/tonytranrp/Pipeline-c-/actions/runs/26058841298
+run=https://github.com/tonytranrp/Pipeline-c-/actions/runs/26069390429
 result=PASS
 jobs=Clang dev preset, Package release preset, Benchmark smoke preset
 ```

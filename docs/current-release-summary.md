@@ -4,10 +4,10 @@ Status snapshot for the current branch/export hardening and validation batch. Us
 
 ## Candidate snapshot
 
-- Latest pushed cross-compiler validation SHA: `6805543ede6946aa283be7f24fb3736c762f47b2` on `main` / `origin/main`.
-- Cross-compiler validation workflow for that SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26058848575> — **passed**.
-- Normal CI workflow for that SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26058841298> — **passed**.
-- Current local branch-completion working tree adds selected-output type-list joins and descriptor-record-backed helper export. It has fresh local Clang/package evidence below, but it still needs a new GitHub cross-compiler run on the final commit SHA before release tagging.
+- Latest pushed cross-compiler validation SHA: `f56fa54399a7a6a4f1dd55433634f13aee9c3174` on `main` / `origin/main`.
+- Cross-compiler validation workflow for that SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26070113329> — **passed**.
+- Normal CI workflow for that SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26069390429> — **passed**.
+- This snapshot has fresh GitHub cross-compiler and normal CI evidence for the exact commit SHA above. Rerun both workflows if later non-doc code changes land before release tagging.
 
 ## What can be claimed with current evidence
 
@@ -32,39 +32,31 @@ Status snapshot for the current branch/export hardening and validation batch. Us
 
 ## Validation evidence collected
 
-Current local branch-completion evidence on macOS/Darwin:
+Latest exact-SHA GitHub cross-compiler validation run `26070113329` passed for `f56fa54399a7a6a4f1dd55433634f13aee9c3174`:
 
 ```text
-git diff --check: passed
-cmake --preset clang-dev-ninja: passed
-cmake --build --preset clang-dev-ninja: passed
-ctest --preset clang-dev-ninja --output-on-failure: passed, 153/153
-cmake --preset package-release-clang-ninja: passed
-cmake --build --preset package-release-clang-ninja: passed
-ctest --preset package-release-clang-ninja --output-on-failure: passed, 153/153
-cmake --build --preset package-release-clang-ninja --target package: passed
-artifact: build/package-release-clang-ninja/pipebuilder-0.1.0-Darwin.tar.gz
+workflow:           Cross Compiler Validation
+run:                https://github.com/tonytranrp/Pipeline-c-/actions/runs/26070113329
+validated SHA:      f56fa54399a7a6a4f1dd55433634f13aee9c3174
+GCC C++20:          passed, 153/153, g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+GCC C++23:          passed, 153/153, g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+Clang C++20:        passed, 153/153, Ubuntu clang version 18.1.3 (1ubuntu1)
+Clang C++23:        passed, 153/153, Ubuntu clang version 18.1.3 (1ubuntu1)
+MSVC C++20:         passed, 152/152, Visual Studio 2022 Enterprise, MSVC 19.44.35226
+Package release:    passed, 153/153, package TGZ generated
+CMake:              3.31.6 in all GitHub Actions lanes
+Ninja:              1.13.2 in GitHub Actions Linux lanes
+package artifact:   /home/runner/work/Pipeline-c-/Pipeline-c-/build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz
 ```
 
-Latest pushed cross-compiler validation run `26058848575` passed with these lanes:
+Normal CI also passed on the same SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26069390429>.
 
-```text
-GCC C++20:        passed, 150/150, g++ 13.3.0
-GCC C++23:        passed, 150/150, g++ 13.3.0
-Clang C++20:      passed, 150/150, Ubuntu clang 18.1.3
-Clang C++23:      passed, 150/150, Ubuntu clang 18.1.3
-MSVC C++20:       passed, 149/149, MSVC 19.44.35226 / VS 2022 Enterprise
-Package release:  passed, 150/150, package TGZ generated
-CMake:            3.31.6 in GitHub Actions lanes
-Ninja:            1.13.2 in GitHub Actions Linux lanes
-```
-
-Package-release clean Ubuntu evidence from the same run:
+Package-release clean Ubuntu evidence from the same cross-compiler run:
 
 ```text
 cmake --preset package-release-clang-ninja: passed
 cmake --build --preset package-release-clang-ninja: passed
-ctest --preset package-release-clang-ninja --output-on-failure: passed, 150/150
+ctest --preset package-release-clang-ninja --output-on-failure: passed, 153/153
 cmake --build --preset package-release-clang-ninja --target package: passed
 artifact: build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz
 ```
@@ -80,4 +72,4 @@ See [Cross-Compiler Validation Status](cross-compiler-validation.md) for the det
 
 ## Release note guardrail
 
-Release notes may mention the old matrix pass only with the exact SHA and workflow link above. Because the current branch-completion slice changes public headers and tests, rerun the cross-compiler workflow and update this page plus `docs/cross-compiler-validation.md` before tagging.
+Release notes may mention the matrix pass only with exact SHA `f56fa54399a7a6a4f1dd55433634f13aee9c3174` and workflow link <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26070113329>. Rerun the cross-compiler workflow and update this page plus `docs/cross-compiler-validation.md` if later non-doc code changes land before tagging.
