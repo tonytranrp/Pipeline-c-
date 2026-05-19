@@ -6,23 +6,12 @@
 #include <string_view>
 #include <type_traits>
 
-#include "pb/core/describe.hpp"
 #include "pb/core/pipeline_state.hpp"
+#include "pb/runtime/descriptor.hpp"
 
 namespace pb::core {
 
 namespace detail {
-
-template <class StageList>
-struct json_has_branch_stage_impl;
-
-template <class... Stages>
-struct json_has_branch_stage_impl<meta::type_list<Stages...>>
-    : std::bool_constant<(is_selected_branch_node<Stages>::value || ...)> {};
-
-template <class Pipeline>
-inline constexpr bool json_pipeline_has_branch_v =
-    json_has_branch_stage_impl<typename pipeline_traits<Pipeline>::stages>::value;
 
 inline void append_json_string(std::ostringstream& stream, std::string_view value) {
   stream << '"';
@@ -51,60 +40,73 @@ inline void append_json_string(std::ostringstream& stream, std::string_view valu
   stream << '"';
 }
 
-template <class Case>
-void append_branch_case_json(std::ostringstream& stream, std::size_t index) {
-  using Predicate = typename Case::predicate_type;
-  using BranchStage = typename Case::stage_type;
-
-  stream << "{\"index\":" << index << ",\"predicate_key\":";
-  append_json_string(stream, stage_traits<Predicate>::key());
+inline void append_branch_case_json(std::ostringstream& stream,
+                                    const pb::runtime::descriptor_branch_case_record& branch_case) {
+  stream << "{\"index\":" << branch_case.case_index << ",\"predicate_key\":";
+  append_json_string(stream, branch_case.predicate_key);
   stream << ",\"predicate_name\":";
-  append_json_string(stream, stage_traits<Predicate>::name());
+  append_json_string(stream, branch_case.predicate_name);
   stream << ",\"stage_key\":";
-  append_json_string(stream, stage_traits<BranchStage>::key());
+  append_json_string(stream, branch_case.stage_key);
   stream << ",\"stage_name\":";
-  append_json_string(stream, stage_traits<BranchStage>::name());
+  append_json_string(stream, branch_case.stage_name);
   stream << ",\"predicate_edge\":{\"from\":\"branch\",\"to\":\"predicate\",\"style\":\"dashed\",\"label\":\"test\"}";
   stream << ",\"stage_edge\":{\"from\":\"predicate\",\"to\":\"case_stage\"}";
   stream << "}";
 }
 
-template <class... Cases, std::size_t... Indexes>
-void append_branch_cases_json(std::ostringstream& stream, meta::type_list<Cases...>, std::index_sequence<Indexes...>) {
+template <class Descriptor>
+void append_branch_cases_json(std::ostringstream& stream, const Descriptor& descriptor, std::size_t branch_stage_index) {
   stream << ",\"branch_cases\":[";
-  ((stream << (Indexes == 0 ? "" : ","), append_branch_case_json<Cases>(stream, Indexes)), ...);
+  bool first_case = true;
+  for (const auto& branch_case : descriptor.branch_case_records()) {
+    if (branch_case.branch_stage_index != branch_stage_index) {
+      continue;
+    }
+    if (!first_case) {
+      stream << ",";
+    }
+    first_case = false;
+    append_branch_case_json(stream, branch_case);
+  }
   stream << "]";
 }
 
-template <class Stage>
-void append_stage_kind_json(std::ostringstream& stream) {
-  if constexpr (is_selected_branch_node<Stage>::value) {
+template <class Descriptor>
+void append_stage_kind_json(std::ostringstream& stream, const Descriptor& descriptor,
+                            const pb::runtime::descriptor_stage_record& stage) {
+  if (stage.topology == pb::runtime::descriptor_topology::branch) {
     stream << ",\"kind\":\"branch\"";
-    append_branch_cases_json(stream, typename Stage::cases{}, std::make_index_sequence<Stage::case_count>{});
+    append_branch_cases_json(stream, descriptor, stage.index);
   } else {
     stream << ",\"kind\":\"stage\"";
   }
 }
 
-template <class Pipeline, std::size_t Index>
-void append_graph_stage_json(std::ostringstream& stream) {
-  using Stage = pipeline_stage_t<Pipeline, Index>;
-  using Descriptor = pipeline_stage_descriptor_t<Pipeline, Index>;
-
-  stream << "{\"index\":" << Index << ",\"key\":";
-  append_json_string(stream, Descriptor::key());
+template <class Descriptor>
+void append_graph_stage_json(std::ostringstream& stream, const Descriptor& descriptor,
+                             const pb::runtime::descriptor_stage_record& stage) {
+  stream << "{\"index\":" << stage.index << ",\"key\":";
+  append_json_string(stream, stage.key);
   stream << ",\"name\":";
-  append_json_string(stream, Descriptor::name());
-  append_stage_kind_json<Stage>(stream);
+  append_json_string(stream, stage.name);
+  append_stage_kind_json(stream, descriptor, stage);
   stream << "}";
 }
 
-template <class Pipeline, std::size_t... Indexes>
-void append_graph_stages_json(std::ostringstream& stream, std::index_sequence<Indexes...>) {
-  ((stream << (Indexes == 0 ? "" : ","), append_graph_stage_json<Pipeline, Indexes>(stream)), ...);
+template <class Descriptor>
+void append_graph_stages_json(std::ostringstream& stream, const Descriptor& descriptor) {
+  bool first_stage = true;
+  for (const auto& stage : descriptor.stage_records()) {
+    if (!first_stage) {
+      stream << ",";
+    }
+    first_stage = false;
+    append_graph_stage_json(stream, descriptor, stage);
+  }
 }
 
-inline void append_graph_edge_json(std::ostringstream& stream, const edge_record& edge) {
+inline void append_graph_edge_json(std::ostringstream& stream, const pb::runtime::descriptor_edge_record& edge) {
   stream << "{\"index\":" << edge.index << ",\"from_stage_index\":" << edge.from_stage_index
          << ",\"to_stage_index\":" << edge.to_stage_index << ",\"from_key\":";
   append_json_string(stream, edge.from_key);
@@ -121,16 +123,17 @@ inline void append_graph_edge_json(std::ostringstream& stream, const edge_record
 
 template <ValidPipeline Pipeline>
 [[nodiscard]] auto to_json() -> std::string {
-  constexpr auto descriptor = describe<Pipeline>();
-  constexpr auto topology = detail::json_pipeline_has_branch_v<Pipeline> ? std::string_view{"branch"}
-                                                                         : std::string_view{"linear"};
+  constexpr auto descriptor = pb::runtime::make_descriptor<Pipeline>();
+  constexpr auto topology = decltype(descriptor)::topology == pb::runtime::descriptor_topology::branch
+                                ? std::string_view{"branch"}
+                                : std::string_view{"linear"};
 
   std::ostringstream stream;
   stream << "{\"schema_version\":\"pb.core.graph.v1\",\"topology\":";
   detail::append_json_string(stream, topology);
   stream << ",\"stage_count\":"
          << descriptor.stage_count << ",\"edge_count\":" << descriptor.edge_count << ",\"stages\":[";
-  detail::append_graph_stages_json<Pipeline>(stream, std::make_index_sequence<descriptor.stage_count>{});
+  detail::append_graph_stages_json(stream, descriptor);
   stream << "],\"edges\":[";
 
   bool first_edge = true;

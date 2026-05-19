@@ -1,6 +1,6 @@
 # Branch / Join Roadmap / Status
 
-Sequential branch execution is now a **supported, tested feature** for homogeneous branch outputs with optional join stages. A first heterogeneous-output slice is also implemented: differing branch outputs are represented as `std::variant<...>` and can be joined by a stage that accepts that variant; duplicate output types are preserved and routed by variant index rather than by type. Move-only branch inputs are supported when predicates inspect by `const input_type&` and the selected branch stage consumes the value.
+Sequential branch execution is now a **supported, tested feature** for homogeneous branch outputs with optional join stages. A first heterogeneous-output slice is also implemented: differing branch outputs are represented as `std::variant<...>` and can be joined either by a stage that accepts that variant or by a type-list join stage that declares `pb::meta::type_list<...>` and overloads every raw branch output type; duplicate output types are preserved and routed by variant index rather than by type. Move-only branch inputs are supported when predicates inspect by `const input_type&` and the selected branch stage consumes the value.
 
 ## Current status
 
@@ -14,7 +14,7 @@ Today the repository supports:
 - **runtime branch execution**: predicate evaluation, first-match-wins case selection with short-circuit, branch-stage execution, observer events (`on_case_selected`, `on_case_skipped`), error annotation with `[branch]` prefix
 - **branch child identities**: unnamed branch predicates/stages receive runtime fallback keys such as `branch.case.0.predicate` and `branch.case.0.stage` so observer/error events do not collapse to the parent branch stage index
 - **stateful branch execution**: branch predicates and stages respect `pb::runtime::stateful_sequential` policy, preserving stage state across multiple runs
-- **heterogeneous branch outputs**: selected branch nodes return `std::variant<Ts...>` when case outputs differ, preserve duplicate output alternatives by index, and join stages can consume that variant
+- **heterogeneous branch outputs**: selected branch nodes return `std::variant<Ts...>` when case outputs differ, preserve duplicate output alternatives by index, and join stages can consume either that variant or raw `pb::meta::type_list<...>` metadata through overload-based selected-output dispatch
 - **move-only branch inputs**: predicates observe an lvalue reference and the selected branch stage receives the moved input; coverage includes `std::unique_ptr` ownership transfer into a by-value branch stage
 - branch-aware export helpers: DOT includes branch/case structure and JSON now reports branch topology instead of always reporting linear topology
 - branch marker aliases (`case_`, `branch_case`, `branch_node`, `join_node`) plus `branch_case_output` / `branch_outputs` marker metadata, raw output type-list helpers, unified branch output helpers, homogeneous branch-output validation, unified-output validation, branch source compatibility, predicate marker, homogeneous branch-node case-input, branch-output compatibility validation, join consumption validation, invalid join-stage, and branch-output marker misuse diagnostics
@@ -33,9 +33,9 @@ Today the repository supports:
 
 Today the repository does **not** yet support:
 
-- `type_list` multi-input join lowering; heterogeneous branch output support is currently variant-based
+- parallel all-branches fan-in / backend multi-input join lowering beyond the current selected-output variant/type-list join model
 - predicate patterns that require consuming a move-only input before routing; predicates must remain callable with `const input_type&`
-- multi-input join execution, descriptor-backed stable graph export, or backend/parallel branch execution
+- parallel all-branches fan-in / backend multi-input join execution, stable descriptor/export compatibility, or backend/parallel branch execution
 
 ## Why branch/join matters
 
@@ -52,13 +52,13 @@ Without this feature, the current library remains intentionally limited to one v
 
 The research plan originally treated branch/join as post-MVP work after the linear chain. The current repository now ships the first production-readiness slice of that plan: homogeneous sequential branch/join execution with public DSL, validation, runtime routing, observer events, stateful storage, tests, and examples.
 
-The broader graph-shaped plan is still not complete. Heterogeneous branch outputs and move-only branch inputs have first implementation slices, including duplicate-output variant routing, explicit raw-vs-unified output validation helpers, and negative coverage for move-only predicates that would consume by value. `type_list` multi-input joins, descriptor-backed stable graph export, stable golden export schemas, and backend branch execution remain roadmap work.
+The broader graph-shaped plan is still not complete. Heterogeneous branch outputs and move-only branch inputs have first implementation slices, including duplicate-output variant routing, explicit raw-vs-unified output validation helpers, and negative coverage for move-only predicates that would consume by value. Parallel all-branches fan-in joins, stable descriptor/export compatibility, release-grade golden export schemas, and backend branch execution remain roadmap work.
 
 ## Non-goals for the current MVP
 
 The current MVP should **not** claim:
 
-- multi-input stage support before join support exists
+- parallel/all-branches multi-input stage support before backend join lowering exists
 - multi-output branch lowering for ordinary stage outputs
 - feedback/cycle execution
 - stable branch label syntax or join result policy
@@ -72,14 +72,14 @@ Those decisions belong to a later implementation slice with explicit tests, exam
 2. **Compile-time validation coverage** ✅  
    Checks for branch predicates, join context, and type compatibility. Branch-output and join validation have accepted evidence.
 3. **Runtime execution coverage** ✅  
-   Sequential branch routing with first-match-wins short-circuit, observer events, error propagation, stateful storage, const-input predicate evaluation, join stage execution, variant joins for heterogeneous outputs including duplicate output alternatives by index, and move-only input consumption by the selected branch stage.
+   Sequential branch routing with first-match-wins short-circuit, observer events, error propagation, stateful storage, const-input predicate evaluation, join stage execution, variant joins and type-list selected-output joins for heterogeneous outputs including duplicate output alternatives by index, and move-only input consumption by the selected branch stage.
 4. **Targeted tests and examples** ✅  
    Positive runtime tests, negative compile-fail diagnostics, branch export compile-pass tests, and user-facing examples.
 
 ## Remaining roadmap items
 
-- `type_list` / true multi-input join execution
-- Descriptor-backed stable graph export with schema docs and golden outputs
+- parallel all-branches fan-in / true backend multi-input join execution
+- Stable descriptor/export compatibility with schema docs and release-grade golden outputs
 - Parallel/async backend support for branch execution
 - Broader move-only edge coverage beyond const-reference predicates plus selected-stage consumption
 
@@ -93,13 +93,13 @@ Those decisions belong to a later implementation slice with explicit tests, exam
 - stateful branch storage tested via `sequential_branch_comprehensive.cpp`
 - graph helper coverage: `pb_export_dot_branch_compile_pass`, `pb_export_json_compile_pass`, `pb_export_json_branch_compile_pass`, and helper-output regression coverage in `pb_export_golden_compile_pass`
 
-Type-list joins, multi-input join execution, descriptor-backed stable export, and backend branch execution remain future slices.
+Parallel all-branches fan-in, stable descriptor/export compatibility, and backend branch execution remain future slices.
 
 ## Release guidance
 
 Release notes and docs should describe branch/join support as:
 
-> sequential branch routing with optional join stages is supported for homogeneous outputs, first-slice heterogeneous outputs through `std::variant` (including duplicate output alternatives by index), and move-only selected-branch input consumption; type-list/multi-input joins, descriptor-backed stable graph export, and backend branch execution remain roadmap work
+> sequential branch routing with optional join stages is supported for homogeneous outputs, first-slice heterogeneous outputs through `std::variant` or type-list selected-output joins (including duplicate output alternatives by index), and move-only selected-branch input consumption; parallel fan-in joins, stable descriptor/export compatibility, and backend branch execution remain roadmap work
 
 If a future slice adds branch/join support, update this page together with:
 

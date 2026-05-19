@@ -1,6 +1,6 @@
 # Cross-Compiler Validation Status
 
-This page records the latest validation-only pass for the current code surface. It is evidence, not a feature claim: roadmap-only items stay roadmap-only even when the existing tests pass across compilers.
+This page records the latest completed GitHub cross-compiler pass. It is evidence, not a feature claim: roadmap-only items stay roadmap-only even when the existing tests pass across compilers. If local public-header or test changes land after the recorded SHA, rerun the workflow on the final candidate SHA before release tagging.
 
 ## Latest completed validation run
 
@@ -12,7 +12,7 @@ run=https://github.com/tonytranrp/Pipeline-c-/actions/runs/26058848575
 result=PASS
 ```
 
-The workflow was added specifically for validation coverage. It configures, builds, and runs CTest for Linux GCC/Clang C++20 and C++23, validates MSVC C++20 on Windows, and runs the package-release preset in a clean Ubuntu job. The docs-only commits after this SHA do not change library code, but a release tag should still rerun the workflow on the final tag candidate if strict exact-SHA release evidence is required.
+The workflow was added specifically for validation coverage. It configures, builds, and runs CTest for Linux GCC/Clang C++20 and C++23, validates MSVC C++20 on Windows, and runs the package-release preset in a clean Ubuntu job. Current local branch-completion work after this SHA changes public headers/tests, so the workflow must be rerun on the final candidate before release tagging.
 
 ## Matrix results
 
@@ -38,8 +38,8 @@ jobs=Clang dev preset, Package release preset, Benchmark smoke preset
 
 This pass supports claims that the current tested surface configures, builds, and passes its test suite on the matrix above. It does **not** mean these roadmap items are implemented:
 
-- `type_list` / true multi-input join execution
-- descriptor-backed stable DOT/JSON graph export
+- parallel all-branches fan-in / true backend multi-input join execution beyond selected-output type-list joins
+- stable descriptor/export compatibility beyond descriptor-record-backed helper DOT/JSON output
 - CLI/file export of user pipeline definitions
 - thread-pool / oneTBB / Taskflow / stdexec pipeline backends
 - C++ modules

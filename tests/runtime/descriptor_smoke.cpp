@@ -256,13 +256,17 @@ int main() {
   // Case 0: IsInvoice → ProcessInvoice
   if constexpr (branch_descriptor.case_count > 0) {
     static_assert(branch_descriptor.branch_case_records()[0].case_index == 0);
+    static_assert(branch_descriptor.branch_case_records()[0].branch_stage_index == 0);
     static_assert(branch_descriptor.branch_case_records()[0].predicate_key == std::string_view{"is-invoice"});
     static_assert(branch_descriptor.branch_case_records()[0].predicate_name == std::string_view{"is-invoice"});
     static_assert(branch_descriptor.branch_case_records()[0].stage_key == std::string_view{"process-invoice"});
     static_assert(branch_descriptor.branch_case_records()[0].stage_name == std::string_view{"process-invoice"});
+    static_assert(!branch_descriptor.branch_case_records()[0].input_type_name.empty());
+    static_assert(!branch_descriptor.branch_case_records()[0].output_type_name.empty());
 
     // Case 1: IsReport → ProcessReport
     static_assert(branch_descriptor.branch_case_records()[1].case_index == 1);
+    static_assert(branch_descriptor.branch_case_records()[1].branch_stage_index == 0);
     static_assert(branch_descriptor.branch_case_records()[1].predicate_key == std::string_view{"is-report"});
     static_assert(branch_descriptor.branch_case_records()[1].predicate_name == std::string_view{"is-report"});
     static_assert(branch_descriptor.branch_case_records()[1].stage_key == std::string_view{"process-report"});
@@ -272,11 +276,12 @@ int main() {
   // Runtime branch engine descriptor
   auto branch_engine = pb::compile<BranchPipeline>(pb::runtime::sequential{});
   const auto runtime_branch_descriptor = branch_engine.descriptor();
-  // Runtime engine uses make_descriptor (linear), so topology is linear and case_count is 0
   assert(runtime_branch_descriptor.schema_version == pb::runtime::descriptor_schema_version);
-  assert(runtime_branch_descriptor.topology == pb::descriptor_topology::linear);
+  assert(runtime_branch_descriptor.topology == pb::descriptor_topology::branch);
   assert(runtime_branch_descriptor.stage_records().size() == 2);
-  assert(runtime_branch_descriptor.branch_case_records().empty());
+  assert(runtime_branch_descriptor.branch_case_records().size() == 2);
+  assert(runtime_branch_descriptor.branch_case_records()[0].branch_stage_index == 0);
+  assert(runtime_branch_descriptor.branch_case_records()[1].stage_key == "process-report");
 
   // Runtime execution
   auto br_result = branch_engine.run(Document{1});

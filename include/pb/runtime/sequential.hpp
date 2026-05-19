@@ -50,6 +50,29 @@ struct no_stage_storage {};
 template <class StageStoragePolicy>
 inline constexpr bool stores_stages_in_engine_v = std::same_as<StageStoragePolicy, store_stages_in_engine>;
 
+template <class T>
+struct is_variant : std::false_type {};
+
+template <class... Ts>
+struct is_variant<std::variant<Ts...>> : std::true_type {};
+
+template <class Stage>
+inline constexpr bool stage_declares_type_list_input_v =
+    pb::core::detail::is_type_list<pb::core::stage_input_t<Stage>>::value;
+
+template <class Stage, class StageObject, class Input>
+[[nodiscard]] decltype(auto) invoke_type_list_join_stage(StageObject& stage_object, Input&& input) {
+  if constexpr (is_variant<std::remove_cvref_t<Input>>::value) {
+    return std::visit(
+        [&stage_object](auto&& selected_output) -> decltype(auto) {
+          return stage_object(std::forward<decltype(selected_output)>(selected_output));
+        },
+        std::forward<Input>(input));
+  } else {
+    return stage_object(std::forward<Input>(input));
+  }
+}
+
 template <class BranchNode, std::size_t StageIndex, class Input>
 [[nodiscard]] auto run_selected_branch(observer* sink, Input&& input) -> result<typename BranchNode::output_type>;
 
@@ -65,6 +88,14 @@ template <class Stage, std::size_t StageIndex, class StageStorage, class Input>
     } else {
       auto& branch_node = std::get<StageIndex>(*storage);
       return run_selected_branch<Stage, StageIndex>(&branch_node, sink, std::forward<Input>(input));
+    }
+  } else if constexpr (stage_declares_type_list_input_v<Stage>) {
+    if constexpr (std::same_as<std::remove_cvref_t<StageStorage>, no_stage_storage>) {
+      auto stage = Stage{};
+      return invoke_type_list_join_stage<Stage>(stage, std::forward<Input>(input));
+    } else {
+      auto& stage = std::get<StageIndex>(*storage);
+      return invoke_type_list_join_stage<Stage>(stage, std::forward<Input>(input));
     }
   } else if constexpr (std::same_as<std::remove_cvref_t<StageStorage>, no_stage_storage>) {
     return Stage{}(std::forward<Input>(input));
@@ -760,7 +791,7 @@ public:
   using descriptor_type = std::array<stage_id, sizeof...(Stages)>;
   using stage_storage_type =
       std::conditional_t<stores_stages_in_engine_v<StageStoragePolicy>, std::tuple<Stages...>, no_stage_storage>;
-  using runtime_descriptor_type = descriptor_view<sizeof...(Stages)>;
+  using runtime_descriptor_type = decltype(make_descriptor<pipeline_type>());
 
   static constexpr auto stage_count = sizeof...(Stages);
 

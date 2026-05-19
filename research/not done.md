@@ -24,6 +24,7 @@ Done / mostly done:
 - First-slice heterogeneous branch outputs through `std::variant`, including duplicate output alternatives routed by variant index
 - Raw branch output metadata (`branch_raw_output_types_t`) and unified execution output metadata (`branch_unified_output_t`)
 - Homogeneous branch-output validation plus unified-output validation for variant joins
+- Type-list selected-output join execution for branch joins whose join stage declares `pb::meta::type_list<...>` and overloads every raw branch output type
 - Move-only selected-branch input consumption when predicates observe by `const input_type&`
 - Negative compile-fail coverage for move-only predicates that try to consume by value
 - Stateful branch predicate/stage storage under pb::runtime::stateful_sequential
@@ -71,9 +72,9 @@ Supported today:
 Still unsupported:
 
 ```text
-- type_list / true multi-input join execution
+- parallel all-branches fan-in / true multi-branch join execution beyond the selected-output sequential join model
 - consuming predicates for move-only branch inputs
-- descriptor-backed stable graph export schemas and release-grade compatibility fixtures
+- stable descriptor/export schema and compatibility contract beyond helper output schemas and release-grade compatibility fixtures
 - CLI/file graph export for user pipeline definitions
 - parallel/backend branch execution
 ```
@@ -82,17 +83,17 @@ Still unsupported:
 
 ### 1. Heterogeneous branch / join execution
 
-Status: **partial / first implementation**
+Status: **implemented for selected-output sequential joins; broader fan-in remains partial**
 
-The current branch runtime supports homogeneous outputs and a first heterogeneous-output slice by representing differing branch outputs as `std::variant<...>`. Join stages can consume that variant, duplicate output alternatives are preserved by index, and public metadata distinguishes raw case output type lists from the unified execution output type. The research plan still needs true `type_list` / multi-input join semantics and richer diagnostics for future join models.
+The current branch runtime supports homogeneous outputs, variant-based heterogeneous outputs, and type-list selected-output joins. A join stage may either consume the unified execution output (`T` or `std::variant<Ts...>`) or declare `pb::meta::type_list<Ts...>` matching the raw branch output types and provide overloads for every raw output type. Duplicate output alternatives are still preserved by variant index during branch selection. The remaining research-plan gap is true all-branches fan-in / multi-input execution for future graph or backend models.
 
 Still needed:
 
 ```text
-- type_list / true multi-input join lowering
-- diagnostics for future unsupported / ambiguous type-list or multi-input joins
-- more edge runtime tests for future heterogeneous route policies beyond the current variant slice
-- examples explaining homogeneous, variant-based heterogeneous, and future type-list join support
+- parallel all-branches fan-in / true multi-branch join execution beyond first-match selected-output joins
+- diagnostics for future unsupported / ambiguous fan-in join models
+- more edge runtime tests for future heterogeneous route policies beyond the current selected-output variant/type-list slice
+- examples explaining homogeneous, variant-based heterogeneous, type-list selected-output joins, and future backend fan-in joins
 ```
 
 ### 2. Move-only branch input execution
@@ -113,12 +114,12 @@ Still needed:
 
 Status: **partial helper surface**
 
-The repo has DOT/JSON helpers for linear and supported branch pipelines, and JSON now reports branch topology for branch pipelines. This is not yet a descriptor-backed stable graph export contract.
+The repo has DOT/JSON helpers for linear and supported branch pipelines, JSON reports branch topology for branch pipelines, and the branch-aware helper paths now render from descriptor records. This is still not a stable graph export compatibility contract.
 
 Still needed:
 
 ```text
-- descriptor-backed DOT/JSON export
+- release-grade descriptor-backed DOT/JSON compatibility contract
 - stable DOT schema
 - stable JSON schema
 - descriptor-backed golden compatibility fixtures
@@ -141,8 +142,8 @@ Need to implement:
 - stable ownership rules
 - stable lifetime rules
 - stable compatibility rules
-- branch/join descriptor records aligned with exporter output
-- descriptor-backed DOT/JSON export
+- broader branch/join descriptor compatibility rules for multiple/future graph shapes
+- release-grade descriptor-backed DOT/JSON export contract
 - descriptor examples
 - descriptor-specific tests
 ```
@@ -393,10 +394,10 @@ Still needed before publishing:
 2. Add standard std::expected matrix evidence or clear fallback wording.
 3. Record compile-time baselines for 5-stage and 50-stage chains.
 4. Define the broader stateful stage storage/lifetime policy.
-5. Finish type-list / multi-input join semantics after the current variant-based heterogeneous slice.
+5. Finish parallel all-branches fan-in / true backend multi-input join semantics beyond the selected-output sequential slice.
 6. Expand move-only branch input policy beyond const-ref predicates plus selected-stage consumption.
 7. Define stable runtime descriptor schema.
-8. Make DOT/JSON export descriptor-backed and add release-grade golden compatibility fixtures.
+8. Promote descriptor-record-backed DOT/JSON helpers into stable descriptor/export schemas with release-grade golden compatibility fixtures.
 9. Add CLI/file graph export only after schema tests exist.
 10. Keep backend feature matrix aligned with real executor support.
 11. Prototype thread-pool pipeline backend before oneTBB/Taskflow/stdexec.
@@ -430,9 +431,9 @@ The repo is no longer just a basic linear MVP. It now has a real sequential bran
 The biggest unfinished research-plan items are now:
 
 ```text
-- type-list / multi-input join execution
+- parallel all-branches fan-in / true backend multi-input join execution
 - broader move-only branch input policies beyond const-ref predicate routing
-- descriptor-backed stable graph export
+- stable descriptor/export schema and compatibility contract beyond helper output
 - CLI/file graph export
 - stable runtime descriptor/export contract
 - optional pipeline backends

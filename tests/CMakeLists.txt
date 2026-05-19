@@ -332,6 +332,13 @@ pb_enable_pch_if_requested(pb_branch_topology_heterogeneous_compile_pass)
 add_test(NAME pb_branch_topology_heterogeneous_compile_pass COMMAND pb_branch_topology_heterogeneous_compile_pass)
 set_tests_properties(pb_branch_topology_heterogeneous_compile_pass PROPERTIES LABELS "compile-pass;branch;heterogeneous;topology")
 
+add_executable(pb_branch_type_list_join_compile_pass compile_pass/branch_type_list_join_compile_pass.cpp)
+target_link_libraries(pb_branch_type_list_join_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_branch_type_list_join_compile_pass PRIVATE)
+pb_enable_pch_if_requested(pb_branch_type_list_join_compile_pass)
+add_test(NAME pb_branch_type_list_join_compile_pass COMMAND pb_branch_type_list_join_compile_pass)
+set_tests_properties(pb_branch_type_list_join_compile_pass PROPERTIES LABELS "compile-pass;branch;join;type-list")
+
 add_test(NAME pb_compile_fail_edge_mismatch
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/edge_mismatch.cpp
@@ -390,6 +397,13 @@ pb_apply_project_options(pb_runtime_sequential_branch_heterogeneous PRIVATE)
 pb_enable_pch_if_requested(pb_runtime_sequential_branch_heterogeneous)
 add_test(NAME pb_runtime_sequential_branch_heterogeneous COMMAND pb_runtime_sequential_branch_heterogeneous)
 set_tests_properties(pb_runtime_sequential_branch_heterogeneous PROPERTIES LABELS "runtime;branch;heterogeneous")
+
+add_executable(pb_runtime_sequential_branch_type_list_join runtime/sequential_branch_type_list_join.cpp)
+target_link_libraries(pb_runtime_sequential_branch_type_list_join PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_sequential_branch_type_list_join PRIVATE)
+pb_enable_pch_if_requested(pb_runtime_sequential_branch_type_list_join)
+add_test(NAME pb_runtime_sequential_branch_type_list_join COMMAND pb_runtime_sequential_branch_type_list_join)
+set_tests_properties(pb_runtime_sequential_branch_type_list_join PROPERTIES LABELS "runtime;branch;join;type-list")
 
 add_test(NAME pb_compile_fail_branch_builder_source_mismatch
   COMMAND ${CMAKE_COMMAND}
@@ -585,7 +599,7 @@ add_test(NAME pb_compile_fail_branch_join_type_mismatch
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
     -DEXPECT_DIAGNOSTIC=Pipeline edge mismatch
-    -DEXPECTED_DIAGNOSTICS=pb::connectable_v
+    -DEXPECTED_DIAGNOSTICS=unified branch output_type;type-list joins must be invocable
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_branch_join_type_mismatch PROPERTIES LABELS "compile-fail;diagnostics;metadata;topology")
@@ -596,7 +610,7 @@ add_test(NAME pb_compile_fail_branch_heterogeneous_join_type_mismatch
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
     -DEXPECT_DIAGNOSTIC=Pipeline\ edge\ mismatch
-    -DEXPECTED_DIAGNOSTICS=pb::connectable_v
+    -DEXPECTED_DIAGNOSTICS=unified branch output_type;type-list joins must be invocable
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_branch_heterogeneous_join_type_mismatch PROPERTIES LABELS "compile-fail;diagnostics;branch;heterogeneous")
@@ -619,6 +633,18 @@ add_test(NAME pb_compile_fail_branch_move_only_predicate_by_value_unsupported
 )
 set_tests_properties(pb_compile_fail_branch_move_only_predicate_by_value_unsupported
   PROPERTIES LABELS "compile-fail;diagnostics;branch;move-only")
+
+add_test(NAME pb_compile_fail_branch_type_list_join_missing_handler
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_type_list_join_missing_handler.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=type-list\ joins\ must\ be\ invocable\ for\ every\ branch\ output_type
+    -DEXPECTED_DIAGNOSTICS=Pipeline\ edge\ mismatch
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_branch_type_list_join_missing_handler
+  PROPERTIES LABELS "compile-fail;diagnostics;branch;join;type-list")
 
 add_test(NAME pb_compile_fail_join_output_invalid_node_misuse
   COMMAND ${CMAKE_COMMAND}

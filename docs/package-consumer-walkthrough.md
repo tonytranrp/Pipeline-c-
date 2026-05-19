@@ -119,6 +119,6 @@ The current downstream package contract is intentionally narrow:
 - The smoke lane proves successful consumption against the local toolchain used to build the package; wider cross-compiler/package-manager validation is still a release gate.
 - The smoke lane proves the generated target-specific consumers build and run from the local install tree; it does not prove package-manager integration or cross-toolchain consumption.
 - The current archive check proves the runtime static library and key config/header entries exist, not that every future optional component or roadmap feature is packaged.
-- Optional backend pipeline execution, type-list/multi-input joins, stable descriptor-backed graph export, observer ABI stability, and richer runtime descriptor surfaces remain roadmap-only work, not installed-package guarantees. The package can include helper headers/tests for the currently supported branch/export slices without making those broader guarantees.
+- Optional backend pipeline execution, parallel all-branches fan-in joins, stable descriptor/export compatibility, observer ABI stability, and richer runtime descriptor surfaces remain roadmap-only work, not installed-package guarantees. The package can include helper headers/tests for the currently supported branch/export slices without making those broader guarantees.
 
 For the current supported release boundary, treat this walkthrough together with `docs/production-readiness.md` and the package-smoke script as the source of truth.

@@ -41,11 +41,14 @@ struct descriptor_stage_record {
 };
 
 struct descriptor_branch_case_record {
+  std::size_t branch_stage_index{};
   std::size_t case_index{};
   std::string_view predicate_key;
   std::string_view predicate_name;
   std::string_view stage_key;
   std::string_view stage_name;
+  std::string_view input_type_name{};
+  std::string_view output_type_name{};
 };
 
 struct descriptor_edge_record {
@@ -248,25 +251,30 @@ template <std::size_t StageCount, std::size_t... StageIndexes, std::size_t... Ed
 // ---------------------------------------------------------------------------
 
 template <class Case>
-[[nodiscard]] constexpr auto to_branch_case_record(std::size_t case_idx) noexcept
+[[nodiscard]] constexpr auto to_branch_case_record(std::size_t branch_stage_idx,
+                                                   std::size_t case_idx) noexcept
     -> descriptor_branch_case_record {
   using Predicate = typename Case::predicate_type;
   using BranchStage = typename Case::stage_type;
 
   return descriptor_branch_case_record{
+      .branch_stage_index = branch_stage_idx,
       .case_index = case_idx,
       .predicate_key = pb::core::stage_traits<Predicate>::key(),
       .predicate_name = pb::core::stage_traits<Predicate>::name(),
       .stage_key = pb::core::stage_traits<BranchStage>::key(),
       .stage_name = pb::core::stage_traits<BranchStage>::name(),
+      .input_type_name = type_name<typename Case::input_type>(),
+      .output_type_name = type_name<pb::core::stage_output_t<BranchStage>>(),
   };
 }
 
 template <class BranchNode, std::size_t... CaseIndexes>
-[[nodiscard]] constexpr auto branch_case_records_from_node(std::index_sequence<CaseIndexes...>) noexcept
+[[nodiscard]] constexpr auto branch_case_records_from_node(std::size_t branch_stage_idx,
+                                                           std::index_sequence<CaseIndexes...>) noexcept
     -> std::array<descriptor_branch_case_record, sizeof...(CaseIndexes)> {
   using Cases = typename BranchNode::cases;
-  return {to_branch_case_record<pb::meta::at_t<Cases, CaseIndexes>>(CaseIndexes)...};
+  return {to_branch_case_record<pb::meta::at_t<Cases, CaseIndexes>>(branch_stage_idx, CaseIndexes)...};
 }
 
 // ---------------------------------------------------------------------------
@@ -300,25 +308,26 @@ template <class SourceView, std::size_t EdgeCount, std::size_t... Idx>
 //          branch nodes (non-lambda helper for MSVC compatibility)
 // ---------------------------------------------------------------------------
 
-template <std::size_t TotalCases, class... Stages>
-[[nodiscard]] constexpr auto fill_branch_case_records(pb::meta::type_list<Stages...>) noexcept
+template <std::size_t TotalCases, class... Stages, std::size_t... StageIndexes>
+[[nodiscard]] constexpr auto fill_branch_case_records(pb::meta::type_list<Stages...>,
+                                                      std::index_sequence<StageIndexes...>) noexcept
     -> std::array<descriptor_branch_case_record, TotalCases> {
   auto cases_arr = std::array<descriptor_branch_case_record, TotalCases>{};
 
   if constexpr (TotalCases > 0) {
     std::size_t case_offset = 0;
-    auto collect_one = [&]<class Stage>(int) {
+    auto collect_one = [&]<class Stage>(std::size_t stage_index) {
       if constexpr (pb::core::detail::is_selected_branch_node<Stage>::value) {
         constexpr auto node_cases = branch_case_count_or_zero<Stage>::value;
         auto node_records =
-            branch_case_records_from_node<Stage>(std::make_index_sequence<node_cases>{});
+            branch_case_records_from_node<Stage>(stage_index, std::make_index_sequence<node_cases>{});
         for (std::size_t i = 0; i < node_cases; ++i) {
           cases_arr[case_offset + i] = node_records[i];
         }
         case_offset += node_cases;
       }
     };
-    (collect_one.template operator()<Stages>(0), ...);
+    (collect_one.template operator()<Stages>(StageIndexes), ...);
   }
 
   return cases_arr;
@@ -340,7 +349,7 @@ template <class Pipeline, class... Stages>
   auto stages_arr = fill_stage_records(source, stages_tl, std::make_index_sequence<stage_count>{});
   auto edges_arr = fill_edge_records<decltype(source), edge_count>(
       source, std::make_index_sequence<edge_count>{});
-  auto cases_arr = fill_branch_case_records<total_cases>(stages_tl);
+  auto cases_arr = fill_branch_case_records<total_cases>(stages_tl, std::make_index_sequence<stage_count>{});
 
   return descriptor_view<stage_count, total_cases>{
       .stages = stages_arr,
@@ -357,20 +366,14 @@ template <class Pipeline, class... Stages>
 
 template <pb::core::ValidPipeline Pipeline>
 [[nodiscard]] constexpr auto make_descriptor() noexcept {
-  using stages_t = pb::core::pipeline_stages_t<Pipeline>;
   constexpr auto core_view = pb::core::descriptor_view<Pipeline>();
-  constexpr auto stage_count = pb::core::pipeline_size_v<Pipeline>;
-  constexpr auto edge_count = pb::core::pipeline_edge_count_v<Pipeline>;
-  return detail::make_enriched_descriptor<Pipeline>(core_view, stages_t{},
-                                                    std::make_index_sequence<stage_count>{},
-                                                    std::make_index_sequence<edge_count>{});
+  using stages_t = pb::core::pipeline_stages_t<Pipeline>;
+  return detail::build_branch_descriptor<Pipeline>(core_view, stages_t{});
 }
 
 template <pb::core::ValidPipeline Pipeline>
 [[nodiscard]] constexpr auto make_branch_descriptor() noexcept {
-  constexpr auto core_view = pb::core::descriptor_view<Pipeline>();
-  using stages_t = pb::core::pipeline_stages_t<Pipeline>;
-  return detail::build_branch_descriptor<Pipeline>(core_view, stages_t{});
+  return make_descriptor<Pipeline>();
 }
 
 } // namespace pb::runtime

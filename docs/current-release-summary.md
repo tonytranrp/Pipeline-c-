@@ -4,26 +4,26 @@ Status snapshot for the current branch/export hardening and validation batch. Us
 
 ## Candidate snapshot
 
-- Latest code-validation SHA: `6805543ede6946aa283be7f24fb3736c762f47b2` on `main` / `origin/main`.
-- Cross-compiler validation workflow: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26058848575> — **passed**.
-- Normal CI workflow on the same SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26058841298> — **passed**.
-- This docs update may create a later docs-only SHA. If a release tag requires exact-SHA evidence, rerun the workflows on the final tag candidate; no library code changed in this docs pass.
+- Latest pushed cross-compiler validation SHA: `6805543ede6946aa283be7f24fb3736c762f47b2` on `main` / `origin/main`.
+- Cross-compiler validation workflow for that SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26058848575> — **passed**.
+- Normal CI workflow for that SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26058841298> — **passed**.
+- Current local branch-completion working tree adds selected-output type-list joins and descriptor-record-backed helper export. It has fresh local Clang/package evidence below, but it still needs a new GitHub cross-compiler run on the final commit SHA before release tagging.
 
 ## What can be claimed with current evidence
 
 - Linear typed pipeline validation and sequential runtime execution remain supported.
 - Public branch/join DSL is supported for the sequential runtime slice.
 - Homogeneous branch outputs and variant-based heterogeneous branch outputs are supported, including duplicate output alternatives preserved by `std::variant` index.
-- Join validation checks the unified branch execution output, while raw branch output type-list metadata remains available for introspection.
+- Join validation checks the unified branch execution output and also supports selected-output type-list joins whose stage declares the raw branch output `pb::meta::type_list<...>` and overloads every raw output type.
 - Move-only selected-branch input consumption is supported when predicates inspect by `const input_type&`; consuming predicates for move-only inputs remain unsupported and have negative compile-fail coverage.
 - Stateful branch predicates/stages are covered under `pb::runtime::stateful_sequential`, and predicate invocation uses const-input semantics in both per-run and stateful paths.
-- DOT/JSON helpers cover linear and supported branch pipelines, including JSON branch topology detection, DOT label escaping, and helper-output golden regressions.
+- DOT/JSON helpers cover linear and supported branch pipelines, including descriptor-record-backed branch helper rendering, JSON branch topology detection, DOT label escaping, and helper-output golden regressions.
 - `pb::runtime::thread_pool` is a standalone utility only; it is not a pipeline backend.
 
 ## What must stay roadmap-only
 
-- `type_list` / true multi-input join execution.
-- Descriptor-backed stable DOT/JSON graph export schemas and release-grade compatibility fixtures.
+- Parallel all-branches fan-in / true backend multi-input join execution beyond the selected-output sequential join model.
+- Stable descriptor/export schemas and release-grade compatibility fixtures beyond the current descriptor-record-backed helper output.
 - CLI/file export for user pipeline definitions.
 - Thread-pool, oneTBB, Taskflow, or stdexec pipeline executor backends.
 - C++ modules and C++26 reflection/contracts feature integrations.
@@ -32,7 +32,21 @@ Status snapshot for the current branch/export hardening and validation batch. Us
 
 ## Validation evidence collected
 
-Cross-compiler validation run `26058848575` passed with these lanes:
+Current local branch-completion evidence on macOS/Darwin:
+
+```text
+git diff --check: passed
+cmake --preset clang-dev-ninja: passed
+cmake --build --preset clang-dev-ninja: passed
+ctest --preset clang-dev-ninja --output-on-failure: passed, 153/153
+cmake --preset package-release-clang-ninja: passed
+cmake --build --preset package-release-clang-ninja: passed
+ctest --preset package-release-clang-ninja --output-on-failure: passed, 153/153
+cmake --build --preset package-release-clang-ninja --target package: passed
+artifact: build/package-release-clang-ninja/pipebuilder-0.1.0-Darwin.tar.gz
+```
+
+Latest pushed cross-compiler validation run `26058848575` passed with these lanes:
 
 ```text
 GCC C++20:        passed, 150/150, g++ 13.3.0
@@ -60,10 +74,10 @@ See [Cross-Compiler Validation Status](cross-compiler-validation.md) for the det
 ## PR summary draft
 
 - Added/validated a cross-compiler workflow covering GCC C++20/C++23, Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release.
-- Preserved the supported branch/export boundary: sequential branch execution, variant-based heterogeneous output, move-only selected-stage consumption, and helper-level DOT/JSON export.
-- Kept descriptor-backed graph export, optional executor backends, C++ modules/C++26 integrations, and performance budgets out of the supported claims.
+- Added selected-output type-list joins for the supported sequential branch slice and kept true all-branches fan-in/backend joins out of scope.
+- Moved DOT/JSON helper rendering onto descriptor records for supported branch/export shapes while keeping stable descriptor/export schema guarantees out of scope.
 - Fixed MSVC validation portability in the workflow by running CTest under the MSVC compiler environment and keeping package smoke in the dedicated package-release lane.
 
 ## Release note guardrail
 
-Release notes may mention the matrix pass only with the exact SHA and workflow link above. If more non-doc code changes land before tagging, rerun the cross-compiler workflow and update this page plus `docs/cross-compiler-validation.md`.
+Release notes may mention the old matrix pass only with the exact SHA and workflow link above. Because the current branch-completion slice changes public headers and tests, rerun the cross-compiler workflow and update this page plus `docs/cross-compiler-validation.md` before tagging.

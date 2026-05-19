@@ -5,8 +5,8 @@
 #include <string>
 #include <string_view>
 
-#include "pb/core/describe.hpp"
 #include "pb/core/pipeline_state.hpp"
+#include "pb/runtime/descriptor.hpp"
 
 namespace pb::core {
 
@@ -76,51 +76,45 @@ inline constexpr bool pipeline_has_branch_v =
 
 // ── Branch case DOT rendering ───────────────────────────────────────────────
 
-template <class Case, std::size_t BranchIndex, std::size_t CaseIndex>
-void append_branch_case_subgraph(std::ostringstream& stream) {
-  using Predicate = typename Case::predicate_type;
-  using BranchStage = typename Case::stage_type;
-
-  const auto pred_name = stage_traits<Predicate>::name();
-  const auto stage_name = stage_traits<BranchStage>::name();
-  const auto case_label = std::string{"Case "} + std::to_string(CaseIndex) + ": " + std::string{pred_name};
+inline void append_branch_case_subgraph(std::ostringstream& stream,
+                                        const pb::runtime::descriptor_branch_case_record& branch_case) {
+  const auto branch_index = branch_case.branch_stage_index;
+  const auto case_index = branch_case.case_index;
+  const auto pred_name = branch_case.predicate_name;
+  const auto stage_name = branch_case.stage_name;
+  const auto case_label = std::string{"Case "} + std::to_string(case_index) + ": " + std::string{pred_name};
   const auto pred_label = std::string{"pred: "} + std::string{pred_name};
 
-  stream << "  subgraph cluster_case_" << BranchIndex << "_" << CaseIndex << " {\n";
+  stream << "  subgraph cluster_case_" << branch_index << "_" << case_index << " {\n";
   stream << "    label=";
   append_dot_label(stream, case_label);
   stream << ";\n";
-  stream << "    pred_" << BranchIndex << "_" << CaseIndex << " [label=";
+  stream << "    pred_" << branch_index << "_" << case_index << " [label=";
   append_dot_label(stream, pred_label);
   stream << "];\n";
-  stream << "    case_" << BranchIndex << "_" << CaseIndex << " [label=";
+  stream << "    case_" << branch_index << "_" << case_index << " [label=";
   append_dot_label(stream, stage_name);
   stream << "];\n";
-  stream << "    branch_" << BranchIndex << " -> pred_" << BranchIndex << "_" << CaseIndex
+  stream << "    branch_" << branch_index << " -> pred_" << branch_index << "_" << case_index
          << " [style=dashed, label=";
   append_dot_label(stream, "test");
   stream << "];\n";
-  stream << "    pred_" << BranchIndex << "_" << CaseIndex << " -> case_" << BranchIndex << "_"
-         << CaseIndex << ";\n";
+  stream << "    pred_" << branch_index << "_" << case_index << " -> case_" << branch_index << "_"
+         << case_index << ";\n";
   stream << "  }\n";
 }
 
-template <class Cases, std::size_t BranchIndex, std::size_t... CaseIndexes>
-void append_branch_case_subgraphs(std::ostringstream& stream,
-                                  std::index_sequence<CaseIndexes...>) {
-  ((append_branch_case_subgraph<meta::at_t<Cases, CaseIndexes>, BranchIndex, CaseIndexes>(stream)),
-   ...);
-}
-
-template <class Stage, std::size_t StageIndex>
-void append_branch_stage_dot(std::ostringstream& stream) {
-  stream << "  branch_" << StageIndex << " [shape=diamond, label=";
+template <class Descriptor>
+void append_branch_stage_dot(std::ostringstream& stream, const Descriptor& descriptor, std::size_t stage_index) {
+  stream << "  branch_" << stage_index << " [shape=diamond, label=";
   append_dot_label(stream, "branch");
   stream << "];\n\n";
 
-  using Cases = typename Stage::cases;
-  append_branch_case_subgraphs<Cases, StageIndex>(
-      stream, std::make_index_sequence<Stage::case_count>{});
+  for (const auto& branch_case : descriptor.branch_case_records()) {
+    if (branch_case.branch_stage_index == stage_index) {
+      append_branch_case_subgraph(stream, branch_case);
+    }
+  }
   stream << "\n";
 }
 
@@ -129,27 +123,29 @@ void append_branch_stage_dot(std::ostringstream& stream) {
 template <class Pipeline, bool HasBranch>
 struct dot_emitter;
 
-// Linear pipeline emitter (unchanged behaviour)
+// Linear pipeline emitter
 template <class Pipeline>
 struct dot_emitter<Pipeline, false> {
+  using descriptor_type = decltype(pb::runtime::make_descriptor<Pipeline>());
+
   [[nodiscard]] static auto emit(std::string_view graph_name) -> std::string {
-    constexpr auto descriptor = describe<Pipeline>();
+    constexpr auto descriptor = pb::runtime::make_descriptor<Pipeline>();
 
     std::ostringstream stream;
     stream << "digraph " << detail::sanitize_identifier(graph_name) << " {\n";
     stream << "  rankdir=LR;\n";
     stream << "  node [shape=box];\n\n";
 
-    for (std::size_t index = 0; index < descriptor.stage_count; ++index) {
-      const auto key = descriptor.stage_keys()[index];
-      const auto name = descriptor.stage_names()[index];
+    for (const auto& stage : descriptor.stage_records()) {
+      const auto key = stage.key;
+      const auto name = stage.name;
       auto label = std::string{name};
       if (name != key) {
         label += "\n(";
         label += key;
         label += ")";
       }
-      stream << "  stage_" << index << " [label=";
+      stream << "  stage_" << stage.index << " [label=";
       append_dot_label(stream, label);
       stream << "];\n";
     }
@@ -172,11 +168,11 @@ struct dot_emitter<Pipeline, false> {
 // Branch pipeline emitter
 template <class Pipeline>
 struct dot_emitter<Pipeline, true> {
-  using traits = pipeline_traits<Pipeline>;
-  using stages = typename traits::stages;
-  static constexpr std::size_t stage_count = traits::stage_count;
+  using descriptor_type = decltype(pb::runtime::make_descriptor<Pipeline>());
+  static constexpr std::size_t stage_count = descriptor_type::stage_count;
 
   [[nodiscard]] static auto emit(std::string_view graph_name) -> std::string {
+    constexpr auto descriptor = pb::runtime::make_descriptor<Pipeline>();
     std::ostringstream stream;
     stream << "digraph " << detail::sanitize_identifier(graph_name) << " {\n";
     stream << "  rankdir=LR;\n";
@@ -188,7 +184,7 @@ struct dot_emitter<Pipeline, true> {
     stream << "];\n\n";
 
     // ── Stage nodes ─────────────────────────────────────────────
-    emit_stages(stream, std::make_index_sequence<stage_count>{});
+    emit_stages(stream, descriptor);
 
     // ── Output node ─────────────────────────────────────────────
     stream << "  to_output [shape=doublecircle, label=";
@@ -196,7 +192,7 @@ struct dot_emitter<Pipeline, true> {
     stream << "];\n\n";
 
     // ── Edges ───────────────────────────────────────────────────
-    emit_all_edges(stream);
+    emit_all_edges(stream, descriptor);
 
     stream << "}\n";
     return stream.str();
@@ -205,26 +201,30 @@ struct dot_emitter<Pipeline, true> {
 private:
   // ── Stage node emission ──────────────────────────────────────
 
-  template <std::size_t... Indexes>
-  static void emit_stages(std::ostringstream& stream, std::index_sequence<Indexes...>) {
-    ((emit_single_stage<pipeline_stage_t<Pipeline, Indexes>, Indexes>(stream)), ...);
+  static auto is_branch_stage(const pb::runtime::descriptor_stage_record& stage) noexcept -> bool {
+    return stage.topology == pb::runtime::descriptor_topology::branch;
   }
 
-  template <class Stage, std::size_t StageIndex>
-  static void emit_single_stage(std::ostringstream& stream) {
-    if constexpr (is_selected_branch_node<Stage>::value) {
-      detail::append_branch_stage_dot<Stage, StageIndex>(stream);
+  static void emit_stages(std::ostringstream& stream, const descriptor_type& descriptor) {
+    for (const auto& stage : descriptor.stage_records()) {
+      emit_single_stage(stream, descriptor, stage);
+    }
+  }
+
+  static void emit_single_stage(std::ostringstream& stream, const descriptor_type& descriptor,
+                                const pb::runtime::descriptor_stage_record& stage) {
+    if (is_branch_stage(stage)) {
+      detail::append_branch_stage_dot(stream, descriptor, stage.index);
     } else {
-      constexpr auto desc = describe<Pipeline>();
-      const auto key = desc.stage_keys()[StageIndex];
-      const auto name = desc.stage_names()[StageIndex];
+      const auto key = stage.key;
+      const auto name = stage.name;
       auto label = std::string{name};
       if (name != key) {
         label += "\n(";
         label += key;
         label += ")";
       }
-      stream << "  stage_" << StageIndex << " [label=";
+      stream << "  stage_" << stage.index << " [label=";
       append_dot_label(stream, label);
       stream << "];\n";
     }
@@ -232,21 +232,20 @@ private:
 
   // ── Edge emission ────────────────────────────────────────────
 
-  static void emit_all_edges(std::ostringstream& stream) {
+  static void emit_all_edges(std::ostringstream& stream, const descriptor_type& descriptor) {
     // Input -> first stage
-    emit_input_to_first_edge(stream);
+    emit_input_to_first_edge(stream, descriptor);
 
     // Stage-to-stage edges (for each adjacent pair)
-    emit_adjacent_edges(stream, std::make_index_sequence<stage_count>{});
+    emit_adjacent_edges(stream, descriptor);
 
     // Last stage -> output
-    emit_last_to_output_edge(stream);
+    emit_last_to_output_edge(stream, descriptor);
   }
 
-  static void emit_input_to_first_edge(std::ostringstream& stream) {
+  static void emit_input_to_first_edge(std::ostringstream& stream, const descriptor_type& descriptor) {
     if constexpr (stage_count > 0) {
-      using FirstStage = pipeline_stage_t<Pipeline, 0>;
-      if constexpr (is_selected_branch_node<FirstStage>::value) {
+      if (is_branch_stage(descriptor.stage_records()[0])) {
         stream << "  from_input -> branch_0;\n";
       } else {
         stream << "  from_input -> stage_0;\n";
@@ -256,75 +255,62 @@ private:
     }
   }
 
-  template <std::size_t... Indexes>
-  static void emit_adjacent_edges(std::ostringstream& stream,
-                                  std::index_sequence<Indexes...>) {
-    ((emit_adjacent_edge<Indexes>(stream)), ...);
+  static void emit_adjacent_edges(std::ostringstream& stream, const descriptor_type& descriptor) {
+    for (std::size_t index = 0; index + 1 < stage_count; ++index) {
+      emit_adjacent_edge(stream, descriptor, index);
+    }
   }
 
-  template <std::size_t Index>
-  static void emit_adjacent_edge(std::ostringstream& stream) {
-    if constexpr (Index + 1 < stage_count) {
-      using CurrentStage = pipeline_stage_t<Pipeline, Index>;
-      using NextStage = pipeline_stage_t<Pipeline, Index + 1>;
+  static void emit_adjacent_edge(std::ostringstream& stream, const descriptor_type& descriptor, std::size_t index) {
+    if (index + 1 < stage_count) {
+      const auto& current_stage = descriptor.stage_records()[index];
+      const auto& next_stage = descriptor.stage_records()[index + 1];
 
-      if constexpr (is_selected_branch_node<CurrentStage>::value) {
+      if (is_branch_stage(current_stage)) {
         // Branch -> next: connect all case output stages to next stage
-        emit_branch_to_next_edges<CurrentStage, NextStage, Index>(stream);
-      } else if constexpr (is_selected_branch_node<NextStage>::value) {
+        emit_branch_to_next_edges(stream, descriptor, index, is_branch_stage(next_stage));
+      } else if (is_branch_stage(next_stage)) {
         // Previous -> branch diamond
-        stream << "  stage_" << Index << " -> branch_" << (Index + 1) << ";\n";
+        stream << "  stage_" << index << " -> branch_" << (index + 1) << ";\n";
       } else {
         // Regular -> regular
-        stream << "  stage_" << Index << " -> stage_" << (Index + 1) << ";\n";
+        stream << "  stage_" << index << " -> stage_" << (index + 1) << ";\n";
       }
     }
   }
 
-  template <class BranchStage, class NextStage, std::size_t BranchIndex>
-  static void emit_branch_to_next_edges(std::ostringstream& stream) {
-    emit_branch_to_next_edges_impl<BranchStage, NextStage, BranchIndex>(
-        stream, std::make_index_sequence<BranchStage::case_count>{});
-  }
-
-  template <class BranchStage, class NextStage, std::size_t BranchIndex,
-            std::size_t... CaseIndexes>
-  static void emit_branch_to_next_edges_impl(std::ostringstream& stream,
-                                             std::index_sequence<CaseIndexes...>) {
-    if constexpr (is_selected_branch_node<NextStage>::value) {
-      ((stream << "  case_" << BranchIndex << "_" << CaseIndexes << " -> branch_"
-               << (BranchIndex + 1) << ";\n"),
-       ...);
-    } else {
-      ((stream << "  case_" << BranchIndex << "_" << CaseIndexes << " -> stage_"
-               << (BranchIndex + 1) << ";\n"),
-       ...);
+  static void emit_branch_to_next_edges(std::ostringstream& stream, const descriptor_type& descriptor,
+                                        std::size_t branch_index, bool next_is_branch) {
+    for (const auto& branch_case : descriptor.branch_case_records()) {
+      if (branch_case.branch_stage_index != branch_index) {
+        continue;
+      }
+      stream << "  case_" << branch_index << "_" << branch_case.case_index;
+      if (next_is_branch) {
+        stream << " -> branch_" << (branch_index + 1) << ";\n";
+      } else {
+        stream << " -> stage_" << (branch_index + 1) << ";\n";
+      }
     }
   }
 
-  static void emit_last_to_output_edge(std::ostringstream& stream) {
+  static void emit_last_to_output_edge(std::ostringstream& stream, const descriptor_type& descriptor) {
     if constexpr (stage_count > 0) {
-      using LastStage = pipeline_stage_t<Pipeline, stage_count - 1>;
-      if constexpr (is_selected_branch_node<LastStage>::value) {
-        emit_branch_to_output_edges<LastStage>(stream);
+      if (is_branch_stage(descriptor.stage_records()[stage_count - 1])) {
+        emit_branch_to_output_edges(stream, descriptor);
       } else {
         stream << "  stage_" << (stage_count - 1) << " -> to_output;\n";
       }
     }
   }
 
-  template <class BranchStage>
-  static void emit_branch_to_output_edges(std::ostringstream& stream) {
-    emit_branch_to_output_edges_impl<BranchStage>(
-        stream, std::make_index_sequence<BranchStage::case_count>{});
-  }
-
-  template <class BranchStage, std::size_t... CaseIndexes>
-  static void emit_branch_to_output_edges_impl(std::ostringstream& stream,
-                                               std::index_sequence<CaseIndexes...>) {
-    ((stream << "  case_" << (stage_count - 1) << "_" << CaseIndexes
-             << " -> to_output;\n"),
-     ...);
+  static void emit_branch_to_output_edges(std::ostringstream& stream, const descriptor_type& descriptor) {
+    constexpr auto branch_index = stage_count - 1;
+    for (const auto& branch_case : descriptor.branch_case_records()) {
+      if (branch_case.branch_stage_index == branch_index) {
+        stream << "  case_" << branch_index << "_" << branch_case.case_index << " -> to_output;\n";
+      }
+    }
   }
 };
 

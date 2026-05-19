@@ -70,25 +70,25 @@ Each theme below records four things:
 
 ### 5. Branch/join topology
 
-- **Current repository evidence:** Public branch/join DSL with compile-time validation, runtime sequential branch execution (first-match-wins with short-circuit), observer events (`on_case_selected`, `on_case_skipped`), stateful storage, join stages, error propagation, first-slice heterogeneous outputs through `std::variant`, move-only selected-branch input consumption, and comprehensive tests and examples.
-- **Current support level:** **Supported for homogeneous outputs, first-slice heterogeneous outputs through `std::variant`, and move-only selected-branch input consumption. Type-list/multi-input joins remain roadmap-only.**
+- **Current repository evidence:** Public branch/join DSL with compile-time validation, runtime sequential branch execution (first-match-wins with short-circuit), observer events (`on_case_selected`, `on_case_skipped`), stateful storage, join stages, error propagation, first-slice heterogeneous outputs through `std::variant`, selected-output type-list joins, move-only selected-branch input consumption, and comprehensive tests and examples.
+- **Current support level:** **Supported for homogeneous outputs, first-slice heterogeneous outputs through `std::variant`, selected-output type-list joins, and move-only selected-branch input consumption.**
 - **Proof points:**
   - `docs/branch-join-roadmap.md`
   - `include/pb/core/pipeline_state.hpp` (public `::branch<...>::join<...>` DSL)
   - `include/pb/runtime/sequential.hpp` (runtime branch routing with storage)
   - `tests/runtime/sequential_branch_comprehensive.cpp`
   - `examples/branch_routing_demo.cpp`, `examples/branch_error_handling.cpp`
-- **Safe next slice:** keep type-list/multi-input joins, broader move-only predicate patterns, and backend branch execution as separate design/implementation phases.
+- **Safe next slice:** keep parallel all-branches fan-in / true backend multi-input joins, broader move-only predicate patterns, and backend branch execution as separate design/implementation phases.
 
 ### 6. Graph export
 
 - **Current repository evidence:** DOT/JSON helper slices exist for linear and supported branch pipelines, including branch topology detection in JSON.
-- **Current support level:** **Partial export helper support; stable descriptor-backed graph export remains roadmap-only.**
+- **Current support level:** **Partial descriptor-record-backed export helper support; stable descriptor/export compatibility remains roadmap-only.**
 - **Proof points:**
   - `docs/graph-export-roadmap.md`
   - `docs/production-readiness.md`
   - research-plan export themes
-- **Safe next slice:** only claim broad export support after descriptor-backed export APIs, golden tests, schema docs, CLI/file behavior, and examples land together.
+- **Safe next slice:** only claim broad export support after stable descriptor/export APIs, release-grade golden compatibility tests, schema docs, CLI/file behavior, and examples land together.
 - **Coordination note:** the DOT/JSON helper APIs are narrower than full graph export. Release notes must distinguish them from stable graph schema support and backend graph-execution claims.
 
 ### 7. Observer hooks
@@ -148,9 +148,9 @@ This queue is the durable docs-lane view of the current missing-feature push. It
 | 4 | Explicit stateful stage storage policy | Narrow public guarantee exists for default-initializable sequential stages: per-run construction versus engine-stored state, including non-copyable owned stage state, is covered by policy aliases, runtime tests, and examples. Borrowed/shared/unique ownership policies, reset policy, and thread-local future-backend storage remain gaps. | API decisions, tests, and docs for borrowed/reference/shared/unique ownership, reset behavior, and future parallel/thread-local storage. |
 | 5 | Branch output compatibility/routing validation | Accepted validation evidence exists; keep the claim scoped to compile-time compatibility validation until final candidate logs are attached. | Candidate branch includes branch-output validation implementation plus compatible/incompatible compile-pass/compile-fail tests. |
 | 6 | Join consumption/compatibility validation | Accepted validation evidence exists; keep the claim scoped to join consumption/compatibility validation, not runtime execution. | Candidate branch includes join validation implementation plus misuse/mismatch compile-fail tests. |
-| 7 | Sequential branch execution | **Done for the supported slice.** Homogeneous outputs, first-slice heterogeneous outputs through `std::variant`, move-only selected-branch input consumption, join stages, observer events, stateful storage, compile-time join validation, runtime tests, and examples are all present. | Keep docs/examples aligned with supported boundary; type-list/multi-input joins and backend branch execution remain future work. |
+| 7 | Sequential branch execution | **Done for the supported slice.** Homogeneous outputs, first-slice heterogeneous outputs through `std::variant`, selected-output type-list joins, move-only selected-branch input consumption, join stages, observer events, stateful storage, compile-time join validation, runtime tests, and examples are all present. | Keep docs/examples aligned with supported boundary; parallel all-branches fan-in / backend multi-input joins and backend branch execution remain future work. |
 | 8 | Runtime descriptor/export contract | Compile-time/diagnostic metadata exists; stable runtime export remains roadmap. | Versioned schema, ownership rules, and tests for the public descriptor/export surface. |
-| 9 | DOT/JSON graph export | Partial DOT/JSON helpers exist for linear and supported branch pipelines; stable descriptor-backed graph export remains roadmap-only. | Candidate export evidence plus clear distinction between helper output and stable schemas, golden fixtures, CLI/file export, and backend graph-execution claims. |
+| 9 | DOT/JSON graph export | Partial descriptor-record-backed DOT/JSON helpers exist for linear and supported branch pipelines; stable descriptor/export compatibility remains roadmap-only. | Candidate export evidence plus clear distinction between helper output and stable schemas, golden fixtures, CLI/file export, and backend graph-execution claims. |
 | 10 | Backend feature matrix | Documented in `docs/optional-backends-roadmap.md`; backend support remains roadmap-only beyond sequential. | Keep the matrix current before any backend implementation/support claim. |
 | 11 | Full release compiler matrix | Current evidence exists for code SHA `6805543`: GCC C++20/C++23, Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release passed. MSVC C++23, C++26 gates, and Windows package-release remain unclaimed. | Keep compiler ID/version plus configure/build/test/package evidence attached to the final candidate SHA; rerun if later non-doc code changes land. |
 | 12 | Release/package evidence on candidate SHA | Clean Ubuntu package-release evidence exists for code SHA `6805543`: configure/build/CTest `150/150` and TGZ package generation passed. | Rerun package-release on the final tag SHA when required and record archive path plus workflow URL. |
@@ -169,7 +169,7 @@ The current repository can safely claim:
 The current repository should **not** claim:
 
 - production-complete topology or execution coverage
-- type-list/multi-input join execution, stable descriptor-backed branch/join graph export, fully stabilized observer contracts, optional backend execution, or a stable runtime descriptor
+- parallel fan-in join execution, stable descriptor/export compatibility, fully stabilized observer contracts, optional backend execution, or a stable runtime descriptor
 - exception-policy parity between `run()` and `try_run()` as a fully harmonized runtime guarantee
 - benchmark thresholds or CI-enforced performance budgets
 - MSVC C++23, C++26 feature implementation, Windows package-release, or package-manager ecosystem validation
@@ -194,4 +194,4 @@ Use these as the first finite batches when the next 3-agent team resumes:
 2. **Runtime / adapters:** harden one small result/error/observer/adapter edge case, then add targeted runtime coverage.
 3. **Updater / docs:** keep docs, examples, release notes, and this map aligned with the coding batches without promoting roadmap-only features.
 
-The next safe work should continue from shipped MVP surfaces. Type-list/multi-input join execution, broader move-only predicate/ownership policies, backend branch execution, and stable descriptor-backed graph export remain separate design/implementation phases, not opportunistic follow-ups inside a routine hardening batch.
+The next safe work should continue from shipped MVP surfaces. Parallel all-branches fan-in / true backend multi-input join execution, broader move-only predicate/ownership policies, backend branch execution, and stable descriptor/export compatibility remain separate design/implementation phases, not opportunistic follow-ups inside a routine hardening batch.

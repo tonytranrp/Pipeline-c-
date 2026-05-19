@@ -19,9 +19,9 @@ The current tree is a **strong MVP foundation** for `research/pipeline_builder_c
 - Free-function, member-function, and functor adapters for existing user code.
 - Sequential runtime with `run()`, `try_run()`, result/expected-like plumbing, zero-stage identity behavior, and observer hooks.
 - Compile-pass, compile-fail, runtime, example, package-consumer, and benchmark smoke scaffolding.
-- Sequential branch/join support for the current standard-library sequential runtime: homogeneous outputs, variant-based heterogeneous outputs including duplicate alternatives by index, optional joins, observer case events, stateful branch predicate/stage storage, and move-only selected-stage consumption when predicates inspect by `const input_type&`.
-- DOT/JSON helper export for linear and supported branch pipelines, including JSON branch topology, DOT label escaping, and helper-output golden regressions.
-- Docs separate supported branch/export helper behavior from roadmap-only type-list joins, descriptor-backed stable export, CLI/file export, optional backends, runtime descriptor stability, and performance-budget work.
+- Sequential branch/join support for the current standard-library sequential runtime: homogeneous outputs, variant-based heterogeneous outputs plus type-list selected-output joins including duplicate alternatives by index, optional joins, observer case events, stateful branch predicate/stage storage, and move-only selected-stage consumption when predicates inspect by `const input_type&`.
+- DOT/JSON descriptor-backed helper export for linear and supported branch pipelines, including JSON branch topology, DOT label escaping, and helper-output golden regressions.
+- Docs separate supported branch/export helper behavior from roadmap-only parallel fan-in joins, stable descriptor/export schema guarantees, CLI/file export, optional backends, runtime descriptor stability, and performance-budget work.
 
 Fresh cross-compiler validation from the current code snapshot:
 
@@ -62,7 +62,7 @@ Docs-lane monitoring observed current integration head `30447ae` plus runtime di
 - `3b1a231` / `23f1d60` hardened runtime `error_or(...)` fallback selection for expected-like/result normalization boundaries.
 - `ec45eae` / `62820ed` / merge `caa43ee` carried sequential observer replacement/accessor coverage into the integrated history.
 
-Release-facing wording should stay narrow but current: branch/join execution is now supported for the sequential slice, including homogeneous outputs, variant-based heterogeneous outputs with duplicate alternatives by index, move-only selected-stage input consumption, observer events, stateful branch storage, and compile-time join validation. DOT/JSON export is helper-level for linear and supported branch pipelines. Do not claim type-list/multi-input joins, descriptor-backed stable graph export, CLI/file export, optional backend execution, stable observer ABI/event schema, runtime descriptor export, or release-grade benchmark budgets. Use `docs/current-release-summary.md`, `docs/cross-compiler-validation.md`, and `docs/research-verification-matrix.md` as compact PR/release note seeds.
+Release-facing wording should stay narrow but current: branch/join execution is now supported for the sequential slice, including homogeneous outputs, variant-based heterogeneous outputs plus type-list selected-output joins with duplicate alternatives by index, move-only selected-stage input consumption, observer events, stateful branch storage, and compile-time join validation. DOT/JSON export is helper-level for linear and supported branch pipelines. Do not claim parallel fan-in joins, stable descriptor/export compatibility, CLI/file export, optional backend execution, stable observer ABI/event schema, runtime descriptor export, or release-grade benchmark budgets. Use `docs/current-release-summary.md`, `docs/cross-compiler-validation.md`, and `docs/research-verification-matrix.md` as compact PR/release note seeds.
 
 ## What is done from the research plan
 
@@ -78,8 +78,8 @@ Treat these as shipped MVP support unless a future regression proves otherwise:
 
 Do not claim these as supported until code, tests, examples, and docs land together:
 
-- Type-list / true multi-input join execution beyond the supported variant-based sequential branch slice.
-- Descriptor-backed stable graph export schema, CLI/file export, and backend graph-export semantics beyond helper DOT/JSON output.
+- Parallel all-branches fan-in / true backend multi-input join execution beyond the supported selected-output sequential branch slice.
+- Stable descriptor/export schema, CLI/file export, and backend graph-export semantics beyond helper DOT/JSON output.
 - Stable runtime descriptor/export contract.
 - Optional Taskflow/oneTBB/stdexec backends.
 - Fully unified exception/error policy between `run()` and `try_run()`.

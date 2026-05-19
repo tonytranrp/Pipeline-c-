@@ -71,6 +71,37 @@ template <class Output, class... Cases>
 struct branch_outputs_match_output
     : std::bool_constant<(std::same_as<typename branch_case_output<Cases>::output_type, Output> && ...)> {};
 
+template <class T>
+struct is_type_list : std::false_type {};
+
+template <class... Ts>
+struct is_type_list<meta::type_list<Ts...>> : std::true_type {};
+
+template <class Stage, class OutputTypes>
+struct stage_invocable_for_output_types : std::false_type {};
+
+template <class Stage, class... Outputs>
+struct stage_invocable_for_output_types<Stage, meta::type_list<Outputs...>>
+    : std::bool_constant<(std::is_invocable_v<Stage, Outputs> && ...)> {};
+
+template <class Outputs, class JoinStage, bool IsOutputs = is_branch_outputs<Outputs>::value,
+          bool IsJoinStage = Stage<JoinStage>>
+struct join_stage_accepts_outputs : std::false_type {};
+
+template <class Outputs, class JoinStage>
+struct join_stage_accepts_outputs<Outputs, JoinStage, true, true> {
+  using join_input_type = stage_input_t<JoinStage>;
+  using raw_output_types = typename Outputs::output_types;
+  using unified_output_type = typename Outputs::output_type;
+
+  static constexpr bool accepts_unified_output = std::same_as<join_input_type, unified_output_type>;
+  static constexpr bool accepts_raw_type_list =
+      std::same_as<join_input_type, raw_output_types> &&
+      stage_invocable_for_output_types<JoinStage, raw_output_types>::value;
+
+  static constexpr bool value = accepts_unified_output || accepts_raw_type_list;
+};
+
 template <class... Cases>
 struct first_branch_output {
   using type = void;
@@ -115,14 +146,22 @@ struct join_validation_impl {
 
 template <class Outputs, class Join>
 struct join_validation_impl<Outputs, Join, true, true> {
-  static_assert(std::same_as<typename Join::input_type, typename Outputs::output_type>,
-                "Join validation mismatch: join stage input_type must match the unified branch output_type");
+  using stage_type = typename Join::stage_type;
+  using acceptance = join_stage_accepts_outputs<Outputs, stage_type>;
+
+  static_assert(acceptance::value,
+                "Join validation mismatch: join stage input_type must match the unified branch output_type "
+                "or the raw branch output_types type_list; type-list joins must be invocable for every "
+                "branch output_type");
 
   using branch_outputs_type = Outputs;
   using join_type = Join;
   using raw_output_types = typename Outputs::output_types;
-  using input_type = typename Outputs::output_type;
+  using input_type = typename Join::input_type;
+  using execution_input_type = typename Outputs::output_type;
   using output_type = typename Join::output_type;
+  static constexpr bool accepts_unified_output = acceptance::accepts_unified_output;
+  static constexpr bool accepts_raw_type_list = acceptance::accepts_raw_type_list;
 };
 
 template <class Outputs, class JoinStage, bool IsOutputs = is_branch_outputs<Outputs>::value,
@@ -135,16 +174,21 @@ struct join_builder_validation_impl {
 template <class Outputs, class JoinStage>
 struct join_builder_validation_impl<Outputs, JoinStage, true, true> {
   using join_type = join_node<JoinStage>;
+  using acceptance = join_stage_accepts_outputs<Outputs, JoinStage>;
 
-  static_assert(std::same_as<stage_input_t<JoinStage>, typename Outputs::output_type>,
-                "Join builder source mismatch: join stage input_type must match unified branch output_type before "
-                "pb::from<...>::branch<...>::join<Stage>");
+  static_assert(acceptance::value,
+                "Join builder source mismatch: join stage input_type must match unified branch output_type "
+                "or raw branch output_types before pb::from<...>::branch<...>::join<Stage>; type-list joins "
+                "must be invocable for every branch output_type");
 
   using branch_outputs_type = Outputs;
   using stage_type = JoinStage;
   using raw_output_types = typename Outputs::output_types;
-  using input_type = typename Outputs::output_type;
+  using input_type = stage_input_t<JoinStage>;
+  using execution_input_type = typename Outputs::output_type;
   using output_type = stage_output_t<JoinStage>;
+  static constexpr bool accepts_unified_output = acceptance::accepts_unified_output;
+  static constexpr bool accepts_raw_type_list = acceptance::accepts_raw_type_list;
 };
 
 template <class Outputs, class Output, bool IsOutputs = is_branch_outputs<Outputs>::value>
@@ -269,6 +313,16 @@ struct is_selected_branch_node : std::false_type {};
 
 template <class... Cases>
 struct is_selected_branch_node<selected_branch_node<Cases...>> : std::true_type {};
+
+template <class Stage, bool IsSelectedBranch = is_selected_branch_node<Stage>::value>
+struct branch_outputs_for_stage {
+  using type = void;
+};
+
+template <class Stage>
+struct branch_outputs_for_stage<Stage, true> {
+  using type = typename Stage::branch_outputs_type;
+};
 
 template <class... Stages>
 struct last_stage_or_void {
@@ -457,9 +511,13 @@ struct append_join<pipeline_state<Input, Current, Stages...>, JoinStage> {
 
   static_assert(Stage<JoinStage>, "Join stage is invalid: define input_type and output_type");
 
-  static_assert(Connectable<Current, JoinStage>,
-                "Pipeline edge mismatch: previous output_type must match join stage input_type; inspect "
-                "pb::connectable_v<PreviousOutput, JoinStage>");
+  using branch_outputs_type = typename branch_outputs_for_stage<last_stage>::type;
+  using acceptance = join_stage_accepts_outputs<branch_outputs_type, JoinStage>;
+
+  static_assert(acceptance::value,
+                "Pipeline edge mismatch: join stage input_type must match the unified branch output_type "
+                "or raw branch output_types type_list; type-list joins must be invocable for every "
+                "branch output_type");
 
   using type = pipeline_state<Input, stage_output_t<JoinStage>, Stages..., JoinStage>;
 };

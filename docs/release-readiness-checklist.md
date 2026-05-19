@@ -12,12 +12,12 @@ A release candidate can only claim the currently shipped and tested surface:
 - C++20 CMake package targets `pb::core`, `pb::runtime`, and `pb::pipeline`
 - linear typed pipeline validation with explicit stage metadata
 - sequential runtime execution for validated linear pipelines
-- supported sequential branch/join slice: homogeneous outputs, variant-based heterogeneous outputs including duplicate alternatives by index, move-only selected-stage consumption when predicates observe by `const input_type&`, observer events, and stateful branch predicate/stage storage
+- supported sequential branch/join slice: homogeneous outputs, variant-based heterogeneous outputs including duplicate alternatives by index, selected-output type-list joins, move-only selected-stage consumption when predicates observe by `const input_type&`, observer events, and stateful branch predicate/stage storage
 - DOT/JSON helper export for linear and supported branch pipelines, including JSON branch topology and DOT label escaping
 - compile-pass, compile-fail, runtime, example, package-consumer, and benchmark **smoke** scaffolding
 - the intentional compile-fail diagnostic example and the package-consumer contract described in the current docs
 
-Do **not** treat roadmap pages as if they are already releaseable features. Type-list/multi-input joins, descriptor-backed stable graph export, fully stabilized observer contracts, optional backend execution, a stable runtime descriptor, and richer diagnostics remain separate follow-on slices.
+Do **not** treat roadmap pages as if they are already releaseable features. Parallel all-branches fan-in / true backend multi-input joins, stable descriptor/export compatibility, fully stabilized observer contracts, optional backend execution, a stable runtime descriptor, and richer diagnostics remain separate follow-on slices.
 
 ## Release evidence to collect before tagging
 
@@ -120,8 +120,8 @@ This keeps the release note aligned with the current docs and avoids treating lo
 
 Before tagging, confirm the release notes and docs still describe these as **not current guarantees**:
 
-- type-list/multi-input join execution and backend branch execution beyond the supported sequential slice
-- descriptor-backed stable graph export beyond the current helper output
+- parallel all-branches fan-in / true backend multi-input join execution and backend branch execution beyond the supported selected-output sequential slice
+- stable descriptor/export compatibility beyond the current descriptor-record-backed helper output
 - observer behavior beyond the current sequential runtime callback path
 - optional backend execution beyond the sequential MVP path
 - fully stable observer ABI, event schema, and cross-executor contracts beyond current sequential support

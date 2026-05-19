@@ -2309,8 +2309,8 @@ This evidence supports the exercised compiler/package matrix only. If non-doc co
 
 The following research-plan items remain missing or partial and must not be presented as shipped support:
 
-- `type_list` / true multi-input join execution.
-- Descriptor-backed stable DOT/JSON graph export schemas and release-grade compatibility fixtures.
+- Parallel all-branches fan-in / true backend multi-input join execution beyond selected-output type-list joins.
+- Stable descriptor/export schemas and release-grade compatibility fixtures beyond descriptor-record-backed helper DOT/JSON output.
 - CLI/file export for user pipeline definitions.
 - Thread-pool, oneTBB, Taskflow, or stdexec pipeline executor backends.
 - Full policy DSL for error, exception, lifetime, contract, diagnostics, and executor capabilities.
@@ -2322,7 +2322,7 @@ The following research-plan items remain missing or partial and must not be pres
 
 ## Updated planning implication
 
-The original recommendation to ship a small first version remains valid in spirit, but the current small surface is no longer linear-only. Release-facing docs may describe the supported sequential branch/join and helper export slices only when paired with the exact validation evidence above. The next implementation milestones should stabilize descriptor-backed export, type-list/multi-input joins, and backend execution as separate phases rather than broadening claims inside routine hardening work.
+The original recommendation to ship a small first version remains valid in spirit, but the current small surface is no longer linear-only. Release-facing docs may describe the supported sequential branch/join and helper export slices only when paired with the exact validation evidence above. The next implementation milestones should stabilize descriptor/export compatibility, parallel fan-in/backend multi-input joins, and backend execution as separate phases rather than broadening claims inside routine hardening work.
 
 # Part 27 - Final Recommendation
 
