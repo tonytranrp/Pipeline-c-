@@ -2,11 +2,11 @@
 
 This file tracks what is done, partially done, still missing, and what must be finished before Pipeline-c++ can claim the full original research-plan vision.
 
-Updated for the local fan-in commit (`Add explicit fan-in to close the branch graph gap`). It is a planning/checkpoint document, not a release announcement. Release-facing claims still need fresh exact-SHA GitHub validation evidence on the candidate tag.
+Updated for validated code SHA `2751238f80ba102e559b395cef3e83406b21cb17` (`Keep Release smoke tests meaningful under NDEBUG`) after the sequential fan-in implementation and Release/NDEBUG smoke-test hardening. It is a planning/checkpoint document, not a release announcement.
 
 ## Latest evidence snapshot
 
-Current local evidence for the fan-in commit:
+Current local evidence for validated code SHA `2751238f80ba102e559b395cef3e83406b21cb17`:
 
 ```text
 - git diff --check: passed
@@ -25,18 +25,20 @@ Current local evidence for the fan-in commit:
 - package artifact: build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz
 ```
 
-Latest GitHub cross-compiler validation remains tied to code SHA `f56fa54399a7a6a4f1dd55433634f13aee9c3174`, not the current HEAD:
+Latest GitHub validation for the same code SHA is current:
 
 ```text
 - workflow: Cross Compiler Validation
-- run: https://github.com/tonytranrp/Pipeline-c-/actions/runs/26070113329
-- GCC C++20/C++23: passed, 153/153
-- Clang C++20/C++23: passed, 153/153
-- MSVC C++20: passed, 152/152
-- clean Ubuntu package-release-clang-ninja: passed, 153/153 plus TGZ package generation
+- run: https://github.com/tonytranrp/Pipeline-c-/actions/runs/26130353198
+- validated SHA: 2751238f80ba102e559b395cef3e83406b21cb17
+- GCC C++20/C++23: passed, 162/162
+- Clang C++20/C++23: passed, 162/162
+- MSVC C++20: passed, 161/161
+- clean Ubuntu package-release-clang-ninja: passed, 162/162 plus TGZ package generation
+- package artifact path in runner: /home/runner/work/Pipeline-c-/Pipeline-c-/build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz
 ```
 
-Because later code changes added helper-export hardening, compile-time benchmark smoke targets, and now sequential fan-in APIs/tests, rerun the GitHub cross-compiler workflow on the final SHA before release publication.
+Normal CI also passed on the same SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26130353599>. The cross-compiler and CI logs had no compiler-style `warning:` diagnostics after the Release/NDEBUG smoke-test cleanup; GitHub still emits a hosted-runner Node 20 action annotation unrelated to compiler warnings.
 
 ## Done / production-grade for the current supported scope
 
@@ -58,7 +60,7 @@ These areas are implemented, tested, documented, and safe to present as supporte
 | Branch case identity metadata | Done for helper/export preparation. | Descriptor branch case records carry deterministic case and node identities plus labels. Runtime fallback identities exist for unnamed branch children. |
 | DOT/JSON helper export | Done as a helper surface for supported shapes. | Linear and selected-output branch helper output uses `schema_version = "pb.core.graph.v1"`, branch topology, branch cases, JSON escaping, DOT escaping, and golden tests. This is not yet a stable external interchange contract. |
 | Compile-time benchmark smoke scaffolding | Done as smoke/build evidence. | Header inclusion, 5-stage chain, 50-stage chain, aggregate `pb_compile_time_benchmarks`, and CTest labels exist. Timing budgets are not established. |
-| Release/package verification scaffolding | Done. | Package release preset, package smoke, GitHub cross-compiler workflow, release docs, and evidence templates exist. Publication is still not done. |
+| Release/package verification scaffolding | Done for the current candidate evidence. | Package release preset, package smoke, GitHub cross-compiler workflow, release docs, evidence templates, exact code-SHA GitHub matrix evidence, and warning-clean Release smoke checks exist. Publication is still not done. |
 
 ## Implemented but still partial / almost production-grade
 
@@ -77,7 +79,7 @@ These areas work in meaningful slices, but should not be described as fully prod
 | Stateful stage storage | Sequential stateful storage preserves linear stages and branch predicates/stages under the current policies. | Borrowed/shared/unique ownership policies, reset policy, thread-local future-backend storage, external-resource cleanup policy, and public lifetime diagnostics. |
 | Adapters | Free-function, member-function, function-object/functor, expected-like/result paths, and current void/error behavior are covered. | Coroutine adapter, sender/receiver adapter, C API ownership/error adapter, runtime-bound callable adapter, full overloaded/ref-qualified member handling, reference-lifetime adapter, and policy docs. |
 | Compile-time performance | Smoke targets prove representative translation units build; CMake has time-trace support. | Recorded release timing baselines, branch/join compile-time benchmark, thresholds, CI regression budget, ftime-trace aggregation, compile-time dashboard, and IWYU enforcement. |
-| Cross-compiler validation | GitHub workflow covers GCC/Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release for SHA `f56fa54`. | Fresh workflow run on current/final SHA; MSVC C++23 if supported; Windows package-release; experimental C++26 feature-gate evidence if those gates are claimed. |
+| Cross-compiler validation | GitHub workflow covers GCC/Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release for validated code SHA `2751238`. | MSVC C++23 if supported; Windows package-release; experimental C++26 feature-gate evidence if those gates are claimed; rerun if later non-doc code changes land. |
 
 ## Not implemented yet / roadmap-only
 
@@ -215,7 +217,7 @@ Need to finish:
 Best next steps from lowest risk / highest production-readiness value to highest complexity:
 
 ```text
-1. Rerun GitHub cross-compiler validation on current/final SHA and update evidence docs.
+1. Preserve current exact-SHA GitHub validation evidence in release notes and rerun it only if later non-doc code changes land.
 2. Record reproducible compile-time timing baselines for header, 5-stage, and 50-stage smoke targets.
 3. Convert DOT/JSON helper schema from “documented helper” toward “stable supported schema” only after compatibility policy is explicit.
 4. Harden runtime error policy docs/tests around run(), try_run(), expected-like, and exception boundaries.
@@ -245,7 +247,7 @@ DOT/JSON helper export:                   8.0 / 10
 Stable descriptor/export contract:        3.8 / 10
 Compile-time benchmark scaffolding:       7.2 / 10
 Optional pipeline backends:               0.8 / 10
-Release readiness before tag:             7.8 / 10
+Release readiness before tag:             8.4 / 10
 Full original research-plan completion:   6.1 / 10
 ```
 
