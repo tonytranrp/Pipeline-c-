@@ -64,6 +64,8 @@ struct ParseB {
   Parsed operator()(Input input) const { return Parsed{input.payload + 300}; }
 };
 
+enum class JoinOverload { none, parsed, reviewed };
+
 struct TypeListJoin {
   using input_type = pb::meta::type_list<Parsed, Reviewed, Parsed>;
   using output_type = Done;
@@ -71,11 +73,13 @@ struct TypeListJoin {
   static constexpr auto stage_name() noexcept { return "Type-list join"; }
 
   Done operator()(Parsed parsed) const {
+    last_overload() = JoinOverload::parsed;
     ++parsed_calls();
-    return Done{"parsed:" + std::to_string(parsed.value)};
+    return Done{"parsed-shared-overload:" + std::to_string(parsed.value)};
   }
 
   Done operator()(Reviewed reviewed) const {
+    last_overload() = JoinOverload::reviewed;
     ++reviewed_calls();
     return Done{"reviewed:" + std::to_string(reviewed.value)};
   }
@@ -89,6 +93,11 @@ struct TypeListJoin {
     static int count = 0;
     return count;
   }
+
+  static JoinOverload& last_overload() {
+    static auto overload = JoinOverload::none;
+    return overload;
+  }
 };
 
 using CaseA = pb::case_<IsParseA>::then<ParseA>;
@@ -101,6 +110,7 @@ static_assert(pb::valid<Pipeline>);
 void reset_counts() {
   TypeListJoin::parsed_calls() = 0;
   TypeListJoin::reviewed_calls() = 0;
+  TypeListJoin::last_overload() = JoinOverload::none;
 }
 
 } // namespace
@@ -111,19 +121,20 @@ int main() {
   reset_counts();
   auto first = engine.run(Input{0, 1});
   assert(first.has_value());
-  assert(first.value().text == "parsed:101");
+  assert(first.value().text == "parsed-shared-overload:101");
   assert(TypeListJoin::parsed_calls() == 1);
   assert(TypeListJoin::reviewed_calls() == 0);
 
   auto second = engine.run(Input{1, 2});
   assert(second.has_value());
   assert(second.value().text == "reviewed:202");
+  assert(TypeListJoin::last_overload() == JoinOverload::reviewed);
   assert(TypeListJoin::parsed_calls() == 1);
   assert(TypeListJoin::reviewed_calls() == 1);
 
   auto third = engine.run(Input{2, 3});
   assert(third.has_value());
-  assert(third.value().text == "parsed:303");
+  assert(third.value().text == "parsed-shared-overload:303");
   assert(TypeListJoin::parsed_calls() == 2);
   assert(TypeListJoin::reviewed_calls() == 1);
 

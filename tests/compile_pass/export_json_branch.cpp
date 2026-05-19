@@ -62,8 +62,18 @@ int main() {
   // Branch case metadata
   assert(graph.find("\"kind\":\"branch\"") != std::string_view::npos);
   assert(graph.find("\"branch_cases\":[") != std::string_view::npos);
+  assert(graph.find("\"case_id\":\"branch.0.case.0\"") != std::string_view::npos);
+  assert(graph.find("\"case_key\":\"branch.0.case.0\"") != std::string_view::npos);
+  assert(graph.find("\"case_label\":\"0\"") != std::string_view::npos);
+  assert(graph.find("\"predicate_node_id\":\"branch.0.case.0.predicate\"") != std::string_view::npos);
+  assert(graph.find("\"stage_node_id\":\"branch.0.case.0.stage\"") != std::string_view::npos);
   assert(graph.find("\"predicate_key\":\"is.even\"") != std::string_view::npos);
   assert(graph.find("\"stage_key\":\"route.even\"") != std::string_view::npos);
+  assert(graph.find("\"case_id\":\"branch.0.case.1\"") != std::string_view::npos);
+  assert(graph.find("\"case_key\":\"branch.0.case.1\"") != std::string_view::npos);
+  assert(graph.find("\"case_label\":\"1\"") != std::string_view::npos);
+  assert(graph.find("\"predicate_node_id\":\"branch.0.case.1.predicate\"") != std::string_view::npos);
+  assert(graph.find("\"stage_node_id\":\"branch.0.case.1.stage\"") != std::string_view::npos);
   assert(graph.find("\"predicate_key\":\"is.odd\"") != std::string_view::npos);
   assert(graph.find("\"stage_key\":\"route.odd\"") != std::string_view::npos);
 

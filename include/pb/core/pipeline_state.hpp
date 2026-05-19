@@ -1,16 +1,18 @@
 #pragma once
 
 #include <concepts>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <variant>
 
 #include "pb/core/concepts.hpp"
+#include "pb/core/fixed_string.hpp"
 #include "pb/core/meta.hpp"
 
 namespace pb::core {
 
-template <class Predicate, class BranchStage>
+template <class Predicate, class BranchStage, fixed_string Label = fixed_string{""}>
 struct branch_case;
 
 template <class JoinStage>
@@ -52,8 +54,8 @@ struct branch_predicate_output_bool<Predicate, true>
 template <class>
 struct is_branch_case : std::false_type {};
 
-template <class Predicate, class BranchStage>
-struct is_branch_case<branch_case<Predicate, BranchStage>> : std::true_type {};
+template <class Predicate, class BranchStage, fixed_string Label>
+struct is_branch_case<branch_case<Predicate, BranchStage, Label>> : std::true_type {};
 
 template <class>
 struct is_join_node : std::false_type {};
@@ -335,7 +337,7 @@ struct last_stage_or_void<First, Rest...> {
 };
 } // namespace detail
 
-template <class Predicate, class BranchStage>
+template <class Predicate, class BranchStage, fixed_string Label>
 struct branch_case {
   static_assert(Stage<Predicate>,
                 "Branch predicate is invalid: define input_type and bool-like output_type");
@@ -348,6 +350,9 @@ struct branch_case {
   using predicate_type = Predicate;
   using stage_type = BranchStage;
   using input_type = stage_input_t<Predicate>;
+  static constexpr auto label = Label;
+
+  [[nodiscard]] static constexpr std::string_view case_label() noexcept { return Label.view(); }
 };
 
 template <class Case>
@@ -357,6 +362,12 @@ template <class Predicate>
 struct case_ {
   template <class Stage>
   using then = branch_case<Predicate, Stage>;
+
+  template <fixed_string Label>
+  struct label {
+    template <class Stage>
+    using then = branch_case<Predicate, Stage, Label>;
+  };
 };
 
 template <class... Cases>

@@ -1,5 +1,6 @@
 #include <pb/pipeline.hpp>
 
+#include <string_view>
 #include <type_traits>
 #include <variant>
 
@@ -31,6 +32,7 @@ struct type_list_join {
 };
 
 using public_branch_case = pb::case_<predicate>::then<parse>;
+using public_labeled_branch_case = pb::case_<predicate>::label<"parse-case">::then<parse>;
 using public_review_branch_case = pb::case_<predicate>::then<manual_review>;
 using public_branch_case_output = pb::branch_case_output<public_branch_case>;
 using public_branch_node = pb::branch_node<public_branch_case, public_review_branch_case>;
@@ -53,6 +55,10 @@ using public_type_list_join_builder_validation =
 static_assert(std::is_same_v<public_branch_case::predicate_type, predicate>);
 static_assert(std::is_same_v<public_branch_case::stage_type, parse>);
 static_assert(std::is_same_v<public_branch_case::input_type, raw>);
+static_assert(public_branch_case::case_label().empty());
+static_assert(std::is_same_v<public_labeled_branch_case::predicate_type, predicate>);
+static_assert(std::is_same_v<public_labeled_branch_case::stage_type, parse>);
+static_assert(public_labeled_branch_case::case_label() == std::string_view{"parse-case"});
 static_assert(std::is_same_v<public_branch_case_output::case_type, public_branch_case>);
 static_assert(std::is_same_v<public_branch_case_output::output_type, parsed>);
 static_assert(public_branch_node::case_count == 2);

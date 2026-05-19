@@ -18,11 +18,31 @@ Sequential branch routing with optional join stages is now supported for homogen
 ### Parallel fan-in / all-branch joins
 Branch cases with different output types currently produce a selected branch result: either the single homogeneous output type or a `std::variant<...>` for heterogeneous cases. A join may declare `pb::meta::type_list<...>` to select overloads for that one routed output, but true all-branches fan-in that runs multiple branch paths and passes separate typed values to a join is not implemented.
 
+Current type model summary:
+
+- branch outputs are tracked as a raw `pb::meta::type_list<...>` of case output types
+- when case outputs differ, the execution boundary uses a unified `std::variant<...>` for the selected branch result
+- a branch case or join stage may still use `pb::runtime::result<T>` for value-or-error execution, but that is orthogonal to the branch type model
+- the type-list join path is selected-output dispatch: the join stage declares `pb::meta::type_list<...>` and overloads each raw output type
+- there is no per-case tagged result wrapper or tuple-style fan-in type for the current sequential branch path
+- the branch type model does not use `std::optional<...>` per case; the branch either selects one output value or reports a runtime contract error if no case matches
+
 ### Consuming predicates for move-only branch inputs
 Move-only branch inputs are supported only when predicates can inspect the input by `const input_type&`. A predicate that must consume the move-only input before routing is not supported, because the selected branch stage still needs to receive the value.
 
 ### Branch-specific observer event ordering
 The observer interface provides `on_case_selected` and `on_case_skipped` events, but the exact ordering relative to other observer events is documented as the current implementation behavior, not a stable contract.
+
+Current observer sequence for a branch run is:
+
+- `on_stage_start(branch)` when the branch node starts
+- `on_stage_start(predicate)` / `on_stage_success(predicate)` for each evaluated predicate
+- `on_case_skipped(branch, index, predicate)` for a false predicate
+- `on_case_selected(branch, index, predicate)` for the first true predicate
+- `on_stage_start(case_stage)` / `on_stage_success(case_stage)` for the selected case stage
+- `on_stage_start(join_stage)` / `on_stage_success(join_stage)` for a following join stage, when present
+
+`on_stage_failure(...)` and `on_stage_exception(...)` are used when the predicate, case stage, or join stage fails or throws; the branch-specific callbacks do not replace the standard failure callbacks.
 
 ### Unnamed stage identity collisions
 When predicates and branch stages do not define `stage_key()` / `stage_name()`, the runtime generates fallback identities from the branch node's `StageIndex`. Multiple unnamed predicates or stages may share the same numeric fallback, making them harder to distinguish in observer output.

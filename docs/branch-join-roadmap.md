@@ -1,6 +1,6 @@
 # Branch / Join Roadmap / Status
 
-Sequential branch execution is now a **supported, tested feature** for homogeneous branch outputs with optional join stages. A first heterogeneous-output slice is also implemented: differing branch outputs are represented as `std::variant<...>` and can be joined either by a stage that accepts that variant or by a type-list join stage that declares `pb::meta::type_list<...>` and overloads every raw branch output type; duplicate output types are preserved and routed by variant index rather than by type. Move-only branch inputs are supported when predicates inspect by `const input_type&` and the selected branch stage consumes the value.
+Sequential branch execution is now a **supported, tested feature** for homogeneous branch outputs with optional join stages. A first heterogeneous-output slice is also implemented: differing branch outputs are represented as `std::variant<...>` and can be joined either by a stage that accepts that variant or by a type-list join stage that declares `pb::meta::type_list<...>` and overloads every raw branch output type. Variant joins preserve duplicate output alternatives by index. Type-list selected-output joins dispatch by C++ type; duplicate same-type branch outputs share the same overload unless the user encodes case identity into the output type. Move-only branch inputs are supported when predicates inspect by `const input_type&` and the selected branch stage consumes the value.
 
 ## Current status
 
@@ -13,8 +13,9 @@ Today the repository supports:
 - **compile-time join validation**: `pipeline_state::join` validates branch context (must follow `::branch<...>`, join stage input must match the unified branch execution output)
 - **runtime branch execution**: predicate evaluation, first-match-wins case selection with short-circuit, branch-stage execution, observer events (`on_case_selected`, `on_case_skipped`), error annotation with `[branch]` prefix
 - **branch child identities**: unnamed branch predicates/stages receive runtime fallback keys such as `branch.case.0.predicate` and `branch.case.0.stage` so observer/error events do not collapse to the parent branch stage index
+- **branch case labels**: cases may opt into helper/export labels with `pb::case_<Predicate>::label<"case-label">::then<Stage>`; unlabeled cases remain source-compatible and helper output displays the case index as the label
 - **stateful branch execution**: branch predicates and stages respect `pb::runtime::stateful_sequential` policy, preserving stage state across multiple runs
-- **heterogeneous branch outputs**: selected branch nodes return `std::variant<Ts...>` when case outputs differ, preserve duplicate output alternatives by index, and join stages can consume either that variant or raw `pb::meta::type_list<...>` metadata through overload-based selected-output dispatch
+- **heterogeneous branch outputs**: selected branch nodes return `std::variant<Ts...>` when case outputs differ and join stages can consume either that variant or raw `pb::meta::type_list<...>` metadata through overload-based selected-output dispatch
 - **move-only branch inputs**: predicates observe an lvalue reference and the selected branch stage receives the moved input; coverage includes `std::unique_ptr` ownership transfer into a by-value branch stage
 - branch-aware export helpers: DOT includes branch/case structure and JSON now reports branch topology instead of always reporting linear topology
 - branch marker aliases (`case_`, `branch_case`, `branch_node`, `join_node`) plus `branch_case_output` / `branch_outputs` marker metadata, raw output type-list helpers, unified branch output helpers, homogeneous branch-output validation, unified-output validation, branch source compatibility, predicate marker, homogeneous branch-node case-input, branch-output compatibility validation, join consumption validation, invalid join-stage, and branch-output marker misuse diagnostics
@@ -29,7 +30,34 @@ Today the repository supports:
 - `output_types` / `pb::branch_raw_output_types_t<Cases...>` is raw metadata: a `pb::meta::type_list<...>` preserving every case-stage output type in case order.
 - `output_type` / `pb::branch_unified_output_t<Cases...>` is the execution output: a single `T` for homogeneous branches or `std::variant<Ts...>` for heterogeneous branches.
 
+The current branch type model intentionally does **not** add a tuple-style or
+per-case tagged result wrapper:
+
+- raw branch case outputs stay in `pb::meta::type_list<...>` for validation and
+  metadata
+- execution uses a single selected-output value, either `T` or `std::variant<...>`
+- the current sequential branch path does not produce `std::tuple<...>` or a
+  tagged-per-case result container
+- `pb::runtime::result<T>` remains orthogonal and is only for value-or-error
+  reporting around a stage result, not for encoding branch multiplicity
+
 `pb::branch_output_validation<Outputs, Output>` remains the homogeneous compatibility check that every raw case output is exactly `Output`. `pb::branch_unified_output_validation<Outputs, Output>` checks the execution output contract and should be used when validating a heterogeneous branch against its `std::variant` join input.
+
+## Type model
+
+For the current branch/join slice, the type model is intentionally split into three layers:
+
+- **Raw case metadata**: `pb::meta::type_list<...>` preserves the per-case output types in case order. This is the right mental model for “all case output types as a list,” not a runtime tuple value.
+- **Execution output**: a homogeneous branch yields a single `T`; a heterogeneous branch yields `std::variant<Ts...>`. This is the value that runtime routing and joins consume.
+- **Join-stage dispatch**: a join stage may consume either the heterogeneous `std::variant` value or the raw `pb::meta::type_list<...>` metadata through overload-based selected-output dispatch.
+
+What this does **not** currently mean:
+
+- a runtime `std::tuple` of per-case values
+- optional/result-per-case fan-out semantics
+- tagged per-case result wrappers as the default branch output model
+
+If future work introduces richer per-case aggregation or tagged results, it should be documented as a new slice with its own tests and compatibility notes rather than retrofitted into the current supported model.
 
 Today the repository does **not** yet support:
 
@@ -61,7 +89,7 @@ The current MVP should **not** claim:
 - parallel/all-branches multi-input stage support before backend join lowering exists
 - multi-output branch lowering for ordinary stage outputs
 - feedback/cycle execution
-- stable branch label syntax or join result policy
+- stable join result policy
 
 Those decisions belong to a later implementation slice with explicit tests, examples, and executor contracts.
 

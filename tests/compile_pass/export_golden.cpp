@@ -80,17 +80,21 @@ struct Finish {
   Done operator()(Routed routed) const { return {routed.value + 1}; }
 };
 
-using EvenCase = pb::case_<IsEven>::then<EvenRoute>;
+using EvenCase = pb::case_<IsEven>::label<"even-case">::then<EvenRoute>;
 using OddCase = pb::case_<IsOdd>::then<OddRoute>;
 using Pipeline = pb::from<Raw>::branch<EvenCase, OddCase>::join<Finish>::to<Done>;
 
 constexpr auto expected_json =
     "{\"schema_version\":\"pb.core.graph.v1\",\"topology\":\"branch\",\"stage_count\":2,\"edge_count\":1,"
     "\"stages\":[{\"index\":0,\"key\":\"branch\",\"name\":\"branch\",\"kind\":\"branch\",\"branch_cases\":["
-    "{\"index\":0,\"predicate_key\":\"is.even\",\"predicate_name\":\"IsEven\",\"stage_key\":\"route.even\","
+    "{\"index\":0,\"case_id\":\"branch.0.case.0\",\"case_key\":\"branch.0.case.0\",\"case_label\":\"even-case\","
+    "\"predicate_node_id\":\"branch.0.case.0.predicate\",\"stage_node_id\":\"branch.0.case.0.stage\","
+    "\"predicate_key\":\"is.even\",\"predicate_name\":\"IsEven\",\"stage_key\":\"route.even\","
     "\"stage_name\":\"EvenRoute\",\"predicate_edge\":{\"from\":\"branch\",\"to\":\"predicate\",\"style\":\"dashed\",\"label\":\"test\"},"
     "\"stage_edge\":{\"from\":\"predicate\",\"to\":\"case_stage\"}},"
-    "{\"index\":1,\"predicate_key\":\"is.odd\",\"predicate_name\":\"IsOdd\",\"stage_key\":\"route.odd\","
+    "{\"index\":1,\"case_id\":\"branch.0.case.1\",\"case_key\":\"branch.0.case.1\",\"case_label\":\"1\","
+    "\"predicate_node_id\":\"branch.0.case.1.predicate\",\"stage_node_id\":\"branch.0.case.1.stage\","
+    "\"predicate_key\":\"is.odd\",\"predicate_name\":\"IsOdd\",\"stage_key\":\"route.odd\","
     "\"stage_name\":\"OddRoute\",\"predicate_edge\":{\"from\":\"branch\",\"to\":\"predicate\",\"style\":\"dashed\",\"label\":\"test\"},"
     "\"stage_edge\":{\"from\":\"predicate\",\"to\":\"case_stage\"}}]},"
     "{\"index\":1,\"key\":\"finish\",\"name\":\"Finish\",\"kind\":\"stage\"}],"
@@ -106,7 +110,7 @@ constexpr auto expected_dot = R"DOT(digraph branch_golden {
   branch_0 [shape=diamond, label="branch"];
 
   subgraph cluster_case_0_0 {
-    label="Case 0: IsEven";
+    label="Case even-case: IsEven";
     pred_0_0 [label="pred: IsEven"];
     case_0_0 [label="EvenRoute"];
     branch_0 -> pred_0_0 [style=dashed, label="test"];
@@ -184,10 +188,14 @@ using Pipeline = pb::from<Raw>::branch<ParseCase, ReviewCase>::join<Join>::to<Do
 constexpr auto expected =
     "{\"schema_version\":\"pb.core.graph.v1\",\"topology\":\"branch\",\"stage_count\":2,\"edge_count\":1,"
     "\"stages\":[{\"index\":0,\"key\":\"branch\",\"name\":\"branch\",\"kind\":\"branch\",\"branch_cases\":["
-    "{\"index\":0,\"predicate_key\":\"is.parse\",\"predicate_name\":\"IsParse\",\"stage_key\":\"route.parse\","
+    "{\"index\":0,\"case_id\":\"branch.0.case.0\",\"case_key\":\"branch.0.case.0\",\"case_label\":\"0\","
+    "\"predicate_node_id\":\"branch.0.case.0.predicate\",\"stage_node_id\":\"branch.0.case.0.stage\","
+    "\"predicate_key\":\"is.parse\",\"predicate_name\":\"IsParse\",\"stage_key\":\"route.parse\","
     "\"stage_name\":\"Parse\",\"predicate_edge\":{\"from\":\"branch\",\"to\":\"predicate\",\"style\":\"dashed\",\"label\":\"test\"},"
     "\"stage_edge\":{\"from\":\"predicate\",\"to\":\"case_stage\"}},"
-    "{\"index\":1,\"predicate_key\":\"is.review\",\"predicate_name\":\"IsReview\",\"stage_key\":\"route.review\","
+    "{\"index\":1,\"case_id\":\"branch.0.case.1\",\"case_key\":\"branch.0.case.1\",\"case_label\":\"1\","
+    "\"predicate_node_id\":\"branch.0.case.1.predicate\",\"stage_node_id\":\"branch.0.case.1.stage\","
+    "\"predicate_key\":\"is.review\",\"predicate_name\":\"IsReview\",\"stage_key\":\"route.review\","
     "\"stage_name\":\"Review\",\"predicate_edge\":{\"from\":\"branch\",\"to\":\"predicate\",\"style\":\"dashed\",\"label\":\"test\"},"
     "\"stage_edge\":{\"from\":\"predicate\",\"to\":\"case_stage\"}}]},"
     "{\"index\":1,\"key\":\"join\",\"name\":\"Join\",\"kind\":\"stage\"}],"

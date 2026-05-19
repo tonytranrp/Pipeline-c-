@@ -195,7 +195,12 @@ int main() {
   assert(runtime_descriptor.edge_records()[0].to_name == descriptor.edge_records()[0].to_name);
 
   assert(runtime_descriptor.stage_records()[0].name == "parse");
+  assert(runtime_descriptor.stage_records()[0].key == "order.parse");
+  assert(runtime_descriptor.stage_records()[1].key == "order.finish");
   assert(runtime_descriptor.edge_records()[0].to_name == "finish");
+  assert(runtime_descriptor.edge_records()[0].from_key == "order.parse");
+  assert(runtime_descriptor.edge_records()[0].from_name == "parse");
+  assert(runtime_descriptor.edge_records()[0].to_key == "order.finish");
   static_assert(std::same_as<decltype(runtime_descriptor), const pb::runtime::descriptor_view<2>>);
 
   // Empty pipeline
@@ -239,10 +244,6 @@ int main() {
   static_assert(branch_descriptor.stage_records()[0].topology == pb::descriptor_topology::branch);
   static_assert(branch_descriptor.stage_records()[0].key == std::string_view{"branch"});
   static_assert(branch_descriptor.stage_records()[0].name == std::string_view{"branch"});
-  // Branch node has input_type_name and output_type_name populated
-  static_assert(!branch_descriptor.stage_records()[0].input_type_name.empty());
-  static_assert(!branch_descriptor.stage_records()[0].output_type_name.empty());
-
   // Second stage is Finalize — linear topology
   static_assert(branch_descriptor.stage_records()[1].topology == pb::descriptor_topology::linear);
   static_assert(branch_descriptor.stage_records()[1].key == std::string_view{"finalize"});
@@ -257,16 +258,27 @@ int main() {
   if constexpr (branch_descriptor.case_count > 0) {
     static_assert(branch_descriptor.branch_case_records()[0].case_index == 0);
     static_assert(branch_descriptor.branch_case_records()[0].branch_stage_index == 0);
+    static_assert(branch_descriptor.branch_case_records()[0].case_id == std::string_view{"branch.0.case.0"});
+    static_assert(branch_descriptor.branch_case_records()[0].case_key == std::string_view{"branch.0.case.0"});
+    static_assert(branch_descriptor.branch_case_records()[0].case_label.empty());
+    static_assert(branch_descriptor.branch_case_records()[0].predicate_node_id ==
+                  std::string_view{"branch.0.case.0.predicate"});
+    static_assert(branch_descriptor.branch_case_records()[0].stage_node_id ==
+                  std::string_view{"branch.0.case.0.stage"});
     static_assert(branch_descriptor.branch_case_records()[0].predicate_key == std::string_view{"is-invoice"});
     static_assert(branch_descriptor.branch_case_records()[0].predicate_name == std::string_view{"is-invoice"});
     static_assert(branch_descriptor.branch_case_records()[0].stage_key == std::string_view{"process-invoice"});
     static_assert(branch_descriptor.branch_case_records()[0].stage_name == std::string_view{"process-invoice"});
-    static_assert(!branch_descriptor.branch_case_records()[0].input_type_name.empty());
-    static_assert(!branch_descriptor.branch_case_records()[0].output_type_name.empty());
-
     // Case 1: IsReport → ProcessReport
     static_assert(branch_descriptor.branch_case_records()[1].case_index == 1);
     static_assert(branch_descriptor.branch_case_records()[1].branch_stage_index == 0);
+    static_assert(branch_descriptor.branch_case_records()[1].case_id == std::string_view{"branch.0.case.1"});
+    static_assert(branch_descriptor.branch_case_records()[1].case_key == std::string_view{"branch.0.case.1"});
+    static_assert(branch_descriptor.branch_case_records()[1].case_label.empty());
+    static_assert(branch_descriptor.branch_case_records()[1].predicate_node_id ==
+                  std::string_view{"branch.0.case.1.predicate"});
+    static_assert(branch_descriptor.branch_case_records()[1].stage_node_id ==
+                  std::string_view{"branch.0.case.1.stage"});
     static_assert(branch_descriptor.branch_case_records()[1].predicate_key == std::string_view{"is-report"});
     static_assert(branch_descriptor.branch_case_records()[1].predicate_name == std::string_view{"is-report"});
     static_assert(branch_descriptor.branch_case_records()[1].stage_key == std::string_view{"process-report"});
@@ -280,8 +292,29 @@ int main() {
   assert(runtime_branch_descriptor.topology == pb::descriptor_topology::branch);
   assert(runtime_branch_descriptor.stage_records().size() == 2);
   assert(runtime_branch_descriptor.branch_case_records().size() == 2);
+  assert(runtime_branch_descriptor.stage_records()[0].key == "branch");
+  assert(runtime_branch_descriptor.stage_records()[0].name == "branch");
+  assert(runtime_branch_descriptor.stage_records()[1].key == "finalize");
+  assert(runtime_branch_descriptor.stage_records()[1].name == "finalize");
   assert(runtime_branch_descriptor.branch_case_records()[0].branch_stage_index == 0);
+  assert(runtime_branch_descriptor.branch_case_records()[0].case_id == "branch.0.case.0");
+  assert(runtime_branch_descriptor.branch_case_records()[0].case_key == "branch.0.case.0");
+  assert(runtime_branch_descriptor.branch_case_records()[0].case_label.empty());
+  assert(runtime_branch_descriptor.branch_case_records()[0].predicate_node_id == "branch.0.case.0.predicate");
+  assert(runtime_branch_descriptor.branch_case_records()[0].stage_node_id == "branch.0.case.0.stage");
+  assert(runtime_branch_descriptor.branch_case_records()[0].predicate_key == "is-invoice");
+  assert(runtime_branch_descriptor.branch_case_records()[0].predicate_name == "is-invoice");
+  assert(runtime_branch_descriptor.branch_case_records()[0].stage_key == "process-invoice");
+  assert(runtime_branch_descriptor.branch_case_records()[0].stage_name == "process-invoice");
+  assert(runtime_branch_descriptor.branch_case_records()[1].case_id == "branch.0.case.1");
+  assert(runtime_branch_descriptor.branch_case_records()[1].case_key == "branch.0.case.1");
+  assert(runtime_branch_descriptor.branch_case_records()[1].case_label.empty());
+  assert(runtime_branch_descriptor.branch_case_records()[1].predicate_node_id == "branch.0.case.1.predicate");
+  assert(runtime_branch_descriptor.branch_case_records()[1].stage_node_id == "branch.0.case.1.stage");
+  assert(runtime_branch_descriptor.branch_case_records()[1].predicate_key == "is-report");
+  assert(runtime_branch_descriptor.branch_case_records()[1].predicate_name == "is-report");
   assert(runtime_branch_descriptor.branch_case_records()[1].stage_key == "process-report");
+  assert(runtime_branch_descriptor.branch_case_records()[1].stage_name == "process-report");
 
   // Runtime execution
   auto br_result = branch_engine.run(Document{1});

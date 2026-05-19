@@ -1,88 +1,114 @@
 # Graph Export Roadmap / Status
 
-Graph export is now a **partial descriptor-record-backed helper surface**, not a stable graph interchange contract. The current tree has linear DOT support, branch-aware DOT output, and JSON output that distinguishes `"topology":"linear"` from `"topology":"branch"` when branch stages are present. The branch-aware helper paths render from descriptor records, but the project still does not promise a stable external schema.
+Graph export is currently a **descriptor-backed helper surface** for supported
+linear and branch pipelines, not a stable graph interchange contract. The
+current implementation lives in `include/pb/core/export_json.hpp` and
+`include/pb/core/export_dot.hpp`, with schema data sourced from
+`include/pb/runtime/descriptor.hpp`.
 
-Keep release notes scoped to that helper boundary: the repository still does not provide stable export schemas, CLI export of user pipeline files, or backend/parallel graph export. Current golden-style tests are helper-output regression tests, not a compatibility promise for external consumers.
+The current helper output is useful for local visualization and regression
+testing, but it remains narrower than a release-grade export schema.
+The current smoke coverage also checks the runtime descriptor helper strings
+that mirror the helper schema fields documented in `export-helper-schema.md`.
+
+At the JSON helper boundary, the current top-level keys are
+`schema_version`, `topology`, `stage_count`, `edge_count`, `stages`, and
+`edges`.
 
 ## Current status
 
 Today the repository supports:
 
-- linear compile-time pipeline validation through `pb::from<T>::then<S>::to<U>`
-- compile-time pipeline metadata/introspection via `describe()` and stage records
-- sequential runtime execution for validated linear and supported branch pipelines
-- DOT export helpers for linear pipelines and branch/case structure
-- JSON export helpers for linear pipelines and branch pipelines, including branch topology detection and branch case metadata
+- linear and branch-aware DOT helper output
+- JSON helper output with `topology` reporting for branch pipelines
+- descriptor-backed helper rendering for stage, edge, and branch-case records
+- targeted compile-pass coverage for JSON/DOT helper strings and runtime
+  descriptor smoke coverage
 
 Today the repository does **not** support:
 
-- a stable DOT/JSON compatibility contract
-- golden schema fixtures or field-ordering guarantees for long-term consumers beyond helper-output regression tests
-- graph-export file emitters or parsing of user pipeline definitions through the CLI
-- multi-input join graph lowering
-- parallel/backend graph execution export semantics
+- a stable export schema contract
+- CLI/file export of user pipeline definitions
+- backend/parallel graph export semantics
+- release-grade compatibility guarantees for helper field names or ordering
 
-## Supported helper boundary
+## Current helper boundary
 
-The current export helpers may be used as local visualization and smoke-test aids. They are intentionally narrower than a release-grade graph schema:
-
-- branch pipelines now report branch topology in JSON instead of being mislabeled as linear
-- DOT can show branch/case structure for the supported branch slice, with label escaping for quotes, backslashes, tabs, carriage returns, and newlines
-- JSON/DOT helper output for supported branch pipelines is rendered from descriptor records, but docs must not claim a stable descriptor/export compatibility contract yet
-- exported strings are covered by targeted compile-pass checks and helper-output golden regressions, not by a versioned schema contract
-
-## Why full graph export remains roadmap work
-
-The research plan treats graph export as a staged follow-on:
-
-- `F010` / `F011` mark DOT and JSON graph export as `v0.2` features.
-- Tasks `111`-`120` describe the future graph-export implementation/test/diagnostic slice.
-- Tasks `411`-`420` describe future documentation/example work that depends on graph export existing first.
-
-The current implementation is useful progress, but it is still not the final architecture. The next stabilizing direction is:
+The current helper boundary is:
 
 ```text
-Pipeline type -> descriptor records -> DOT/JSON helper output -> future stable schema contract
+pipeline type -> runtime descriptor -> JSON/DOT helper output
 ```
 
-The current helper implementation has started this direction for supported branch pipelines; the remaining work is the stable schema/compatibility contract that prevents drift as graph features grow.
+The helper schema currently exposes these top-level JSON fields:
+
+Current branch-case helper descriptors also carry deterministic identity fields (`case_id` / `case_key`, `predicate_node_id`, `stage_node_id`) so branch graph rendering and helper tests can refer to a stable per-case identity without claiming a stable external graph schema.
 
 ## Planned implementation checkpoints
 
-When stabilizing graph export, keep it staged and separately verifiable:
+In other words, the current branch-stage helper shape is `kind = "branch"`
+with a nested `branch_cases` array.
 
-1. **Make descriptor the source of truth**
-   Lower pipeline types into descriptor v1, then render DOT/JSON from that descriptor.
-2. **Document schema and compatibility**
-   Add field-ordering expectations, branch edge labels, type-name fields, and a schema changelog.
-3. **Promote golden verification into a compatibility suite**
-   Existing helper-output golden regressions cover linear JSON, homogeneous branch JSON, heterogeneous branch JSON, and branch DOT. A future stable export phase should add release-grade golden DOT/JSON/descriptor fixtures, schema version docs, and compatibility review rules.
-4. **Expose file/CLI behavior only after tests exist**
-   Keep CLI/export examples scoped until user-pipeline parsing and export are implemented.
+Runtime descriptor branch metadata such as branch-stage indices and branch-case
+type names stays behind the helper boundary for now.
+
+The current sequential branch observer events already cover:
+
+- branch start / success / failure
+- case selected / skipped
+- stage start / success / failure / exception on the predicate and case-stage
+  nodes
+
+Those observer events are exercised by the runtime branch smoke and
+comprehensive branch execution tests rather than by the helper-schema page.
+
+See `docs/export-helper-schema.md` for the current field-level summary.
+
+Relevant helper-schema source files:
+
+- `include/pb/runtime/descriptor.hpp`
+- `include/pb/core/export_json.hpp`
+- `include/pb/core/export_dot.hpp`
+- `tests/compile_pass/export_json.cpp`
+- `tests/compile_pass/export_json_branch.cpp`
+- `tests/compile_pass/export_dot.cpp`
+- `tests/compile_pass/export_dot_branch.cpp`
+- `tests/runtime/descriptor_smoke.cpp`
+
+## Why this remains roadmap work
+
+The current helper output is intentionally limited:
+
+- it is not a versioned public schema
+- it is not a CLI/file export format
+- it is not a promise of stable field ordering or long-term compatibility
+
+That means future schema changes should still be treated as roadmap work until
+the helper surface is explicitly promoted.
 
 ## Verification status today
 
 Current targeted evidence includes:
 
-- `pb_export_dot_compile_pass`
-- `pb_export_dot_branch_compile_pass`
-- `pb_export_json_compile_pass`
-- `pb_export_json_branch_compile_pass`
-- `pb_export_golden_compile_pass` helper-output regression checks
-- public-header coverage for export headers
-
-There is still no stable schema, release-grade golden-output compatibility suite, CLI file-export path, or backend graph-export evidence.
+- `tests/compile_pass/export_json.cpp`
+- `tests/compile_pass/export_json_branch.cpp`
+- `tests/compile_pass/export_dot.cpp`
+- `tests/compile_pass/export_dot_branch.cpp`
+- `tests/compile_pass/export_golden.cpp`
+- public-header coverage for the export helpers
+- `tests/runtime/descriptor_smoke.cpp`
 
 ## Release guidance
 
 Release notes and docs may describe the current slice as:
 
-> DOT/JSON helper export for linear and supported branch pipelines, including branch topology in JSON; not a stable graph schema and not a CLI/file export contract.
+> Descriptor-backed DOT/JSON helper export for linear and supported branch
+> pipelines, including branch topology in JSON; not a stable graph schema and
+> not a CLI/file export contract.
 
-If a future slice stabilizes graph export, update this page together with:
+If a future slice stabilizes the export contract, update this page together with:
 
 - `docs/production-readiness.md`
 - `docs/examples.md`
 - `docs/runtime-descriptor-roadmap.md`
-- the relevant tests/examples/bench entries
-- release verification notes in `docs/build.md` when new checks are introduced
+- the relevant helper tests/examples

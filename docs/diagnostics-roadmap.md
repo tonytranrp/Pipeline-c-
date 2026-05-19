@@ -21,6 +21,8 @@ Today the repository does **not** support:
 - observer-driven diagnostic reporting or richer error-category policy beyond the current sequential runtime helpers
 - a complete golden-test matrix that proves diagnostic behavior across every planned roadmap slice
 
+Additional compile-fail diagnostics still needed for later slices should be documented and tested alongside the feature they protect, especially for branch/join routing, graph-export helpers, and any future descriptor/export compatibility checks.
+
 Keep examples and release notes aligned with that boundary. The repo can truthfully claim diagnostic scaffolding and smoke coverage today, but it should not yet claim the full research-plan diagnostics story as complete.
 
 ## Why richer diagnostics matter
@@ -79,7 +81,7 @@ The current verification evidence supports the existing linear-pipeline diagnost
 
 - compile-fail tests check for expected diagnostic text through `tests/run_compile_fail.cmake`
 - `pb_runtime_error_diagnostic_smoke` and custom-error observer coverage validate runtime category/stage/message formatting helpers, custom expected-like diagnostic stage annotation, and the `error_record` / `to_record(...)` diagnostic projection
-- branch-marker compile-fail tests cover unsupported topology, branch source/predicate misuse, branch-node case-input mismatch, invalid join-stage markers, and branch-output marker misuse without claiming executable branch/join support
+- branch-marker and branch/join compile-fail tests cover unsupported topology, branch source/predicate misuse, branch-node case-input mismatch, invalid join-stage markers, branch-output marker misuse, join validation mismatches, and branch output validation mismatches without claiming executable branch/join support
 - `pb_runtime_sequential_observer_accessor_smoke` keeps the linear descriptor stage identity aligned with observer failure callbacks and the `try_run()` error envelope
 - `examples/error_diagnostic.cpp` documents the intentional compile-fail path for users
 - `docs/examples.md` explains how to run the diagnostic example and the compile-fail smoke target

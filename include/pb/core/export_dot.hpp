@@ -82,7 +82,9 @@ inline void append_branch_case_subgraph(std::ostringstream& stream,
   const auto case_index = branch_case.case_index;
   const auto pred_name = branch_case.predicate_name;
   const auto stage_name = branch_case.stage_name;
-  const auto case_label = std::string{"Case "} + std::to_string(case_index) + ": " + std::string{pred_name};
+  const auto case_name = branch_case.case_label.empty() ? std::to_string(case_index)
+                                                       : std::string{branch_case.case_label};
+  const auto case_label = std::string{"Case "} + case_name + ": " + std::string{pred_name};
   const auto pred_label = std::string{"pred: "} + std::string{pred_name};
 
   stream << "  subgraph cluster_case_" << branch_index << "_" << case_index << " {\n";

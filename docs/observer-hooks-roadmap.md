@@ -15,6 +15,14 @@ Today the repository supports:
 - structured start/success/failure/exception event hooks
 - runtime observer coverage in existing smoke tests
 
+For the current branch-aware sequential slice, the event vocabulary also includes:
+
+- branch started
+- case scheduled
+- case completed
+- case failed
+- join started
+
 Keep release notes and examples aligned with that boundary: sequential observer hooks are supported, while event schema and long-term ABI/lifecycle guarantees are not yet finalized.
 
 ## Why observer hooks matter

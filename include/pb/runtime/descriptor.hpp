@@ -43,6 +43,11 @@ struct descriptor_stage_record {
 struct descriptor_branch_case_record {
   std::size_t branch_stage_index{};
   std::size_t case_index{};
+  std::string_view case_id{};
+  std::string_view case_key{};
+  std::string_view case_label{};
+  std::string_view predicate_node_id{};
+  std::string_view stage_node_id{};
   std::string_view predicate_key;
   std::string_view predicate_name;
   std::string_view stage_key;
@@ -100,6 +105,134 @@ template <class T>
 [[nodiscard]] constexpr auto type_name() noexcept -> std::string_view {
   return detail::type_name_impl<T>();
 }
+
+template <std::size_t Value>
+[[nodiscard]] consteval auto decimal_digits() noexcept -> std::size_t {
+  std::size_t digits = 1;
+  for (std::size_t temp = Value; temp >= 10; temp /= 10) {
+    ++digits;
+  }
+  return digits;
+}
+
+template <std::size_t BranchStageIdx, std::size_t CaseIdx>
+[[nodiscard]] consteval auto make_branch_case_id_storage() noexcept {
+  constexpr std::size_t total = (sizeof("branch.") - 1) + decimal_digits<BranchStageIdx>() +
+                                (sizeof(".case.") - 1) + decimal_digits<CaseIdx>();
+
+  std::array<char, total + 1> storage{};
+  std::size_t pos = 0;
+
+  auto append_literal = [&storage, &pos](std::string_view text) {
+    for (const char ch : text) {
+      storage[pos++] = ch;
+    }
+  };
+
+  auto append_decimal = [&storage, &pos](std::size_t value) {
+    std::array<char, 20> digits{};
+    std::size_t len = 0;
+    do {
+      digits[len++] = static_cast<char>('0' + (value % 10));
+      value /= 10;
+    } while (value != 0);
+
+    while (len > 0) {
+      storage[pos++] = digits[--len];
+    }
+  };
+
+  append_literal("branch.");
+  append_decimal(BranchStageIdx);
+  append_literal(".case.");
+  append_decimal(CaseIdx);
+  storage[total] = '\0';
+  return storage;
+}
+
+template <std::size_t BranchStageIdx, std::size_t CaseIdx>
+struct branch_case_identity_strings {
+  static constexpr auto case_id_storage = make_branch_case_id_storage<BranchStageIdx, CaseIdx>();
+  static constexpr std::string_view case_id{case_id_storage.data(), case_id_storage.size() - 1};
+  static constexpr std::string_view case_key{case_id};
+
+  static constexpr auto predicate_node_id_storage = [] {
+    constexpr std::string_view prefix{"branch."};
+    constexpr std::string_view middle{".case."};
+    constexpr std::string_view suffix{".predicate"};
+    constexpr auto branch_digits = decimal_digits<BranchStageIdx>();
+    constexpr auto case_digits = decimal_digits<CaseIdx>();
+    std::array<char, prefix.size() + branch_digits + middle.size() + case_digits + suffix.size() + 1> storage{};
+    std::size_t pos = 0;
+
+    auto append_literal = [&storage, &pos](std::string_view text) {
+      for (const char ch : text) {
+        storage[pos++] = ch;
+      }
+    };
+    auto append_decimal = [&storage, &pos](std::size_t value) {
+      std::array<char, 20> digits{};
+      std::size_t len = 0;
+      do {
+        digits[len++] = static_cast<char>('0' + (value % 10));
+        value /= 10;
+      } while (value != 0);
+
+      while (len > 0) {
+        storage[pos++] = digits[--len];
+      }
+    };
+
+    append_literal(prefix);
+    append_decimal(BranchStageIdx);
+    append_literal(middle);
+    append_decimal(CaseIdx);
+    append_literal(suffix);
+    storage[pos] = '\0';
+    return storage;
+  }();
+
+  static constexpr std::string_view predicate_node_id{predicate_node_id_storage.data(),
+                                                      predicate_node_id_storage.size() - 1};
+
+  static constexpr auto stage_node_id_storage = [] {
+    constexpr std::string_view prefix{"branch."};
+    constexpr std::string_view middle{".case."};
+    constexpr std::string_view suffix{".stage"};
+    constexpr auto branch_digits = decimal_digits<BranchStageIdx>();
+    constexpr auto case_digits = decimal_digits<CaseIdx>();
+    std::array<char, prefix.size() + branch_digits + middle.size() + case_digits + suffix.size() + 1> storage{};
+    std::size_t pos = 0;
+
+    auto append_literal = [&storage, &pos](std::string_view text) {
+      for (const char ch : text) {
+        storage[pos++] = ch;
+      }
+    };
+    auto append_decimal = [&storage, &pos](std::size_t value) {
+      std::array<char, 20> digits{};
+      std::size_t len = 0;
+      do {
+        digits[len++] = static_cast<char>('0' + (value % 10));
+        value /= 10;
+      } while (value != 0);
+
+      while (len > 0) {
+        storage[pos++] = digits[--len];
+      }
+    };
+
+    append_literal(prefix);
+    append_decimal(BranchStageIdx);
+    append_literal(middle);
+    append_decimal(CaseIdx);
+    append_literal(suffix);
+    storage[pos] = '\0';
+    return storage;
+  }();
+
+  static constexpr std::string_view stage_node_id{stage_node_id_storage.data(), stage_node_id_storage.size() - 1};
+};
 
 // ---------------------------------------------------------------------------
 // Descriptor view — parameterised by stage count and optional branch-case count
@@ -250,16 +383,21 @@ template <std::size_t StageCount, std::size_t... StageIndexes, std::size_t... Ed
 // detail: branch case record generation
 // ---------------------------------------------------------------------------
 
-template <class Case>
-[[nodiscard]] constexpr auto to_branch_case_record(std::size_t branch_stage_idx,
-                                                   std::size_t case_idx) noexcept
+template <std::size_t BranchStageIdx, std::size_t CaseIdx, class Case>
+[[nodiscard]] constexpr auto to_branch_case_record() noexcept
     -> descriptor_branch_case_record {
   using Predicate = typename Case::predicate_type;
   using BranchStage = typename Case::stage_type;
+  using identity = branch_case_identity_strings<BranchStageIdx, CaseIdx>;
 
   return descriptor_branch_case_record{
-      .branch_stage_index = branch_stage_idx,
-      .case_index = case_idx,
+      .branch_stage_index = BranchStageIdx,
+      .case_index = CaseIdx,
+      .case_id = identity::case_id,
+      .case_key = identity::case_key,
+      .case_label = Case::case_label(),
+      .predicate_node_id = identity::predicate_node_id,
+      .stage_node_id = identity::stage_node_id,
       .predicate_key = pb::core::stage_traits<Predicate>::key(),
       .predicate_name = pb::core::stage_traits<Predicate>::name(),
       .stage_key = pb::core::stage_traits<BranchStage>::key(),
@@ -269,12 +407,11 @@ template <class Case>
   };
 }
 
-template <class BranchNode, std::size_t... CaseIndexes>
-[[nodiscard]] constexpr auto branch_case_records_from_node(std::size_t branch_stage_idx,
-                                                           std::index_sequence<CaseIndexes...>) noexcept
+template <class BranchNode, std::size_t BranchStageIdx, std::size_t... CaseIndexes>
+[[nodiscard]] constexpr auto branch_case_records_from_node(std::index_sequence<CaseIndexes...>) noexcept
     -> std::array<descriptor_branch_case_record, sizeof...(CaseIndexes)> {
   using Cases = typename BranchNode::cases;
-  return {to_branch_case_record<pb::meta::at_t<Cases, CaseIndexes>>(branch_stage_idx, CaseIndexes)...};
+  return {to_branch_case_record<BranchStageIdx, CaseIndexes, pb::meta::at_t<Cases, CaseIndexes>>()...};
 }
 
 // ---------------------------------------------------------------------------
@@ -316,18 +453,18 @@ template <std::size_t TotalCases, class... Stages, std::size_t... StageIndexes>
 
   if constexpr (TotalCases > 0) {
     std::size_t case_offset = 0;
-    auto collect_one = [&]<class Stage>(std::size_t stage_index) {
+    auto collect_one = [&]<class Stage, std::size_t StageIndex>() {
       if constexpr (pb::core::detail::is_selected_branch_node<Stage>::value) {
         constexpr auto node_cases = branch_case_count_or_zero<Stage>::value;
         auto node_records =
-            branch_case_records_from_node<Stage>(stage_index, std::make_index_sequence<node_cases>{});
+            branch_case_records_from_node<Stage, StageIndex>(std::make_index_sequence<node_cases>{});
         for (std::size_t i = 0; i < node_cases; ++i) {
           cases_arr[case_offset + i] = node_records[i];
         }
         case_offset += node_cases;
       }
     };
-    (collect_one.template operator()<Stages>(StageIndexes), ...);
+    (collect_one.template operator()<Stages, StageIndexes>(), ...);
   }
 
   return cases_arr;

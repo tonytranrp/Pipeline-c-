@@ -40,9 +40,27 @@ inline void append_json_string(std::ostringstream& stream, std::string_view valu
   stream << '"';
 }
 
+[[nodiscard]] inline auto branch_case_label_or_index(
+    const pb::runtime::descriptor_branch_case_record& branch_case) -> std::string {
+  if (!branch_case.case_label.empty()) {
+    return std::string{branch_case.case_label};
+  }
+  return std::to_string(branch_case.case_index);
+}
+
 inline void append_branch_case_json(std::ostringstream& stream,
                                     const pb::runtime::descriptor_branch_case_record& branch_case) {
-  stream << "{\"index\":" << branch_case.case_index << ",\"predicate_key\":";
+  stream << "{\"index\":" << branch_case.case_index << ",\"case_id\":";
+  append_json_string(stream, branch_case.case_id);
+  stream << ",\"case_key\":";
+  append_json_string(stream, branch_case.case_key);
+  stream << ",\"case_label\":";
+  append_json_string(stream, branch_case_label_or_index(branch_case));
+  stream << ",\"predicate_node_id\":";
+  append_json_string(stream, branch_case.predicate_node_id);
+  stream << ",\"stage_node_id\":";
+  append_json_string(stream, branch_case.stage_node_id);
+  stream << ",\"predicate_key\":";
   append_json_string(stream, branch_case.predicate_key);
   stream << ",\"predicate_name\":";
   append_json_string(stream, branch_case.predicate_name);

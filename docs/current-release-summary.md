@@ -17,7 +17,7 @@ Status snapshot for the current branch/export hardening and validation batch. Us
 - Join validation checks the unified branch execution output and also supports selected-output type-list joins whose stage declares the raw branch output `pb::meta::type_list<...>` and overloads every raw output type.
 - Move-only selected-branch input consumption is supported when predicates inspect by `const input_type&`; consuming predicates for move-only inputs remain unsupported and have negative compile-fail coverage.
 - Stateful branch predicates/stages are covered under `pb::runtime::stateful_sequential`, and predicate invocation uses const-input semantics in both per-run and stateful paths.
-- DOT/JSON helpers cover linear and supported branch pipelines, including descriptor-record-backed branch helper rendering, JSON branch topology detection, DOT label escaping, and helper-output golden regressions.
+- DOT/JSON helpers cover linear and supported branch pipelines, including descriptor-record-backed branch helper rendering, JSON branch topology detection, the current top-level JSON fields (`schema_version`, `topology`, `stage_count`, `edge_count`, `stages`, `edges`), DOT label escaping, and helper-output golden regressions.
 - `pb::runtime::thread_pool` is a standalone utility only; it is not a pipeline backend.
 
 ## What must stay roadmap-only

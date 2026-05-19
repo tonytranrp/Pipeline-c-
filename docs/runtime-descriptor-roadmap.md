@@ -90,6 +90,14 @@ The research plan treats the feature as planned work, not current behavior:
 
 The current repository documents the direction, but it does not yet ship the broader runtime-facing representation or compatibility guarantees needed to claim stable export support.
 
+For branch pipelines, the current runtime descriptor helpers now also expose deterministic branch-case identity metadata:
+
+- `case_id` / `case_key` in the form `branch.<branch_stage_index>.case.<case_index>`
+- `predicate_node_id` in the form `branch.<branch_stage_index>.case.<case_index>.predicate`
+- `stage_node_id` in the form `branch.<branch_stage_index>.case.<case_index>.stage`
+
+Those fields strengthen helper stability for the supported branch slice, but they still do not imply a stable runtime export contract or broader graph/schema compatibility promise.
+
 ## Non-goals for the current MVP
 
 The current MVP should **not** claim:
