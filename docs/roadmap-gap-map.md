@@ -152,8 +152,8 @@ This queue is the durable docs-lane view of the current missing-feature push. It
 | 8 | Runtime descriptor/export contract | Compile-time/diagnostic metadata exists; stable runtime export remains roadmap. | Versioned schema, ownership rules, and tests for the public descriptor/export surface. |
 | 9 | DOT/JSON graph export | Partial descriptor-record-backed DOT/JSON helpers exist for linear and supported branch pipelines; stable descriptor/export compatibility remains roadmap-only. | Candidate export evidence plus clear distinction between helper output and stable schemas, golden fixtures, CLI/file export, and backend graph-execution claims. |
 | 10 | Backend feature matrix | Documented in `docs/optional-backends-roadmap.md`; backend support remains roadmap-only beyond sequential. | Keep the matrix current before any backend implementation/support claim. |
-| 11 | Full release compiler matrix | Current evidence exists for code SHA `6805543`: GCC C++20/C++23, Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release passed. MSVC C++23, C++26 gates, and Windows package-release remain unclaimed. | Keep compiler ID/version plus configure/build/test/package evidence attached to the final candidate SHA; rerun if later non-doc code changes land. |
-| 12 | Release/package evidence on candidate SHA | Clean Ubuntu package-release evidence exists for code SHA `6805543`: configure/build/CTest `150/150` and TGZ package generation passed. | Rerun package-release on the final tag SHA when required and record archive path plus workflow URL. |
+| 11 | Full release compiler matrix | GitHub evidence exists for code SHA `f56fa54`: GCC C++20/C++23, Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release passed. Current local HEAD `4d7127c` passed developer and package-release verification locally. MSVC C++23, C++26 gates, and Windows package-release remain unclaimed. | Keep compiler ID/version plus configure/build/test/package evidence attached to the final candidate SHA; rerun if later non-doc code changes land. |
+| 12 | Release/package evidence on candidate SHA | Clean Ubuntu package-release GitHub evidence exists for code SHA `f56fa54`: configure/build/CTest `153/153` and TGZ package generation passed. Current local HEAD `4d7127c` also passed local `package-release-clang-ninja` configure/build/CTest `156/156` plus TGZ package generation. | Rerun package-release on the final tag SHA when required and record archive path plus workflow URL. |
 
 ## Current support summary
 
@@ -164,7 +164,7 @@ The current repository can safely claim:
 - sequential runtime execution for validated linear pipelines
 - sequential branch execution with optional join stages, first-slice heterogeneous outputs through `std::variant`, and move-only selected-branch input consumption
 - compile-pass, compile-fail, runtime, example, package-consumer, and benchmark smoke scaffolding
-- release-readiness documentation plus current GCC/Clang/MSVC/package validation evidence for code SHA `6805543`
+- release-readiness documentation plus GitHub GCC/Clang/MSVC/package validation evidence for code SHA `f56fa54` and local current-HEAD package evidence for `4d7127c`
 
 The current repository should **not** claim:
 

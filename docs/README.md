@@ -8,6 +8,7 @@ This directory holds quickstart notes, diagnostic examples, benchmark guidance, 
 - [Release Evidence Template](release-evidence-template.md)
 - [Cross-Compiler Validation Status](cross-compiler-validation.md)
 - [Research Verification Matrix](research-verification-matrix.md)
+- [Current implementation / not-done map](../research/not%20done.md)
 - [Current PR / Release Summary](current-release-summary.md)
 - [Diagnostic Example Walkthrough](diagnostic-example-walkthrough.md)
 - [Runtime Error Model Tutorial](error-model-tutorial.md)

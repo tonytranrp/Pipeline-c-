@@ -19,6 +19,7 @@ This first base follows `research/pipeline_builder_cpp_research_plan.md`:
 - [Pipeline-c++ docs hub](docs/README.md) links all guides used during the review lane.
 - [Production Readiness Status](docs/production-readiness.md) tracks supported capabilities, known release gaps, and the package-consumer release gate.
 - [Research Verification Matrix](docs/research-verification-matrix.md) maps research-plan gaps to shipped evidence, tests, release status, and next slices.
+- [Current implementation / not-done map](research/not%20done.md) summarizes what is done, partial, missing, and required for production-grade completion against the original research plan.
 - [Graph Export Roadmap / Status](docs/graph-export-roadmap.md) explains the DOT/JSON helper boundary and what must land before docs can present stable graph export as supported.
 - [Cross-Compiler Validation Status](docs/cross-compiler-validation.md) records the latest GCC/Clang/MSVC/package validation evidence and remaining release boundaries.
 
