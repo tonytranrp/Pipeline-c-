@@ -120,7 +120,7 @@ This keeps the release note aligned with the current docs and avoids treating lo
 
 Before tagging, confirm the release notes and docs still describe these as **not current guarantees**:
 
-- parallel all-branches fan-in / true backend multi-input join execution and backend branch execution beyond the supported selected-output sequential slice
+- backend/parallel fan-in / true backend multi-input join execution and backend branch execution beyond the supported sequential selected-output and fan-in slices
 - stable descriptor/export compatibility beyond the current descriptor-record-backed helper output
 - observer behavior beyond the current sequential runtime callback path
 - optional backend execution beyond the sequential MVP path

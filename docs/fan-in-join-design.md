@@ -1,8 +1,11 @@
 # Fan-in Join Design
 
-This document describes a future all-branches fan-in join design for branch
-pipelines. It is design-only: it does not change the current public API,
-runtime behavior, descriptor schema, backend behavior, or export helpers.
+This document describes the all-branches fan-in join design for branch
+pipelines and records which parts are implemented today. The first sequential
+runtime slice is now implemented through `::fan_in<JoinStage>` and
+`::join_all<JoinStage>`. Backend/parallel scheduling, richer failed-case
+aggregation, stable descriptor/export topology, and long-term schema
+compatibility remain future work.
 
 ## Current selected-output join
 
@@ -31,11 +34,13 @@ runtime dispatches the selected variant alternative to a matching overload.
 This is not all-branches fan-in. Non-selected cases are not executed and do not
 produce values for the join.
 
-## Future all-branches fan-in goal
+## All-branches fan-in goal and current status
 
-All-branches fan-in should be an explicit, separate feature. It should execute a
-set of branch cases, collect each case outcome in deterministic case order, and
-invoke a join stage with a complete fan-in value model.
+All-branches fan-in is an explicit, separate feature. It executes a set of
+branch cases, collects each case outcome in deterministic case order, and
+invokes a join stage with a complete fan-in value model. The implemented first
+slice is sequential and records `skipped` / `completed` case states; richer
+failed-case aggregation remains a follow-up policy.
 
 The design goals are:
 
@@ -55,22 +60,21 @@ Keep the current selected-output DSL:
 pb::from<Input>::branch<CaseA, CaseB>::join<SelectedJoin>::to<Output>;
 ```
 
-Introduce a separate all-branches fan-in spelling. Two acceptable names are:
+The implemented all-branches fan-in spelling is:
 
 ```cpp
 pb::from<Input>::branch<CaseA, CaseB>::fan_in<FanInJoin>::to<Output>;
 ```
 
-or:
+with `join_all<JoinStage>` as a source-compatible alias:
 
 ```cpp
 pb::from<Input>::branch<CaseA, CaseB>::join_all<FanInJoin>::to<Output>;
 ```
 
-The design preference is `fan_in<JoinStage>` because it names the topology
-rather than overloading the existing `join` concept. `join_all<JoinStage>` is a
-reasonable alias only if documentation keeps `join` and `join_all` sharply
-separated.
+`fan_in<JoinStage>` remains the preferred spelling because it names the
+topology rather than overloading the existing selected-output `join` concept.
+Documentation must keep `join` and `join_all` sharply separated.
 
 Do not make `::join<...>` switch behavior based on the join stage input type.
 That would make source-compatible code silently change semantics when a join
@@ -85,9 +89,9 @@ enters one of these states:
 - `completed`: predicate returned true and the case stage produced a value
 - `failed`: predicate or case stage returned/raised an error
 
-For the first implementation slice, sequential fan-in should evaluate and run
-cases in declaration order. Later backends may schedule passing cases in
-parallel, but observable result ordering must still follow declaration order.
+For the first implementation slice, sequential fan-in evaluates and runs cases
+in declaration order. Later backends may schedule passing cases in parallel, but
+observable result ordering must still follow declaration order.
 
 Suggested sequential algorithm:
 
@@ -102,9 +106,9 @@ Suggested sequential algorithm:
 5. Notify join start/completion or failure.
 
 The first slice should not short-circuit on the first successful predicate.
-Short-circuit-on-error may be a policy option later, but the default fan-in
-contract should make every eligible case visible in the aggregate unless a
-fatal setup/contract error prevents safe execution.
+The current first slice returns on predicate/stage failure before invoking the
+join. Richer aggregation that keeps multiple failed cases visible in one
+aggregate remains a policy follow-up.
 
 ## Zero-pass behavior
 
@@ -241,9 +245,9 @@ id, and the deterministic case result state.
 
 Implementation should be staged by backend:
 
-1. Sequential fan-in only.
+1. Sequential fan-in is implemented.
    - deterministic predicate and case execution
-   - ordered aggregate values/errors
+   - ordered aggregate values for skipped/completed cases
    - runtime tests for zero/one/many pass cases
 2. Thread-pool fan-in later.
    - schedule passing case stages concurrently only after sequential semantics
@@ -256,7 +260,7 @@ Implementation should be staged by backend:
 
 ## Compile-fail diagnostics
 
-Add targeted compile-fail coverage before broad implementation:
+Targeted compile-fail coverage should include:
 
 - fan-in join stage does not accept the fan-in aggregate
 - fan-in join output does not match `.to<Output>`
@@ -307,8 +311,9 @@ stable even when completion order differs.
 
 ## Non-goals for the current wave
 
-- no public API header changes
-- no fan-in runtime implementation
 - no backend implementation
-- no descriptor/export helper field changes
+- no descriptor/export helper field changes for fan-in topology
 - no stable graph schema claim
+- no rich multi-error fan-in aggregation object yet
+- no clone/borrow/shared-view policy for non-copyable fan-in inputs yet
+- no void-output fan-in case aggregation yet

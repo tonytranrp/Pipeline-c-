@@ -13,11 +13,11 @@ struct LogEntry {
 static int side_effect_counter = 0;
 
 struct LogFn {
-  void operator()(LogEntry entry) const { ++side_effect_counter; }
+  void operator()(LogEntry entry) const { (void)entry; ++side_effect_counter; }
 };
 
 struct LogNoexceptFn {
-  void operator()(LogEntry entry) const noexcept { ++side_effect_counter; }
+  void operator()(LogEntry entry) const noexcept { (void)entry; ++side_effect_counter; }
 };
 
 using VoidLogAdapter = pb::void_adapter<LogFn, LogEntry>;
@@ -43,6 +43,7 @@ struct CountingLogger {
   int* counter = nullptr;
 
   void operator()(LogEntry entry) const {
+    (void)entry;
     if (counter) *counter += 1;
   }
 };

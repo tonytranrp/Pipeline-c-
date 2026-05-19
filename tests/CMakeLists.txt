@@ -339,6 +339,13 @@ pb_enable_pch_if_requested(pb_branch_type_list_join_compile_pass)
 add_test(NAME pb_branch_type_list_join_compile_pass COMMAND pb_branch_type_list_join_compile_pass)
 set_tests_properties(pb_branch_type_list_join_compile_pass PROPERTIES LABELS "compile-pass;branch;join;type-list")
 
+add_executable(pb_branch_fan_in_compile_pass compile_pass/branch_fan_in_compile_pass.cpp)
+target_link_libraries(pb_branch_fan_in_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_branch_fan_in_compile_pass PRIVATE)
+pb_enable_pch_if_requested(pb_branch_fan_in_compile_pass)
+add_test(NAME pb_branch_fan_in_compile_pass COMMAND pb_branch_fan_in_compile_pass)
+set_tests_properties(pb_branch_fan_in_compile_pass PROPERTIES LABELS "compile-pass;branch;fan-in;join")
+
 add_test(NAME pb_compile_fail_edge_mismatch
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/edge_mismatch.cpp
@@ -404,6 +411,13 @@ pb_apply_project_options(pb_runtime_sequential_branch_type_list_join PRIVATE)
 pb_enable_pch_if_requested(pb_runtime_sequential_branch_type_list_join)
 add_test(NAME pb_runtime_sequential_branch_type_list_join COMMAND pb_runtime_sequential_branch_type_list_join)
 set_tests_properties(pb_runtime_sequential_branch_type_list_join PROPERTIES LABELS "runtime;branch;join;type-list")
+
+add_executable(pb_runtime_sequential_branch_fan_in runtime/sequential_branch_fan_in.cpp)
+target_link_libraries(pb_runtime_sequential_branch_fan_in PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_sequential_branch_fan_in PRIVATE)
+pb_enable_pch_if_requested(pb_runtime_sequential_branch_fan_in)
+add_test(NAME pb_runtime_sequential_branch_fan_in COMMAND pb_runtime_sequential_branch_fan_in)
+set_tests_properties(pb_runtime_sequential_branch_fan_in PROPERTIES LABELS "runtime;branch;fan-in;join;observer")
 
 add_test(NAME pb_compile_fail_branch_builder_source_mismatch
   COMMAND ${CMAKE_COMMAND}
@@ -645,6 +659,54 @@ add_test(NAME pb_compile_fail_branch_type_list_join_missing_handler
 )
 set_tests_properties(pb_compile_fail_branch_type_list_join_missing_handler
   PROPERTIES LABELS "compile-fail;diagnostics;branch;join;type-list")
+
+add_test(NAME pb_compile_fail_branch_fan_in_without_branch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_fan_in_without_branch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Fan-in\ join\ requires\ a\ preceding\ branch
+    -DEXPECTED_DIAGNOSTICS=fan_in
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_branch_fan_in_without_branch
+  PROPERTIES LABELS "compile-fail;diagnostics;branch;fan-in")
+
+add_test(NAME pb_compile_fail_branch_fan_in_join_type_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_fan_in_join_type_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Fan-in\ join\ input\ mismatch
+    -DEXPECTED_DIAGNOSTICS=pb::fan_in_results
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_branch_fan_in_join_type_mismatch
+  PROPERTIES LABELS "compile-fail;diagnostics;branch;fan-in;join")
+
+add_test(NAME pb_compile_fail_branch_fan_in_move_only_input_unsupported
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_fan_in_move_only_input_unsupported.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Fan-in\ branch\ inputs\ must\ be\ copy-constructible
+    -DEXPECTED_DIAGNOSTICS=copy-constructible
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_branch_fan_in_move_only_input_unsupported
+  PROPERTIES LABELS "compile-fail;diagnostics;branch;fan-in;move-only")
+
+add_test(NAME pb_compile_fail_branch_fan_in_void_output_unsupported
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_fan_in_void_output_unsupported.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Fan-in\ branch\ stages\ must\ produce\ non-void\ outputs
+    -DEXPECTED_DIAGNOSTICS=non-void
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_branch_fan_in_void_output_unsupported
+  PROPERTIES LABELS "compile-fail;diagnostics;branch;fan-in")
 
 add_test(NAME pb_compile_fail_join_output_invalid_node_misuse
   COMMAND ${CMAKE_COMMAND}

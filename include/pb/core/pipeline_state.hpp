@@ -1,9 +1,11 @@
 #pragma once
 
 #include <concepts>
+#include <optional>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <variant>
 
 #include "pb/core/concepts.hpp"
@@ -17,6 +19,12 @@ struct branch_case;
 
 template <class JoinStage>
 struct join_node;
+
+template <std::size_t Index, class T>
+struct fan_in_case_result;
+
+template <class... CaseResults>
+struct fan_in_results;
 
 template <class... Cases>
 struct branch_outputs;
@@ -38,6 +46,15 @@ struct branch_raw_output_types;
 
 template <class... Cases>
 struct branch_unified_output;
+
+template <class... Cases>
+struct fan_in_output;
+
+template <class... Cases>
+using fan_in_output_t = typename fan_in_output<Cases...>::type;
+
+template <class Input, class Current, class... Stages>
+struct pipeline_state;
 
 namespace detail {
 
@@ -316,6 +333,15 @@ struct is_selected_branch_node : std::false_type {};
 template <class... Cases>
 struct is_selected_branch_node<selected_branch_node<Cases...>> : std::true_type {};
 
+template <class... Cases>
+struct fan_in_branch_node;
+
+template <class>
+struct is_fan_in_branch_node : std::false_type {};
+
+template <class... Cases>
+struct is_fan_in_branch_node<fan_in_branch_node<Cases...>> : std::true_type {};
+
 template <class Stage, bool IsSelectedBranch = is_selected_branch_node<Stage>::value>
 struct branch_outputs_for_stage {
   using type = void;
@@ -335,7 +361,82 @@ template <class First, class... Rest>
 struct last_stage_or_void<First, Rest...> {
   using type = meta::back_t<meta::type_list<First, Rest...>>;
 };
+
+template <class Input, class Current, class List>
+struct pipeline_state_from_list;
+
+template <class Input, class Current, class... Stages>
+struct pipeline_state_from_list<Input, Current, meta::type_list<Stages...>> {
+  using type = pipeline_state<Input, Current, Stages...>;
+};
+
+template <class IndexSequence, class... Cases>
+struct fan_in_results_from_cases;
+
+template <std::size_t... Indexes, class... Cases>
+struct fan_in_results_from_cases<std::index_sequence<Indexes...>, Cases...> {
+  using type = fan_in_results<fan_in_case_result<Indexes, typename branch_case_output<Cases>::output_type>...>;
+};
+
+template <class LastStage, bool IsSelectedBranch, class JoinStage>
+struct fan_in_stage_from_last {
+  static_assert(always_false_v<LastStage>,
+                "Fan-in join requires a preceding branch: use pb::from<...>::branch<...>::fan_in<Stage>");
+};
+
+template <class... Cases, class JoinStage>
+struct fan_in_stage_from_last<selected_branch_node<Cases...>, true, JoinStage> {
+  using type = fan_in_branch_node<Cases...>;
+};
 } // namespace detail
+
+enum class fan_in_case_state {
+  skipped,
+  completed,
+};
+
+template <std::size_t Index, class T>
+struct fan_in_case_result {
+  static constexpr std::size_t index = Index;
+  using value_type = T;
+
+  fan_in_case_state state{fan_in_case_state::skipped};
+  std::optional<T> value{};
+
+  [[nodiscard]] constexpr bool selected() const noexcept { return state == fan_in_case_state::completed; }
+  [[nodiscard]] constexpr bool has_value() const noexcept { return value.has_value(); }
+  [[nodiscard]] constexpr T& get() & { return *value; }
+  [[nodiscard]] constexpr const T& get() const& { return *value; }
+  [[nodiscard]] constexpr T&& get() && { return std::move(*value); }
+};
+
+template <class... CaseResults>
+struct fan_in_results {
+  using cases_type = std::tuple<CaseResults...>;
+  static constexpr std::size_t case_count = sizeof...(CaseResults);
+
+  cases_type cases{};
+
+  template <std::size_t Index>
+  [[nodiscard]] constexpr auto& get() & {
+    return std::get<Index>(cases);
+  }
+
+  template <std::size_t Index>
+  [[nodiscard]] constexpr const auto& get() const& {
+    return std::get<Index>(cases);
+  }
+
+  template <std::size_t Index>
+  [[nodiscard]] constexpr auto&& get() && {
+    return std::get<Index>(std::move(cases));
+  }
+};
+
+template <class... Cases>
+struct fan_in_output {
+  using type = typename detail::fan_in_results_from_cases<std::index_sequence_for<Cases...>, Cases...>::type;
+};
 
 template <class Predicate, class BranchStage, fixed_string Label>
 struct branch_case {
@@ -455,6 +556,37 @@ struct selected_branch_node {
   [[nodiscard]] static constexpr auto stage_name() noexcept { return "branch"; }
   [[nodiscard]] static constexpr auto stage_key() noexcept { return "branch"; }
 };
+
+template <class... Cases>
+struct fan_in_branch_node {
+  using cases = meta::type_list<Cases...>;
+  using input_type = typename branch_node_input<Cases...>::type;
+  using branch_outputs_type = branch_outputs<Cases...>;
+  using output_types = typename branch_outputs_type::output_types;
+
+  static_assert((!std::is_void_v<typename branch_case_output<Cases>::output_type> && ...),
+                "Fan-in branch stages must produce non-void outputs in the first sequential fan-in slice");
+
+  using output_type = fan_in_output_t<Cases...>;
+
+  static constexpr std::size_t case_count = sizeof...(Cases);
+
+  static_assert(std::copy_constructible<input_type>,
+                "Fan-in branch inputs must be copy-constructible in the sequential fan-in backend; "
+                "all passing branch stages receive an independent copy of the branch input");
+  static_assert((std::is_invocable_v<typename Cases::predicate_type, const input_type&> && ...),
+                "Fan-in branch predicates must be callable with const input_type& so every predicate can inspect "
+                "the input before any passing branch stage receives a copy");
+
+  using predicate_tuple = std::tuple<typename Cases::predicate_type...>;
+  using branch_stage_tuple = std::tuple<typename Cases::stage_type...>;
+
+  predicate_tuple predicates_{};
+  branch_stage_tuple branch_stages_{};
+
+  [[nodiscard]] static constexpr auto stage_name() noexcept { return "fan_in"; }
+  [[nodiscard]] static constexpr auto stage_key() noexcept { return "fan_in"; }
+};
 } // namespace detail
 
 template <class Outputs, class Output>
@@ -533,6 +665,34 @@ struct append_join<pipeline_state<Input, Current, Stages...>, JoinStage> {
   using type = pipeline_state<Input, stage_output_t<JoinStage>, Stages..., JoinStage>;
 };
 
+template <class State, class JoinStage>
+struct append_fan_in;
+
+template <class Input, class Current, class... Stages, class JoinStage>
+struct append_fan_in<pipeline_state<Input, Current, Stages...>, JoinStage> {
+  using last_stage = typename detail::last_stage_or_void<Stages...>::type;
+
+  static_assert(!std::is_same_v<last_stage, void>,
+                "Fan-in join requires a preceding branch: use pb::from<...>::branch<...>::fan_in<Stage>");
+
+  static_assert(detail::is_selected_branch_node<last_stage>::value,
+                "Fan-in join must follow a branch node: pipeline_state::fan_in is only valid after ::branch<...>");
+
+  static_assert(Stage<JoinStage>, "Fan-in join stage is invalid: define input_type and output_type");
+
+  using fan_in_stage =
+      typename detail::fan_in_stage_from_last<last_stage, detail::is_selected_branch_node<last_stage>::value,
+                                              JoinStage>::type;
+
+  static_assert(std::same_as<stage_input_t<JoinStage>, typename fan_in_stage::output_type>,
+                "Fan-in join input mismatch: join stage input_type must match pb::fan_in_results<...> for the "
+                "preceding branch cases");
+
+  using replaced_stages = meta::replace_back_t<meta::type_list<Stages...>, fan_in_stage>;
+  using with_join = meta::push_back_t<replaced_stages, JoinStage>;
+  using type = typename detail::pipeline_state_from_list<Input, stage_output_t<JoinStage>, with_join>::type;
+};
+
 template <class State, class Output>
 struct finalize_pipeline;
 
@@ -577,6 +737,12 @@ struct pipeline_state {
 
   template <class StageType>
   using join = typename detail::append_join<pipeline_state, StageType>::type;
+
+  template <class StageType>
+  using fan_in = typename detail::append_fan_in<pipeline_state, StageType>::type;
+
+  template <class StageType>
+  using join_all = fan_in<StageType>;
 
   template <class Output>
   using to = typename detail::finalize_pipeline<pipeline_state, Output>::type;

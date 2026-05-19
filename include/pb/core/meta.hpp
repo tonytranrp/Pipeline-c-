@@ -26,6 +26,29 @@ struct push_back<type_list<Ts...>, T> { using type = type_list<Ts..., T>; };
 template <class List, class T>
 using push_back_t = typename push_back<List, T>::type;
 
+template <class T, class List>
+struct push_front;
+
+template <class T, class... Ts>
+struct push_front<T, type_list<Ts...>> { using type = type_list<T, Ts...>; };
+
+template <class T, class List>
+using push_front_t = typename push_front<T, List>::type;
+
+template <class List, class T>
+struct replace_back;
+
+template <class Last, class T>
+struct replace_back<type_list<Last>, T> { using type = type_list<T>; };
+
+template <class First, class Second, class... Rest, class T>
+struct replace_back<type_list<First, Second, Rest...>, T> {
+  using type = push_front_t<First, typename replace_back<type_list<Second, Rest...>, T>::type>;
+};
+
+template <class List, class T>
+using replace_back_t = typename replace_back<List, T>::type;
+
 template <class List, class T>
 struct contains;
 
@@ -81,6 +104,10 @@ using ::pb::meta::contains;
 using ::pb::meta::front_t;
 using ::pb::meta::push_back;
 using ::pb::meta::push_back_t;
+using ::pb::meta::push_front;
+using ::pb::meta::push_front_t;
+using ::pb::meta::replace_back;
+using ::pb::meta::replace_back_t;
 using ::pb::meta::size;
 using ::pb::meta::size_v;
 using ::pb::meta::transform;

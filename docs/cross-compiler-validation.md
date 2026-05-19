@@ -38,7 +38,7 @@ jobs=Clang dev preset, Package release preset, Benchmark smoke preset
 
 This pass supports claims that the current tested surface configures, builds, and passes its test suite on the matrix above. It does **not** mean these roadmap items are implemented:
 
-- parallel all-branches fan-in / true backend multi-input join execution beyond selected-output type-list joins
+- backend/parallel fan-in / true backend multi-input join execution beyond the current sequential fan-in slice
 - stable descriptor/export compatibility beyond descriptor-record-backed helper DOT/JSON output
 - CLI/file export of user pipeline definitions
 - thread-pool / oneTBB / Taskflow / stdexec pipeline backends

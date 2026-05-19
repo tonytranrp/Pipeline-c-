@@ -16,7 +16,7 @@ Sequential branch routing with optional join stages is now supported for homogen
 ## Not yet supported
 
 ### Parallel fan-in / all-branch joins
-Branch cases with different output types currently produce a selected branch result: either the single homogeneous output type or a `std::variant<...>` for heterogeneous cases. A join may declare `pb::meta::type_list<...>` to select overloads for that one routed output, but true all-branches fan-in that runs multiple branch paths and passes separate typed values to a join is not implemented.
+Branch cases with different output types in the selected-output path produce a selected branch result: either the single homogeneous output type or a `std::variant<...>` for heterogeneous cases. A selected-output join may declare `pb::meta::type_list<...>` to select overloads for that one routed output. Explicit all-passing sequential fan-in is available separately through `::fan_in<JoinStage>` / `::join_all<JoinStage>`, where the join receives `pb::fan_in_results<...>`. Backend/parallel fan-in and richer fan-in error aggregation are not implemented.
 
 Current type model summary:
 

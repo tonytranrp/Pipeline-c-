@@ -1,6 +1,5 @@
 #include <pb/pipeline.hpp>
 
-#include <cassert>
 #include <string>
 #include <vector>
 
@@ -58,6 +57,7 @@ struct CountingLogger {
   explicit CountingLogger(int* c) : counter(c) {}
 
   void operator()(Processed p) const {
+    (void)p;
     if (counter) *counter += 1;
   }
 };
@@ -125,9 +125,9 @@ int main() {
     auto adapter = pb::void_adapter<SideEffectLogger, Processed>{logger};
     Processed input{42};
     auto result = adapter(input);
-    assert(result.value == 42); // pass-through
-    assert(log.size() == 1);
-    assert(log[0] == "test1:42");
+    if (result.value != 42) return 1; // pass-through
+    if (log.size() != 1) return 1;
+    if (log[0] != "test1:42") return 1;
   }
 
   // Test 2: noexcept void_adapter pass-through
@@ -137,9 +137,9 @@ int main() {
     auto adapter = pb::void_adapter<SideEffectNoexceptLogger, Processed>{logger};
     Processed input{17};
     auto result = adapter(input);
-    assert(result.value == 17); // pass-through
-    assert(log.size() == 1);
-    assert(log[0] == "test2:noexcept:17");
+    if (result.value != 17) return 1; // pass-through
+    if (log.size() != 1) return 1;
+    if (log[0] != "test2:noexcept:17") return 1;
   }
 
   // Test 3: Default-constructible functor void_adapter
@@ -149,8 +149,8 @@ int main() {
     auto adapter = pb::void_adapter<CountingLogger, Processed>{logger};
     Processed input{5};
     auto result = adapter(input);
-    assert(result.value == 5);
-    assert(counter == 1);
+    if (result.value != 5) return 1;
+    if (counter != 1) return 1;
   }
 
   // Test 4: Pipeline with void adapter (construct_per_run — default-constructed logger)
@@ -160,7 +160,7 @@ int main() {
     auto engine = pb::compile<FnVoidPipeline>(pb::runtime::sequential{});
 
     auto result = engine.run(Input{5});
-    assert(result.value == 12); // (5+1)*2 = 12
+    if (result.value != 12) return 1; // (5+1)*2 = 12
   }
 
   // Test 5: Pipeline with noexcept void adapter
@@ -168,7 +168,7 @@ int main() {
     auto engine = pb::compile<NoexceptFnVoidPipeline>(pb::runtime::sequential{});
 
     auto result = engine.run(Input{3});
-    assert(result.value == 8); // (3+1)*2 = 8
+    if (result.value != 8) return 1; // (3+1)*2 = 8
   }
 
   // Test 6: Pipeline with functor void adapter (construct_per_run)
@@ -176,7 +176,7 @@ int main() {
     auto engine = pb::compile<FunctorVoidPipeline>(pb::runtime::sequential{});
 
     auto result = engine.run(Input{10});
-    assert(result.value == 22); // (10+1)*2 = 22
+    if (result.value != 22) return 1; // (10+1)*2 = 22
     // Functor with null counter still passes through without crashing
   }
 
@@ -195,7 +195,7 @@ int main() {
     auto engine = pb::compile<VoidFinalPipeline>(pb::runtime::sequential{});
 
     auto result = engine.run(Input{7});
-    assert(result.value == 8); // 7+1=8
+    if (result.value != 8) return 1; // 7+1=8
   }
 
   // Test 9: Multiple void adapters chained
@@ -206,7 +206,7 @@ int main() {
     auto engine = pb::compile<MultiVoidPipeline>(pb::runtime::sequential{});
 
     auto result = engine.run(Input{1});
-    assert(result.value == 4); // (1+1)*2 = 4
+    if (result.value != 4) return 1; // (1+1)*2 = 4
   }
 
   // Test 10: void_adapter satisfies adapted_stage
@@ -222,8 +222,8 @@ int main() {
     auto engine = pb::compile<FnVoidPipeline>(pb::runtime::sequential{});
 
     auto result = engine.try_run(Input{2});
-    assert(result.has_value());
-    assert(result.value().value == 6); // (2+1)*2 = 6
+    if (!result.has_value()) return 1;
+    if (result.value().value != 6) return 1; // (2+1)*2 = 6
   }
 
   return 0;
