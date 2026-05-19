@@ -2,6 +2,7 @@
 
 #include <concepts>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
@@ -393,6 +394,7 @@ struct fan_in_stage_from_last<selected_branch_node<Cases...>, true, JoinStage> {
 enum class fan_in_case_state {
   skipped,
   completed,
+  failed,
 };
 
 template <std::size_t Index, class T>
@@ -402,12 +404,60 @@ struct fan_in_case_result {
 
   fan_in_case_state state{fan_in_case_state::skipped};
   std::optional<T> value{};
+  std::optional<std::string> diagnostic{};
 
   [[nodiscard]] constexpr bool selected() const noexcept { return state == fan_in_case_state::completed; }
+  [[nodiscard]] constexpr bool completed() const noexcept { return state == fan_in_case_state::completed; }
+  [[nodiscard]] constexpr bool skipped() const noexcept { return state == fan_in_case_state::skipped; }
+  [[nodiscard]] constexpr bool failed() const noexcept { return state == fan_in_case_state::failed; }
   [[nodiscard]] constexpr bool has_value() const noexcept { return value.has_value(); }
   [[nodiscard]] constexpr T& get() & { return *value; }
   [[nodiscard]] constexpr const T& get() const& { return *value; }
   [[nodiscard]] constexpr T&& get() && { return std::move(*value); }
+  [[nodiscard]] constexpr std::string_view diagnostic_message() const noexcept {
+    return diagnostic.has_value() ? std::string_view{*diagnostic} : std::string_view{};
+  }
+
+  template <class Value>
+  void mark_completed(Value&& next_value) {
+    state = fan_in_case_state::completed;
+    value.emplace(std::forward<Value>(next_value));
+    diagnostic.reset();
+  }
+
+  void mark_failed(std::string message) {
+    state = fan_in_case_state::failed;
+    value.reset();
+    diagnostic.emplace(std::move(message));
+  }
+};
+
+template <std::size_t Index>
+struct fan_in_case_result<Index, void> {
+  static constexpr std::size_t index = Index;
+  using value_type = void;
+
+  fan_in_case_state state{fan_in_case_state::skipped};
+  std::optional<std::string> diagnostic{};
+
+  [[nodiscard]] constexpr bool selected() const noexcept { return state == fan_in_case_state::completed; }
+  [[nodiscard]] constexpr bool completed() const noexcept { return state == fan_in_case_state::completed; }
+  [[nodiscard]] constexpr bool skipped() const noexcept { return state == fan_in_case_state::skipped; }
+  [[nodiscard]] constexpr bool failed() const noexcept { return state == fan_in_case_state::failed; }
+  [[nodiscard]] constexpr bool has_value() const noexcept { return state == fan_in_case_state::completed; }
+  [[nodiscard]] constexpr std::string_view diagnostic_message() const noexcept {
+    return diagnostic.has_value() ? std::string_view{*diagnostic} : std::string_view{};
+  }
+
+  void mark_completed() noexcept {
+    state = fan_in_case_state::completed;
+    diagnostic.reset();
+  }
+
+  void mark_failed(std::string message) {
+    state = fan_in_case_state::failed;
+    diagnostic.emplace(std::move(message));
+  }
 };
 
 template <class... CaseResults>
@@ -564,16 +614,14 @@ struct fan_in_branch_node {
   using branch_outputs_type = branch_outputs<Cases...>;
   using output_types = typename branch_outputs_type::output_types;
 
-  static_assert((!std::is_void_v<typename branch_case_output<Cases>::output_type> && ...),
-                "Fan-in branch stages must produce non-void outputs in the first sequential fan-in slice");
-
   using output_type = fan_in_output_t<Cases...>;
 
   static constexpr std::size_t case_count = sizeof...(Cases);
 
-  static_assert(std::copy_constructible<input_type>,
-                "Fan-in branch inputs must be copy-constructible in the sequential fan-in backend; "
-                "all passing branch stages receive an independent copy of the branch input");
+  static_assert(std::copy_constructible<input_type> ||
+                    (std::is_invocable_v<typename Cases::stage_type&, const input_type&> && ...),
+                "Fan-in branch inputs must be copy-constructible, or every fan-in branch stage must be callable "
+                "with const input_type& for borrowed-input fan-in execution");
   static_assert((std::is_invocable_v<typename Cases::predicate_type, const input_type&> && ...),
                 "Fan-in branch predicates must be callable with const input_type& so every predicate can inspect "
                 "the input before any passing branch stage receives a copy");

@@ -70,15 +70,15 @@ Each theme below records four things:
 
 ### 5. Branch/join topology
 
-- **Current repository evidence:** Public branch/join DSL with compile-time validation, runtime sequential branch execution (first-match-wins with short-circuit), observer events (`on_case_selected`, `on_case_skipped`), stateful storage, join stages, error propagation, first-slice heterogeneous outputs through `std::variant`, selected-output type-list joins, move-only selected-branch input consumption, and comprehensive tests and examples.
-- **Current support level:** **Supported for homogeneous outputs, first-slice heterogeneous outputs through `std::variant`, selected-output type-list joins, and move-only selected-branch input consumption.**
+- **Current repository evidence:** Public branch/join DSL with compile-time validation, runtime sequential branch execution (first-match-wins with short-circuit), observer events (`on_case_selected`, `on_case_skipped`, `on_case_failed`), stateful storage, join stages, error propagation, heterogeneous outputs through `std::variant`, selected-output type-list joins, explicit sequential fan-in with skipped/completed/failed slots, void-output cases, borrowed move-only fan-in, move-only selected-branch input consumption, and comprehensive tests and examples.
+- **Current support level:** **Supported for homogeneous outputs, heterogeneous outputs through `std::variant`, selected-output type-list joins, explicit sequential fan-in, borrowed move-only fan-in, and move-only selected-branch input consumption.**
 - **Proof points:**
   - `docs/branch-join-roadmap.md`
   - `include/pb/core/pipeline_state.hpp` (public `::branch<...>::join<...>` DSL)
   - `include/pb/runtime/sequential.hpp` (runtime branch routing with storage)
   - `tests/runtime/sequential_branch_comprehensive.cpp`
   - `examples/branch_routing_demo.cpp`, `examples/branch_error_handling.cpp`
-- **Safe next slice:** harden the new sequential fan-in slice, then keep backend/parallel fan-in, broader move-only predicate patterns, and backend branch execution as separate design/implementation phases.
+- **Safe next slice:** keep backend/parallel fan-in, cancellation/scheduling policy, broader move-only predicate patterns, and backend branch execution as separate design/implementation phases.
 
 ### 6. Graph export
 
@@ -148,7 +148,7 @@ This queue is the durable docs-lane view of the current missing-feature push. It
 | 4 | Explicit stateful stage storage policy | Narrow public guarantee exists for default-initializable sequential stages: per-run construction versus engine-stored state, including non-copyable owned stage state, is covered by policy aliases, runtime tests, and examples. Borrowed/shared/unique ownership policies, reset policy, and thread-local future-backend storage remain gaps. | API decisions, tests, and docs for borrowed/reference/shared/unique ownership, reset behavior, and future parallel/thread-local storage. |
 | 5 | Branch output compatibility/routing validation | Accepted validation evidence exists; keep the claim scoped to compile-time compatibility validation until final candidate logs are attached. | Candidate branch includes branch-output validation implementation plus compatible/incompatible compile-pass/compile-fail tests. |
 | 6 | Join consumption/compatibility validation | Accepted validation evidence exists; keep the claim scoped to join consumption/compatibility validation, not runtime execution. | Candidate branch includes join validation implementation plus misuse/mismatch compile-fail tests. |
-| 7 | Sequential branch execution | **Done for the supported slice.** Homogeneous outputs, first-slice heterogeneous outputs through `std::variant`, selected-output type-list joins, move-only selected-branch input consumption, selected-output join stages, explicit sequential fan-in joins, observer events, stateful storage, compile-time join validation, runtime tests, and examples are all present. | Keep docs/examples aligned with supported boundary; backend/parallel fan-in, richer fan-in aggregation policy, and backend branch execution remain future work. |
+| 7 | Sequential branch execution | **Done for the supported slice.** Homogeneous outputs, heterogeneous outputs through `std::variant`, selected-output type-list joins, move-only selected-branch input consumption, selected-output join stages, explicit sequential fan-in joins with failed-case diagnostics, void-output cases, borrowed move-only fan-in, observer events, stateful storage, compile-time join validation, runtime tests, and examples are all present. | Keep docs/examples aligned with supported boundary; backend/parallel fan-in, cancellation/scheduling policy, and backend branch execution remain future work. |
 | 8 | Runtime descriptor/export contract | Compile-time/diagnostic metadata exists; stable runtime export remains roadmap. | Versioned schema, ownership rules, and tests for the public descriptor/export surface. |
 | 9 | DOT/JSON graph export | Partial descriptor-record-backed DOT/JSON helpers exist for linear and supported branch pipelines; stable descriptor/export compatibility remains roadmap-only. | Candidate export evidence plus clear distinction between helper output and stable schemas, golden fixtures, CLI/file export, and backend graph-execution claims. |
 | 10 | Backend feature matrix | Documented in `docs/optional-backends-roadmap.md`; backend support remains roadmap-only beyond sequential. | Keep the matrix current before any backend implementation/support claim. |
@@ -162,7 +162,7 @@ The current repository can safely claim:
 - linear typed pipeline validation
 - explicit stage metadata and compile-time introspection helpers
 - sequential runtime execution for validated linear pipelines
-- sequential branch execution with optional join stages, first-slice heterogeneous outputs through `std::variant`, and move-only selected-branch input consumption
+- sequential branch execution with optional join stages, heterogeneous outputs through `std::variant`, explicit sequential fan-in with skipped/completed/failed slots, borrowed move-only fan-in, and move-only selected-branch input consumption
 - compile-pass, compile-fail, runtime, example, package-consumer, and benchmark smoke scaffolding
 - release-readiness documentation plus GitHub GCC/Clang/MSVC/package validation evidence for code SHA `f56fa54` and local current-HEAD package evidence for `4d7127c`
 

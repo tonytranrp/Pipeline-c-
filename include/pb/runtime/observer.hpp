@@ -15,6 +15,8 @@ struct observer {
                                 const stage_id& /*predicate_id*/) {}
   virtual void on_case_skipped(const stage_id& /*branch_id*/, std::size_t /*case_index*/,
                                const stage_id& /*predicate_id*/) {}
+  virtual void on_case_failed(const stage_id& /*branch_id*/, std::size_t /*case_index*/,
+                              const stage_id& /*case_stage_id*/, const error& /*diagnostic*/) {}
 };
 
 } // namespace pb::runtime

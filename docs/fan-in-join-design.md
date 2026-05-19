@@ -3,9 +3,7 @@
 This document describes the all-branches fan-in join design for branch
 pipelines and records which parts are implemented today. The first sequential
 runtime slice is now implemented through `::fan_in<JoinStage>` and
-`::join_all<JoinStage>`. Backend/parallel scheduling, richer failed-case
-aggregation, stable descriptor/export topology, and long-term schema
-compatibility remain future work.
+`::join_all<JoinStage>`. Backend/parallel scheduling, cancellation/error policy extensions, stable descriptor/export topology, and long-term schema compatibility remain future work.
 
 ## Current selected-output join
 
@@ -39,8 +37,7 @@ produce values for the join.
 All-branches fan-in is an explicit, separate feature. It executes a set of
 branch cases, collects each case outcome in deterministic case order, and
 invokes a join stage with a complete fan-in value model. The implemented first
-slice is sequential and records `skipped` / `completed` case states; richer
-failed-case aggregation remains a follow-up policy.
+slice is sequential and records `skipped`, `completed`, and `failed` case states with diagnostics. Backend/parallel aggregation and cancellation policy remain follow-up work.
 
 The design goals are:
 
@@ -101,14 +98,11 @@ Suggested sequential algorithm:
    - run the predicate against the branch input
    - if false, record `skipped`
    - if true, run the case stage and record `completed` or `failed`
-3. If errors exist, apply the error aggregation policy.
-4. Invoke the fan-in join stage with the ordered aggregate.
+3. Record predicate/stage failures into the affected case slots and continue later cases.
+4. Invoke the fan-in join stage with the ordered aggregate so domain code can inspect skipped/completed/failed slots.
 5. Notify join start/completion or failure.
 
-The first slice should not short-circuit on the first successful predicate.
-The current first slice returns on predicate/stage failure before invoking the
-join. Richer aggregation that keeps multiple failed cases visible in one
-aggregate remains a policy follow-up.
+The sequential slice does not short-circuit on the first successful predicate or the first predicate/stage failure. Failed cases remain visible in the aggregate through `failed()` and `diagnostic_message()`. Richer domain-specific error envelopes and backend cancellation policies remain future policy work.
 
 ## Zero-pass behavior
 
@@ -125,21 +119,14 @@ should report a clear contract error before the join runs.
 
 Fan-in needs an ordered error model because more than one case can fail.
 
-Recommended first-slice behavior:
+Current sequential behavior:
 
-- collect predicate and case-stage errors in case order
-- do not invoke the join if any case is `failed`
-- return a fan-in aggregate error that contains:
-  - branch stage id
-  - ordered per-case errors
-  - case index
-  - predicate/stage role
-  - original error category and message
+- predicate and case-stage errors are recorded in their case slots in case order
+- later cases continue after an earlier failure
+- the join is invoked with the aggregate so domain code can inspect `failed()` and `diagnostic_message()` per case
+- observer/trace hooks report case failure events while preserving ordinary stage failure/exception events
 
-If the current public `pb::runtime::error` cannot carry multiple nested errors,
-start with a single `contract_violation` or stage error whose message summarizes
-all failing case indexes, and keep a richer `fan_in_error` design as the next
-slice. Do not lose deterministic ordering.
+Future backend/policy work may add a richer `fan_in_error` envelope, fail-fast policy, or cancellation policy. Those policies must preserve deterministic case ordering in the reported aggregate or error record.
 
 ## Ordering rules
 
@@ -207,9 +194,7 @@ Recommended rules:
 - predicates should inspect `const input_type&`
 - if more than one case can execute, case stages should accept `const input_type&`
   or an explicitly cloned/projected value
-- move-only fan-in input should be rejected unless the branch declares a cloning,
-  projection, or shared-view policy that can provide each passing case with a
-  valid input
+- move-only fan-in input is supported when every passing case stage borrows through `const input_type&`; by-value case stages still require a copy-constructible input or a future cloning/projection/shared-view policy
 - diagnostics must explain that all-branches fan-in cannot consume one move-only
   input by value in multiple cases
 
@@ -247,8 +232,8 @@ Implementation should be staged by backend:
 
 1. Sequential fan-in is implemented.
    - deterministic predicate and case execution
-   - ordered aggregate values for skipped/completed cases
-   - runtime tests for zero/one/many pass cases
+   - ordered aggregate values for skipped/completed/failed cases
+   - runtime tests for zero/one/many pass cases, failure aggregation, void-output cases, and borrowed move-only input
 2. Thread-pool fan-in later.
    - schedule passing case stages concurrently only after sequential semantics
      are fixed
@@ -288,8 +273,7 @@ Add runtime tests in small slices:
 - mixed skipped/completed/failed ordering is deterministic
 - observer events occur in the documented order for sequential fan-in
 - move-only input by-value fan-in is rejected at compile time
-- join is not invoked when the initial error aggregation policy says errors are
-  fatal
+- join receives failed slots under the current aggregate policy
 
 After thread-pool support exists, add scheduling tests that prove result order is
 stable even when completion order differs.
@@ -303,7 +287,7 @@ stable even when completion order differs.
 4. Add compile-fail tests for invalid fan-in DSL and type contracts.
 5. Implement sequential fan-in execution with ordered case results.
 6. Add observer/trace fan-in event coverage.
-7. Add runtime tests for zero/one/many pass cases and error aggregation.
+7. Add runtime tests for zero/one/many pass cases, error aggregation, void-output aggregation, and borrowed move-only input.
 8. Document move-only input restrictions and diagnostics.
 9. Only after sequential semantics stabilize, design thread-pool scheduling.
 10. Only after runtime semantics stabilize, update descriptor/export helpers and
@@ -314,6 +298,6 @@ stable even when completion order differs.
 - no backend implementation
 - no descriptor/export helper field changes for fan-in topology
 - no stable graph schema claim
-- no rich multi-error fan-in aggregation object yet
-- no clone/borrow/shared-view policy for non-copyable fan-in inputs yet
-- no void-output fan-in case aggregation yet
+- no backend/parallel cancellation or scheduling policy yet
+- no rich domain-specific multi-error envelope beyond per-case diagnostic strings yet
+- no clone/projection/shared-view policy for owned non-copyable fan-in inputs yet

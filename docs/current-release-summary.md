@@ -19,7 +19,7 @@ Status snapshot for the current branch/export, compile-time benchmark, sequentia
 - Homogeneous branch outputs and variant-based heterogeneous branch outputs are supported, including duplicate output alternatives preserved by `std::variant` index.
 - Type-list selected-output joins dispatch by C++ type; duplicate same-type branch outputs share the same overload unless the user encodes case identity into the output type.
 - Move-only selected-branch input consumption is supported when predicates inspect by `const input_type&`; consuming predicates for move-only inputs remain unsupported and have negative compile-fail coverage.
-- Explicit sequential fan-in joins are supported through `::fan_in<JoinStage>` / `::join_all<JoinStage>`; all predicates are evaluated, all passing cases run in declaration order, zero passing cases are valid, duplicate same-type outputs are distinguished by case index in `pb::fan_in_case_result<I, T>`, and backend/parallel fan-in remains roadmap-only.
+- Explicit sequential fan-in joins are supported through `::fan_in<JoinStage>` / `::join_all<JoinStage>`; all predicates are evaluated, all passing cases run in declaration order, zero passing cases are valid, duplicate same-type outputs are distinguished by case index in `pb::fan_in_case_result<I, T>`, failed predicate/stage cases carry diagnostics, void-output cases aggregate without placeholder values, borrowed move-only fan-in is supported when every case stage accepts `const input_type&`, and backend/parallel fan-in remains roadmap-only.
 - Stateful branch predicates/stages are covered under `pb::runtime::stateful_sequential`, and predicate invocation uses const-input semantics in both per-run and stateful paths.
 - DOT/JSON helpers cover linear and selected-output branch pipelines, including descriptor-record-backed branch helper rendering, JSON branch topology detection, current top-level JSON fields (`schema_version`, `topology`, `stage_count`, `edge_count`, `stages`, `edges`), branch case identity fields, DOT label escaping, JSON string escaping, and helper-output golden regressions for `pb.core.graph.v1`.
 - Compile-time/header smoke targets cover public header inclusion plus representative 5-stage and 50-stage chains through the `pb_compile_time_benchmarks` aggregate target.
@@ -28,7 +28,7 @@ Status snapshot for the current branch/export, compile-time benchmark, sequentia
 
 ## What must stay roadmap-only
 
-- Backend/parallel fan-in / true backend multi-input join execution beyond the current sequential fan-in join model, plus richer fan-in failure aggregation.
+- Backend/parallel fan-in / true backend multi-input join execution beyond the current sequential fan-in join model, plus backend cancellation/scheduling/error policy extensions.
 - Stable descriptor/export schemas and release-grade compatibility fixtures beyond the current descriptor-record-backed helper output.
 - CLI/file export as a stable public contract for user pipeline definitions.
 - Thread-pool, oneTBB, Taskflow, or stdexec pipeline executor backends.
@@ -76,7 +76,7 @@ See [Cross-Compiler Validation Status](cross-compiler-validation.md) for the det
 
 ## PR summary draft
 
-- Added the first explicit sequential fan-in slice while preserving selected-output branch/join behavior; backend/parallel fan-in joins and richer failure aggregation remain out of scope.
+- Added and hardened the explicit sequential fan-in slice while preserving selected-output branch/join behavior; backend/parallel fan-in joins and backend cancellation/scheduling policies remain out of scope.
 - Hardened DOT/JSON helper output for supported linear and selected-output branch shapes, including branch identity metadata and JSON/DOT escaping coverage.
 - Added developer-preset compile-time/header benchmark smoke targets and the aggregate `pb_compile_time_benchmarks` target; no timing thresholds are enforced.
 - Converted Release smoke tests from assert-only checks to explicit aborting test helpers, keeping Release/NDEBUG checks meaningful and warning-clean.

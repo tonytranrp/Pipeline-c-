@@ -22,6 +22,7 @@ enum class trace_event_kind : std::uint8_t {
   stage_exception,
   case_selected,
   case_skipped,
+  case_failed,
   pipeline_start,
   pipeline_complete,
 };
@@ -110,6 +111,16 @@ public:
                      .case_index = case_index});
   }
 
+  void on_case_failed(const stage_id& branch_id, std::size_t case_index,
+                      const stage_id& /*case_stage_id*/, const error& diagnostic) override {
+    emit(trace_event{.kind = trace_event_kind::case_failed,
+                     .stage_key = branch_id.key,
+                     .stage_name = branch_id.name,
+                     .case_index = case_index,
+                     .has_error = true,
+                     .diagnostic = diagnostic});
+  }
+
 private:
   void emit(const trace_event& event) {
     if (sink_ != nullptr) {
@@ -134,6 +145,8 @@ private:
     return "case_selected";
   case trace_event_kind::case_skipped:
     return "case_skipped";
+  case trace_event_kind::case_failed:
+    return "case_failed";
   case trace_event_kind::pipeline_start:
     return "pipeline_start";
   case trace_event_kind::pipeline_complete:
@@ -185,7 +198,8 @@ inline void append_stage_json(std::ostream& stream, const trace_event& event) {
   stream << ",\"stage_index\":" << event.stage_index;
   if (event.case_index != 0 ||
       event.kind == trace_event_kind::case_selected ||
-      event.kind == trace_event_kind::case_skipped) {
+      event.kind == trace_event_kind::case_skipped ||
+      event.kind == trace_event_kind::case_failed) {
     stream << ",\"case_index\":" << event.case_index;
   }
   stream << '}';

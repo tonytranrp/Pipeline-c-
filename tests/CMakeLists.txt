@@ -346,6 +346,14 @@ pb_enable_pch_if_requested(pb_branch_fan_in_compile_pass)
 add_test(NAME pb_branch_fan_in_compile_pass COMMAND pb_branch_fan_in_compile_pass)
 set_tests_properties(pb_branch_fan_in_compile_pass PROPERTIES LABELS "compile-pass;branch;fan-in;join")
 
+add_executable(pb_branch_fan_in_void_output_compile_pass compile_pass/branch_fan_in_void_output.cpp)
+target_link_libraries(pb_branch_fan_in_void_output_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_branch_fan_in_void_output_compile_pass PRIVATE)
+pb_enable_pch_if_requested(pb_branch_fan_in_void_output_compile_pass)
+add_test(NAME pb_branch_fan_in_void_output_compile_pass COMMAND pb_branch_fan_in_void_output_compile_pass)
+set_tests_properties(pb_branch_fan_in_void_output_compile_pass
+  PROPERTIES LABELS "compile-pass;branch;fan-in;join;void")
+
 add_test(NAME pb_compile_fail_edge_mismatch
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/edge_mismatch.cpp
@@ -695,18 +703,6 @@ add_test(NAME pb_compile_fail_branch_fan_in_move_only_input_unsupported
 )
 set_tests_properties(pb_compile_fail_branch_fan_in_move_only_input_unsupported
   PROPERTIES LABELS "compile-fail;diagnostics;branch;fan-in;move-only")
-
-add_test(NAME pb_compile_fail_branch_fan_in_void_output_unsupported
-  COMMAND ${CMAKE_COMMAND}
-    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/branch_fan_in_void_output_unsupported.cpp
-    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
-    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
-    -DEXPECT_DIAGNOSTIC=Fan-in\ branch\ stages\ must\ produce\ non-void\ outputs
-    -DEXPECTED_DIAGNOSTICS=non-void
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
-)
-set_tests_properties(pb_compile_fail_branch_fan_in_void_output_unsupported
-  PROPERTIES LABELS "compile-fail;diagnostics;branch;fan-in")
 
 add_test(NAME pb_compile_fail_join_output_invalid_node_misuse
   COMMAND ${CMAKE_COMMAND}

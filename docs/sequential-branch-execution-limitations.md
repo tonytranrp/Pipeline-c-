@@ -1,6 +1,6 @@
 # Sequential Branch Execution — Supported Features and Limitations
 
-Sequential branch routing with optional join stages is now supported for homogeneous outputs, first-slice heterogeneous outputs through `std::variant`, selected-output type-list joins, and move-only selected-branch input consumption. This page documents what works today and what remains roadmap work.
+Sequential branch routing with optional join stages is now supported for homogeneous outputs, heterogeneous outputs through `std::variant`, selected-output type-list joins, explicit fan-in joins, and move-only selected-branch input consumption. This page documents what works today and what remains roadmap work.
 
 ## Supported
 
@@ -12,11 +12,14 @@ Sequential branch routing with optional join stages is now supported for homogen
 - **Observer coverage**: standard observer events (`on_stage_start`, `on_stage_success`, `on_stage_failure`, `on_stage_exception`) plus branch-specific events (`on_case_selected`, `on_case_skipped`)
 - **Multiple cases**: any number of branch cases (1+) supported via recursive template evaluation
 - **Move-only selected input**: move-only branch inputs can be routed when predicates accept `const input_type&`; the selected branch stage receives the moved value
+- **Explicit sequential fan-in**: `::fan_in<JoinStage>` / `::join_all<JoinStage>` evaluates all predicates, runs passing cases in declaration order, and passes `pb::fan_in_results<...>` to the join stage
+- **Fan-in aggregation states**: fan-in slots expose skipped/completed/failed state, diagnostic text for predicate/stage failures, and void-output case completion without placeholder values
+- **Borrowed move-only fan-in**: a move-only input may be used in fan-in when every passing case stage accepts `const input_type&`; by-value fan-in stages still require copyable input
 
 ## Not yet supported
 
-### Parallel fan-in / all-branch joins
-Branch cases with different output types in the selected-output path produce a selected branch result: either the single homogeneous output type or a `std::variant<...>` for heterogeneous cases. A selected-output join may declare `pb::meta::type_list<...>` to select overloads for that one routed output. Explicit all-passing sequential fan-in is available separately through `::fan_in<JoinStage>` / `::join_all<JoinStage>`, where the join receives `pb::fan_in_results<...>`. Backend/parallel fan-in and richer fan-in error aggregation are not implemented.
+### Backend/parallel fan-in / all-branch joins
+Branch cases with different output types in the selected-output path produce a selected branch result: either the single homogeneous output type or a `std::variant<...>` for heterogeneous cases. A selected-output join may declare `pb::meta::type_list<...>` to select overloads for that one routed output. Explicit all-passing sequential fan-in is available separately through `::fan_in<JoinStage>` / `::join_all<JoinStage>`, where the join receives `pb::fan_in_results<...>` with per-case skipped/completed/failed state. Backend/parallel fan-in, cancellation, and backend scheduling policy are not implemented.
 
 Current type model summary:
 
@@ -24,8 +27,8 @@ Current type model summary:
 - when case outputs differ, the execution boundary uses a unified `std::variant<...>` for the selected branch result
 - a branch case or join stage may still use `pb::runtime::result<T>` for value-or-error execution, but that is orthogonal to the branch type model
 - the type-list join path is selected-output dispatch: the join stage declares `pb::meta::type_list<...>` and overloads each raw output type
-- there is no per-case tagged result wrapper or tuple-style fan-in type for the current sequential branch path
-- the branch type model does not use `std::optional<...>` per case; the branch either selects one output value or reports a runtime contract error if no case matches
+- the selected-output branch path has no per-case tagged result wrapper or tuple-style fan-in type; explicit fan-in uses `pb::fan_in_results<...>` instead
+- selected-output branches either select one output value or report a runtime contract error if no case matches; explicit fan-in uses per-case result slots and allows zero passing cases
 
 ### Consuming predicates for move-only branch inputs
 Move-only branch inputs are supported only when predicates can inspect the input by `const input_type&`. A predicate that must consume the move-only input before routing is not supported, because the selected branch stage still needs to receive the value.
@@ -33,7 +36,7 @@ Move-only branch inputs are supported only when predicates can inspect the input
 ### Branch-specific observer event ordering
 The observer interface provides `on_case_selected` and `on_case_skipped` events, but the exact ordering relative to other observer events is documented as the current implementation behavior, not a stable contract.
 
-Current observer sequence for a branch run is:
+Current selected-output observer sequence for a branch run is:
 
 - `on_stage_start(branch)` when the branch node starts
 - `on_stage_start(predicate)` / `on_stage_success(predicate)` for each evaluated predicate
@@ -42,10 +45,10 @@ Current observer sequence for a branch run is:
 - `on_stage_start(case_stage)` / `on_stage_success(case_stage)` for the selected case stage
 - `on_stage_start(join_stage)` / `on_stage_success(join_stage)` for a following join stage, when present
 
-`on_stage_failure(...)` and `on_stage_exception(...)` are used when the predicate, case stage, or join stage fails or throws; the branch-specific callbacks do not replace the standard failure callbacks.
+`on_stage_failure(...)` and `on_stage_exception(...)` are used when the predicate, case stage, or join stage fails or throws; the branch-specific callbacks do not replace the standard failure callbacks. Explicit fan-in additionally reports failed predicate/stage slots through `on_case_failed(...)` before the join receives the aggregate.
 
 ### Unnamed stage identity collisions
-When predicates and branch stages do not define `stage_key()` / `stage_name()`, the runtime generates fallback identities from the branch node's `StageIndex`. Multiple unnamed predicates or stages may share the same numeric fallback, making them harder to distinguish in observer output.
+When predicates and branch stages do not define `stage_key()` / `stage_name()`, the runtime generates deterministic fallback identities such as `branch.case.0.predicate` and `branch.case.0.stage` so observer/error output can distinguish branch children. Explicit keys are still recommended for stable user-facing diagnostics.
 
 ### Branch exhaustiveness
 There is no compile-time enforcement that branch cases cover all possible inputs. Unmatched inputs produce a runtime `contract_violation` error.

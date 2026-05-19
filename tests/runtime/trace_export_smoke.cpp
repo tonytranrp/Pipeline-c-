@@ -272,6 +272,7 @@ int main() {
     pb_test_require(trace_event_kind_name(trace_event_kind::stage_exception) == "stage_exception");
     pb_test_require(trace_event_kind_name(trace_event_kind::case_selected) == "case_selected");
     pb_test_require(trace_event_kind_name(trace_event_kind::case_skipped) == "case_skipped");
+    pb_test_require(trace_event_kind_name(trace_event_kind::case_failed) == "case_failed");
     pb_test_require(trace_event_kind_name(trace_event_kind::pipeline_start) == "pipeline_start");
     pb_test_require(trace_event_kind_name(trace_event_kind::pipeline_complete) == "pipeline_complete");
   }
