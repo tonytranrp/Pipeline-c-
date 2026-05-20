@@ -134,6 +134,12 @@ pb_apply_project_options(pb_runtime_thread_pool_smoke PRIVATE)
 add_test(NAME pb_runtime_thread_pool_smoke COMMAND pb_runtime_thread_pool_smoke)
 set_tests_properties(pb_runtime_thread_pool_smoke PROPERTIES LABELS "runtime;thread-pool;smoke")
 
+add_executable(pb_runtime_thread_pool_fan_in_smoke runtime/thread_pool_fan_in_smoke.cpp)
+target_link_libraries(pb_runtime_thread_pool_fan_in_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_thread_pool_fan_in_smoke PRIVATE)
+add_test(NAME pb_runtime_thread_pool_fan_in_smoke COMMAND pb_runtime_thread_pool_fan_in_smoke)
+set_tests_properties(pb_runtime_thread_pool_fan_in_smoke PROPERTIES LABELS "runtime;thread-pool;fan-in;backend")
+
 add_executable(pb_runtime_sequential_policy_dsl_smoke runtime/sequential_policy_dsl_smoke.cpp)
 target_link_libraries(pb_runtime_sequential_policy_dsl_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_sequential_policy_dsl_smoke PRIVATE)

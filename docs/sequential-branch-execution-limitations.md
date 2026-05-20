@@ -19,7 +19,7 @@ Sequential branch routing with optional join stages is now supported for homogen
 ## Not yet supported
 
 ### Backend/parallel fan-in / all-branch joins
-Branch cases with different output types in the selected-output path produce a selected branch result: either the single homogeneous output type or a `std::variant<...>` for heterogeneous cases. A selected-output join may declare `pb::meta::type_list<...>` to select overloads for that one routed output. Explicit all-passing sequential fan-in is available separately through `::fan_in<JoinStage>` / `::join_all<JoinStage>`, where the join receives `pb::fan_in_results<...>` with per-case skipped/completed/failed state. Backend/parallel fan-in, cancellation, and backend scheduling policy are not implemented.
+Branch cases with different output types in the selected-output path produce a selected branch result: either the single homogeneous output type or a `std::variant<...>` for heterogeneous cases. A selected-output join may declare `pb::meta::type_list<...>` to select overloads for that one routed output. Explicit all-passing fan-in is available separately through `::fan_in<JoinStage>` / `::join_all<JoinStage>`, where the join receives `pb::fan_in_results<...>` with per-case skipped/completed/failed state. The sequential backend runs passing cases in declaration order. `pb::runtime::thread_pool_backend` may run passing fan-in case stages concurrently, while preserving declaration-order aggregate results and draining already-running cases before the join inspects the aggregate.
 
 Current type model summary:
 
@@ -54,10 +54,10 @@ When predicates and branch stages do not define `stage_key()` / `stage_name()`, 
 There is no compile-time enforcement that branch cases cover all possible inputs. Unmatched inputs produce a runtime `contract_violation` error.
 
 ### Parallel/async backends
-Only the sequential runtime (`pb::runtime::sequential`) is supported. Parallel backends (thread-pool, oneTBB, Taskflow, stdexec) remain roadmap work.
+The sequential runtime (`pb::runtime::sequential`) is supported for selected-output and fan-in branch execution. The standard-library `pb::runtime::thread_pool_backend` is supported for the current fan-in backend slice. oneTBB, Taskflow, stdexec, preemptive cancellation, backend examples, and backend benchmarks remain roadmap work.
 
 ### Stable graph export
-DOT/JSON helper output exists for supported branch shapes, and JSON now reports branch topology for branch pipelines. Stable descriptor/export schemas, release-grade golden compatibility fixtures, CLI/file export, and backend graph-export semantics are not yet supported.
+DOT/JSON helper output exists for supported branch and fan-in shapes, and JSON now reports `branch` or `fan_in` topology for those pipelines. Stable descriptor/export schemas, release-grade external compatibility fixtures, CLI/file export, and backend scheduling/trace graph-export semantics are not yet supported.
 
 ## Related pages
 

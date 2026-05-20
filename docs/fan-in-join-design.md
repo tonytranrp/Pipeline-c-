@@ -234,14 +234,14 @@ Implementation should be staged by backend:
    - deterministic predicate and case execution
    - ordered aggregate values for skipped/completed/failed cases
    - runtime tests for zero/one/many pass cases, failure aggregation, void-output cases, and borrowed move-only input
-2. Thread-pool fan-in later.
-   - schedule passing case stages concurrently only after sequential semantics
-     are fixed
-   - preserve declaration-order aggregate output
-   - define cancellation/error policy before enabling parallel failure paths
-3. Export/backend graph semantics after runtime behavior is stable.
-   - descriptor/export helpers may show fan-in topology later
-   - do not claim stable graph schema as part of the first runtime slice
+2. Thread-pool fan-in is implemented for the first standard-library backend slice.
+   - predicates are still evaluated in declaration order
+   - passing case stages are scheduled concurrently on `pb::runtime::thread_pool_backend`
+   - the fan-in aggregate remains declaration/case-index ordered even when completion order differs
+   - the current cancellation policy is non-preemptive: drain already-running cases and let the join inspect skipped/completed/failed slots
+3. Export/backend graph semantics are implemented as helper metadata, not as a stable external schema.
+   - descriptor/export helpers now report `fan_in` topology and deterministic case identity
+   - do not claim long-term schema compatibility until a public compatibility policy is written
 
 ## Compile-fail diagnostics
 
@@ -275,8 +275,7 @@ Add runtime tests in small slices:
 - move-only input by-value fan-in is rejected at compile time
 - join receives failed slots under the current aggregate policy
 
-After thread-pool support exists, add scheduling tests that prove result order is
-stable even when completion order differs.
+Thread-pool support includes a scheduling smoke test that proves passing fan-in cases overlap while the aggregate result remains case-index ordered. Future backend tests should add heavier cancellation, timing, and benchmarking coverage before broad parallel-execution claims.
 
 ## Implementation checklist
 
@@ -289,15 +288,13 @@ stable even when completion order differs.
 6. Add observer/trace fan-in event coverage.
 7. Add runtime tests for zero/one/many pass cases, error aggregation, void-output aggregation, and borrowed move-only input.
 8. Document move-only input restrictions and diagnostics.
-9. Only after sequential semantics stabilize, design thread-pool scheduling.
-10. Only after runtime semantics stabilize, update descriptor/export helpers and
-    schema docs for fan-in topology.
+9. Implemented the first thread-pool scheduling slice with deterministic ordered aggregation and drain-running-cases behavior.
+10. Updated descriptor/export helpers and schema docs for fan-in topology while keeping long-term schema stability as a separate release decision.
 
 ## Non-goals for the current wave
 
-- no backend implementation
-- no descriptor/export helper field changes for fan-in topology
-- no stable graph schema claim
-- no backend/parallel cancellation or scheduling policy yet
+- no oneTBB, Taskflow, or stdexec backend implementation
+- no stable graph schema claim beyond helper-output golden tests
+- no preemptive cancellation of already-running backend case stages
 - no rich domain-specific multi-error envelope beyond per-case diagnostic strings yet
-- no clone/projection/shared-view policy for owned non-copyable fan-in inputs yet
+- no runtime clone/projection/shared-view policy for owned non-copyable fan-in inputs yet

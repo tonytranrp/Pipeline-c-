@@ -106,8 +106,10 @@ void append_branch_cases_json(std::ostringstream& stream, const Descriptor& desc
 template <class Descriptor>
 void append_stage_kind_json(std::ostringstream& stream, const Descriptor& descriptor,
                             const pb::runtime::descriptor_stage_record& stage) {
-  if (stage.topology == pb::runtime::descriptor_topology::branch) {
-    stream << ",\"kind\":\"branch\"";
+  if (stage.topology == pb::runtime::descriptor_topology::branch ||
+      stage.topology == pb::runtime::descriptor_topology::fan_in) {
+    stream << ",\"kind\":";
+    append_json_string(stream, stage.topology == pb::runtime::descriptor_topology::fan_in ? "fan_in" : "branch");
     append_branch_cases_json(stream, descriptor, stage.index);
   } else {
     stream << ",\"kind\":\"stage\"";
@@ -155,9 +157,11 @@ inline void append_graph_edge_json(std::ostringstream& stream, const pb::runtime
 template <ValidPipeline Pipeline>
 [[nodiscard]] auto to_json() -> std::string {
   constexpr auto descriptor = pb::runtime::make_descriptor<Pipeline>();
-  constexpr auto topology = decltype(descriptor)::topology == pb::runtime::descriptor_topology::branch
-                                ? std::string_view{"branch"}
-                                : std::string_view{"linear"};
+  constexpr auto topology = decltype(descriptor)::topology == pb::runtime::descriptor_topology::fan_in
+                                ? std::string_view{"fan_in"}
+                                : (decltype(descriptor)::topology == pb::runtime::descriptor_topology::branch
+                                       ? std::string_view{"branch"}
+                                       : std::string_view{"linear"});
 
   std::ostringstream stream;
   stream << "{\"schema_version\":\"pb.core.graph.v1\",\"topology\":";

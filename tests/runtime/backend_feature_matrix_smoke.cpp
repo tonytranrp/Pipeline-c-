@@ -33,11 +33,11 @@ int main() {
 
   const auto thread_pool = named("thread_pool");
   pb_test_require(thread_pool != features.end());
-  pb_test_require(thread_pool->support == pb::backend_support::roadmap);
+  pb_test_require(thread_pool->support == pb::backend_support::supported);
   pb_test_require(thread_pool->execution_model == pb::backend_execution_model::thread_pool);
   pb_test_require(!thread_pool->external_dependency);
   pb_test_require(!thread_pool->default_build);
-  pb_test_require(!pb::backend_supported("thread_pool"));
+  pb_test_require(pb::backend_supported("thread_pool"));
 
   for (const auto backend : {"taskflow", "oneTBB", "stdexec"}) {
     const auto feature = named(backend);

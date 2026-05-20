@@ -306,6 +306,109 @@ constexpr auto expected =
     "\"from_name\":\"branch\",\"to_key\":\"type.list.join\",\"to_name\":\"TypeListJoin\"}]}";
 } // namespace type_list_selected_output_json_golden
 
+namespace fan_in_json_golden {
+struct Raw { int value{}; };
+struct Parsed { int value{}; };
+struct Reviewed { int value{}; };
+struct Done { int value{}; };
+
+struct IsParse {
+  using input_type = Raw;
+  using output_type = bool;
+  static constexpr auto stage_key() noexcept { return "is.parse"; }
+  static constexpr auto stage_name() noexcept { return "IsParse"; }
+  bool operator()(const Raw&) const { return true; }
+};
+
+struct IsReview {
+  using input_type = Raw;
+  using output_type = bool;
+  static constexpr auto stage_key() noexcept { return "is.review"; }
+  static constexpr auto stage_name() noexcept { return "IsReview"; }
+  bool operator()(const Raw&) const { return true; }
+};
+
+struct Parse {
+  using input_type = Raw;
+  using output_type = Parsed;
+  static constexpr auto stage_key() noexcept { return "fan.parse"; }
+  static constexpr auto stage_name() noexcept { return "FanParse"; }
+  Parsed operator()(Raw raw) const { return {raw.value}; }
+};
+
+struct Review {
+  using input_type = Raw;
+  using output_type = Reviewed;
+  static constexpr auto stage_key() noexcept { return "fan.review"; }
+  static constexpr auto stage_name() noexcept { return "FanReview"; }
+  Reviewed operator()(Raw raw) const { return {raw.value}; }
+};
+
+using ParseCase = pb::case_<IsParse>::label<"parse-case">::then<Parse>;
+using ReviewCase = pb::case_<IsReview>::then<Review>;
+using JoinInput = pb::fan_in_output_t<ParseCase, ReviewCase>;
+
+struct FanInJoin {
+  using input_type = JoinInput;
+  using output_type = Done;
+  static constexpr auto stage_key() noexcept { return "fan.join"; }
+  static constexpr auto stage_name() noexcept { return "FanInJoin"; }
+  Done operator()(const JoinInput&) const { return {}; }
+};
+
+using Pipeline = pb::from<Raw>::branch<ParseCase, ReviewCase>::fan_in<FanInJoin>::to<Done>;
+
+constexpr auto expected_json =
+    "{\"schema_version\":\"pb.core.graph.v1\",\"topology\":\"fan_in\",\"stage_count\":2,\"edge_count\":1,"
+    "\"stages\":[{\"index\":0,\"key\":\"fan_in\",\"name\":\"fan_in\",\"kind\":\"fan_in\",\"branch_cases\":["
+    "{\"index\":0,\"case_id\":\"branch.0.case.0\",\"case_key\":\"branch.0.case.0\",\"case_label\":\"parse-case\","
+    "\"predicate_node_id\":\"branch.0.case.0.predicate\",\"stage_node_id\":\"branch.0.case.0.stage\","
+    "\"predicate_key\":\"is.parse\",\"predicate_name\":\"IsParse\",\"stage_key\":\"fan.parse\","
+    "\"stage_name\":\"FanParse\",\"predicate_edge\":{\"from\":\"branch\",\"to\":\"predicate\",\"style\":\"dashed\",\"label\":\"test\"},"
+    "\"stage_edge\":{\"from\":\"predicate\",\"to\":\"case_stage\"}},"
+    "{\"index\":1,\"case_id\":\"branch.0.case.1\",\"case_key\":\"branch.0.case.1\",\"case_label\":\"1\","
+    "\"predicate_node_id\":\"branch.0.case.1.predicate\",\"stage_node_id\":\"branch.0.case.1.stage\","
+    "\"predicate_key\":\"is.review\",\"predicate_name\":\"IsReview\",\"stage_key\":\"fan.review\","
+    "\"stage_name\":\"FanReview\",\"predicate_edge\":{\"from\":\"branch\",\"to\":\"predicate\",\"style\":\"dashed\",\"label\":\"test\"},"
+    "\"stage_edge\":{\"from\":\"predicate\",\"to\":\"case_stage\"}}]},"
+    "{\"index\":1,\"key\":\"fan.join\",\"name\":\"FanInJoin\",\"kind\":\"stage\"}],"
+    "\"edges\":[{\"index\":0,\"from_stage_index\":0,\"to_stage_index\":1,\"from_key\":\"fan_in\","
+    "\"from_name\":\"fan_in\",\"to_key\":\"fan.join\",\"to_name\":\"FanInJoin\"}]}";
+
+constexpr auto expected_dot = R"DOT(digraph fan_in_golden {
+  rankdir=LR;
+  node [shape=box];
+
+  from_input [label="Input"];
+
+  branch_0 [shape=diamond, label="fan_in"];
+
+  subgraph cluster_case_0_0 {
+    label="Case parse-case: IsParse";
+    pred_0_0 [label="pred: IsParse"];
+    case_0_0 [label="FanParse"];
+    branch_0 -> pred_0_0 [style=dashed, label="test"];
+    pred_0_0 -> case_0_0;
+  }
+  subgraph cluster_case_0_1 {
+    label="Case 1: IsReview";
+    pred_0_1 [label="pred: IsReview"];
+    case_0_1 [label="FanReview"];
+    branch_0 -> pred_0_1 [style=dashed, label="test"];
+    pred_0_1 -> case_0_1;
+  }
+
+  stage_1 [label="FanInJoin\n(fan.join)"];
+  to_output [shape=doublecircle, label="Output"];
+
+  from_input -> branch_0;
+  case_0_0 -> stage_1;
+  case_0_1 -> stage_1;
+  stage_1 -> to_output;
+}
+)DOT";
+} // namespace fan_in_json_golden
+
 namespace dot_escaping {
 struct Raw { int value{}; };
 struct Routed { int value{}; };
@@ -393,8 +496,11 @@ int main() {
                     heterogeneous_branch_json_golden::expected)) return 3;
   if (!expect_equal(pb::to_json<type_list_selected_output_json_golden::Pipeline>(),
                     type_list_selected_output_json_golden::expected)) return 12;
+  if (!expect_equal(pb::to_json<fan_in_json_golden::Pipeline>(), fan_in_json_golden::expected_json)) return 13;
   if (!expect_equal(pb::to_dot<homogeneous_branch_json_golden::Pipeline>("branch_golden"),
                     homogeneous_branch_json_golden::expected_dot)) return 4;
+  if (!expect_equal(pb::to_dot<fan_in_json_golden::Pipeline>("fan_in_golden"),
+                    fan_in_json_golden::expected_dot)) return 14;
 
   const auto escaped_dot = pb::to_dot<dot_escaping::Pipeline>("escaping graph");
   if (!expect_contains(escaped_dot, "digraph escaping_graph")) return 5;

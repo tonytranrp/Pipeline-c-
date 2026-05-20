@@ -63,7 +63,7 @@ This pass supports claims that the current tested surface configures, builds, pa
 
 It does **not** mean these roadmap items are implemented:
 
-- backend/parallel fan-in or true backend multi-input join execution beyond the current sequential fan-in slice
+- thread-pool fan-in work that landed after this validation snapshot; rerun this workflow before release if that code is included
 - stable descriptor/export compatibility beyond descriptor-record-backed helper DOT/JSON output
 - CLI/file export of user pipeline definitions
 - thread-pool / oneTBB / Taskflow / stdexec pipeline backends

@@ -17,7 +17,7 @@ A release candidate can only claim the currently shipped and tested surface:
 - compile-pass, compile-fail, runtime, example, package-consumer, and benchmark **smoke** scaffolding
 - the intentional compile-fail diagnostic example and the package-consumer contract described in the current docs
 
-Do **not** treat roadmap pages as if they are already releaseable features. Parallel all-branches fan-in / true backend multi-input joins, stable descriptor/export compatibility, fully stabilized observer contracts, optional backend execution, a stable runtime descriptor, and richer diagnostics remain separate follow-on slices.
+Do **not** treat roadmap pages as if they are already releaseable features. Preemptive cancellation, dependency backend fan-in / true backend multi-input joins beyond the thread-pool slice, stable descriptor/export compatibility, fully stabilized observer contracts, a stable runtime descriptor, and richer diagnostics remain separate follow-on slices.
 
 ## Release evidence to collect before tagging
 
@@ -120,7 +120,7 @@ This keeps the release note aligned with the current docs and avoids treating lo
 
 Before tagging, confirm the release notes and docs still describe these as **not current guarantees**:
 
-- backend/parallel fan-in / true backend multi-input join execution and backend branch execution beyond the supported sequential selected-output and fan-in slices
+- dependency backend fan-in / true backend multi-input join execution, preemptive cancellation, and backend branch execution beyond the supported sequential and thread-pool fan-in slices
 - stable descriptor/export compatibility beyond the current descriptor-record-backed helper output
 - observer behavior beyond the current sequential runtime callback path
 - optional backend execution beyond the sequential MVP path

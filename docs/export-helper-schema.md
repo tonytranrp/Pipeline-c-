@@ -5,7 +5,7 @@ This page documents the current helper-output shape produced by
 runtime descriptor records in `include/pb/runtime/descriptor.hpp`.
 
 It is a **helper schema**, not a stable external interchange contract.
-For the currently supported linear and selected-output branch shapes, the helper output is regression-tested as `pb.core.graph.v1`; future fan-in/backend/CLI export remains outside this helper contract.
+For the currently supported linear, selected-output branch, and explicit fan-in branch shapes, the helper output is regression-tested as `pb.core.graph.v1`; CLI/file export and long-term compatibility guarantees remain outside this helper contract.
 
 ## Scope
 
@@ -23,14 +23,14 @@ It does **not** promise:
 - a versioned public export contract
 - CLI/file export of user pipeline definitions
 - long-term field stability beyond the current helper tests
-- backend or parallel graph export semantics
+- backend-specific scheduling graphs or parallel execution trace export semantics
 
 ## JSON helper shape
 
 The helper JSON currently uses these top-level fields, in the current helper output shape:
 
 - `schema_version`: `"pb.core.graph.v1"`
-- `topology`: `"linear"` or `"branch"`
+- `topology`: `"linear"`, `"branch"`, or `"fan_in"`
 - `stage_count`
 - `edge_count`
 - `stages`: array of stage records
@@ -59,13 +59,14 @@ ASCII control bytes as `\u00xx`.
 
 - `"linear"`
 - `"branch"`
+- `"fan_in"`
 
 For the current helper surface, the serialized object is shaped like:
 
 ```json
 {
   "schema_version": "...",
-  "topology": "linear|branch",
+  "topology": "linear|branch|fan_in",
   "stage_count": 0,
   "edge_count": 0,
   "stages": [],
@@ -86,15 +87,15 @@ Each stage entry currently includes:
 
 #### Branch stage records
 
-Branch stages use `kind = "branch"`.
+Selected-output branch stages use `kind = "branch"`. Explicit all-branches fan-in stages use `kind = "fan_in"`.
 They also include `branch_cases`, an array of branch-case records for that
 branch stage.
 
-Non-branch stages use `kind = "stage"`.
+Both branch shapes include `branch_cases`; non-branch stages use `kind = "stage"`.
 
 ### Branch-case records
 
-In other words, the current helper schema treats a branch stage as a normal serialized stage record with a branch-specific `kind` marker and an additional `branch_cases` array. That is the current helper-output shape, not a commitment to preserve this exact representation forever.
+In other words, the current helper schema treats selected-output and fan-in branch stages as normal serialized stage records with a branch-specific `kind` marker (`branch` or `fan_in`) and an additional `branch_cases` array. That is the current helper-output shape, not a commitment to preserve this exact representation forever.
 
 The underlying runtime descriptor records also carry branch-stage-local type-name fields, but the current JSON/DOT helper schema does not promote those fields to the serialized helper contract.
 
@@ -168,7 +169,7 @@ The branch event kinds currently covered by trace export are:
 
 ### Branch type model
 
-The current branch helper model is:
+The current selected-output branch helper model is:
 
 - raw branch outputs are collected as `pb::meta::type_list<...>`
 - the unified branch output type is the corresponding `std::variant<...>`
@@ -236,3 +237,15 @@ portion covers linear pipelines and selected-output branch pipelines, including
 branch case identity fields and JSON escaping. If a future change alters field
 names, field order, labels, escaping, or branch rendering, the docs and helper
 regression tests should be updated together.
+
+
+### Fan-in helper model
+
+Explicit fan-in pipelines use the same branch-case record shape as selected-output branches, but their branch stage reports:
+
+- top-level `topology = "fan_in"`
+- stage record `kind = "fan_in"`
+- branch stage key/name from the fan-in marker (`fan_in`)
+- deterministic `case_id`, `case_key`, `predicate_node_id`, and `stage_node_id` fields for every case
+
+The helper output remains graph-shape metadata. It does not serialize backend scheduling decisions, worker counts, completion timing, cancellation decisions, or runtime result values. Thread-pool backend execution preserves the same descriptor/export graph shape as sequential fan-in.

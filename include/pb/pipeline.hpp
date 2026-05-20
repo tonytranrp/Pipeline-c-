@@ -21,6 +21,7 @@
 #include "pb/runtime/result.hpp"
 #include "pb/runtime/routing.hpp"
 #include "pb/runtime/sequential.hpp"
+#include "pb/runtime/thread_pool_backend.hpp"
 #include "pb/runtime/trace.hpp"
 
 namespace pb {
@@ -137,6 +138,7 @@ using runtime::trace_event_kind_name;
 using runtime::trace_observer;
 using runtime::trace_recorder;
 using runtime::trace_schema_version;
+using runtime::thread_pool_backend;
 using runtime::trace_sink;
 
 // diagnostics

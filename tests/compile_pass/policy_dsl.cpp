@@ -191,3 +191,32 @@ static_assert(sizeof(PolicyTuple) <= sizeof(int) * 8,
 } // namespace policy_constexpr_usage
 
 int main() { return 0; }
+
+// ---------------------------------------------------------------------------
+// 6. Policy bundles expose production fan-in backend intent without runtime state
+// ---------------------------------------------------------------------------
+namespace policy_bundle_checks {
+
+using Bundle = pb::policy::bundle<pb::policy::scheduling::parallel_cases,
+                                  pb::policy::scheduling::deterministic_case_order,
+                                  pb::policy::cancellation::drain_running_cases,
+                                  pb::policy::clone::borrowed_input,
+                                  pb::policy::lifetime::shared_view>;
+
+static_assert(Bundle::size == 5);
+static_assert(pb::policy::contains_v<pb::policy::scheduling::parallel_cases, Bundle>);
+static_assert(pb::policy::contains_v<pb::policy::scheduling::deterministic_case_order, Bundle>);
+static_assert(pb::policy::contains_v<pb::policy::cancellation::drain_running_cases, Bundle>);
+static_assert(pb::policy::contains_v<pb::policy::clone::borrowed_input, Bundle>);
+static_assert(pb::policy::contains_v<pb::policy::lifetime::shared_view, Bundle>);
+static_assert(!pb::policy::contains_v<pb::policy::cancellation::fail_fast_not_started, Bundle>);
+
+constexpr auto default_policy = pb::policy::make_bundle<pb::policy::scheduling::parallel_cases,
+                                                       pb::policy::cancellation::drain_running_cases>();
+static_assert(decltype(default_policy)::size == 2);
+static_assert(pb::policy::contains_v<pb::policy::scheduling::deterministic_case_order,
+                                     pb::policy::default_thread_pool_fan_in>);
+static_assert(pb::policy::contains_v<pb::policy::cancellation::drain_running_cases,
+                                     pb::policy::default_thread_pool_fan_in>);
+
+} // namespace policy_bundle_checks

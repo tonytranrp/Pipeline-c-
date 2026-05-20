@@ -123,6 +123,75 @@ using BranchPipeline = pb::from<Document>::branch<InvoiceCase, ReportCase>::join
 static_assert(pb::valid<BranchPipeline>);
 
 // ---------------------------------------------------------------------------
+// Fan-in pipeline stages
+// ---------------------------------------------------------------------------
+
+struct FanInInputDoc {
+  int id{};
+};
+
+struct ParsedDoc {
+  int value{};
+};
+
+struct ReviewedDoc {
+  int value{};
+};
+
+struct FanInDone {
+  int value{};
+};
+
+struct FanInFirst {
+  using input_type = FanInInputDoc;
+  using output_type = bool;
+  static constexpr auto stage_name() noexcept { return "fan-in-first"; }
+  static constexpr auto stage_key() noexcept { return "fan-in-first"; }
+  bool operator()(const FanInInputDoc&) const { return true; }
+};
+
+struct FanInSecond {
+  using input_type = FanInInputDoc;
+  using output_type = bool;
+  static constexpr auto stage_name() noexcept { return "fan-in-second"; }
+  static constexpr auto stage_key() noexcept { return "fan-in-second"; }
+  bool operator()(const FanInInputDoc&) const { return true; }
+};
+
+struct FanInParse {
+  using input_type = FanInInputDoc;
+  using output_type = ParsedDoc;
+  static constexpr auto stage_name() noexcept { return "fan-in-parse"; }
+  static constexpr auto stage_key() noexcept { return "fan-in-parse"; }
+  ParsedDoc operator()(const FanInInputDoc& input) const { return ParsedDoc{input.id + 1}; }
+};
+
+struct FanInReview {
+  using input_type = FanInInputDoc;
+  using output_type = ReviewedDoc;
+  static constexpr auto stage_name() noexcept { return "fan-in-review"; }
+  static constexpr auto stage_key() noexcept { return "fan-in-review"; }
+  ReviewedDoc operator()(const FanInInputDoc& input) const { return ReviewedDoc{input.id + 2}; }
+};
+
+using FanInCaseA = pb::case_<FanInFirst>::then<FanInParse>;
+using FanInCaseB = pb::case_<FanInSecond>::then<FanInReview>;
+using FanInJoinInput = pb::fan_in_output_t<FanInCaseA, FanInCaseB>;
+
+struct FanInJoin {
+  using input_type = FanInJoinInput;
+  using output_type = FanInDone;
+  static constexpr auto stage_name() noexcept { return "fan-in-join"; }
+  static constexpr auto stage_key() noexcept { return "fan-in-join"; }
+  FanInDone operator()(const FanInJoinInput& input) const {
+    return FanInDone{input.template get<0>().get().value + input.template get<1>().get().value};
+  }
+};
+
+using FanInPipeline = pb::from<FanInInputDoc>::branch<FanInCaseA, FanInCaseB>::fan_in<FanInJoin>::to<FanInDone>;
+static_assert(pb::valid<FanInPipeline>);
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -333,6 +402,35 @@ int main() {
   auto br_result2 = branch_engine.run(Document{2});
   pb_test_require(br_result2.has_value());
   pb_test_require(br_result2.value() == 40); // Report: id=2 → 2*20 = 40
+
+  // Fan-in descriptor distinguishes all-branches fan-in from selected-output branch.
+  constexpr auto fan_in_descriptor = pb::make_branch_descriptor<FanInPipeline>();
+  static_assert(fan_in_descriptor.schema_version == std::string_view{"pb.descriptor.v1"});
+  static_assert(fan_in_descriptor.topology == pb::descriptor_topology::fan_in);
+  static_assert(fan_in_descriptor.stage_count == 2);
+  static_assert(fan_in_descriptor.edge_count == 1);
+  static_assert(fan_in_descriptor.case_count == 2);
+  static_assert(fan_in_descriptor.stage_records()[0].topology == pb::descriptor_topology::fan_in);
+  static_assert(fan_in_descriptor.stage_records()[0].key == std::string_view{"fan_in"});
+  static_assert(fan_in_descriptor.stage_records()[1].topology == pb::descriptor_topology::linear);
+  static_assert(fan_in_descriptor.stage_records()[1].key == std::string_view{"fan-in-join"});
+  static_assert(fan_in_descriptor.branch_case_records()[0].case_id == std::string_view{"branch.0.case.0"});
+  static_assert(fan_in_descriptor.branch_case_records()[0].predicate_node_id ==
+                std::string_view{"branch.0.case.0.predicate"});
+  static_assert(fan_in_descriptor.branch_case_records()[0].stage_node_id ==
+                std::string_view{"branch.0.case.0.stage"});
+  static_assert(fan_in_descriptor.branch_case_records()[1].case_id == std::string_view{"branch.0.case.1"});
+
+  auto fan_in_engine = pb::compile<FanInPipeline>(pb::runtime::thread_pool_backend{.worker_count = 2});
+  const auto runtime_fan_in_descriptor = fan_in_engine.descriptor();
+  pb_test_require(runtime_fan_in_descriptor.topology == pb::descriptor_topology::fan_in);
+  pb_test_require(runtime_fan_in_descriptor.stage_records()[0].topology == pb::descriptor_topology::fan_in);
+  pb_test_require(runtime_fan_in_descriptor.branch_case_records().size() == 2);
+  pb_test_require(runtime_fan_in_descriptor.branch_case_records()[0].case_id == "branch.0.case.0");
+  pb_test_require(runtime_fan_in_descriptor.branch_case_records()[1].stage_node_id == "branch.0.case.1.stage");
+  const auto fan_in_run = fan_in_engine.run(FanInInputDoc{10});
+  pb_test_require(fan_in_run.has_value());
+  pb_test_require(fan_in_run.value().value == 23);
 
   // =========================================================================
   // Section 3 — type_name utility tests

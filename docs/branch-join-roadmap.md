@@ -1,6 +1,6 @@
 # Branch / Join Roadmap / Status
 
-Sequential branch execution is now a **supported, tested feature** for homogeneous branch outputs with optional join stages. A first heterogeneous-output slice is also implemented: differing branch outputs are represented as `std::variant<...>` and can be joined either by a stage that accepts that variant or by a type-list join stage that declares `pb::meta::type_list<...>` and overloads every raw branch output type. Variant joins preserve duplicate output alternatives by index. Type-list selected-output joins dispatch by C++ type; duplicate same-type branch outputs share the same overload unless the user encodes case identity into the output type. Move-only branch inputs are supported when predicates inspect by `const input_type&` and the selected branch stage consumes the value. A sequential fan-in slice is now implemented through explicit `::fan_in<JoinStage>` / `::join_all<JoinStage>` APIs that evaluate all predicates, run every passing case in declaration order, and pass an ordered `pb::fan_in_results<...>` aggregate to the join stage. Fan-in case slots preserve `skipped`, `completed`, and `failed` states, including diagnostic text for predicate/stage failures; later cases continue after earlier failures so the join can inspect the aggregate.
+Sequential branch execution is now a **supported, tested feature** for homogeneous branch outputs with optional join stages. A first heterogeneous-output slice is also implemented: differing branch outputs are represented as `std::variant<...>` and can be joined either by a stage that accepts that variant or by a type-list join stage that declares `pb::meta::type_list<...>` and overloads every raw branch output type. Variant joins preserve duplicate output alternatives by index. Type-list selected-output joins dispatch by C++ type; duplicate same-type branch outputs share the same overload unless the user encodes case identity into the output type. Move-only branch inputs are supported when predicates inspect by `const input_type&` and the selected branch stage consumes the value. A fan-in slice is now implemented through explicit `::fan_in<JoinStage>` / `::join_all<JoinStage>` APIs that evaluate all predicates and pass an ordered `pb::fan_in_results<...>` aggregate to the join stage. The sequential backend runs passing cases in declaration order; `pb::runtime::thread_pool_backend` schedules passing case stages concurrently while preserving declaration-order aggregate results. Fan-in case slots preserve `skipped`, `completed`, and `failed` states, including diagnostic text for predicate/stage failures; later cases continue after earlier failures so the join can inspect the aggregate.
 
 ## Current status
 
@@ -70,11 +70,11 @@ If future work introduces richer error-envelope policies, cancellation rules, or
 
 Today the repository does **not** yet support:
 
-- backend/parallel fan-in or backend multi-input join lowering beyond the current sequential fan-in slice
+- dependency backend fan-in or backend multi-input join lowering beyond the current sequential/thread-pool fan-in slices
 - backend/parallel failure aggregation, cancellation, and scheduling policy beyond the current sequential aggregate
 - predicate patterns that require consuming a move-only input before routing; predicates must remain callable with `const input_type&`
 - by-value fan-in stages for non-copyable inputs unless the input is copy-constructible; the supported move-only fan-in path requires every passing case stage to borrow via `const input_type&`
-- stable descriptor/export compatibility for fan-in topology, or backend/parallel branch execution
+- stable external descriptor/export compatibility for fan-in topology, or dependency-backend branch execution
 
 ## Why branch/join matters
 
@@ -91,7 +91,7 @@ Without this feature, the current library remains intentionally limited to one v
 
 The research plan originally treated branch/join as post-MVP work after the linear chain. The current repository now ships the first production-readiness slice of that plan: homogeneous sequential branch/join execution with public DSL, validation, runtime routing, observer events, stateful storage, tests, and examples.
 
-The broader graph-shaped plan is still not complete. Heterogeneous branch outputs, move-only selected-output branch inputs, and sequential fan-in now have implementation slices, including duplicate-output variant routing, explicit raw-vs-unified output validation helpers, negative coverage for move-only predicates that would consume by value, failed-case fan-in aggregation, void-output fan-in aggregation, borrowed-input fan-in for move-only values when all branch stages accept `const input_type&`, and an ordered fan-in aggregate for all cases. Backend/parallel fan-in, cancellation policy, stable descriptor/export compatibility, release-grade golden export schemas, and backend branch execution remain roadmap work.
+The broader graph-shaped plan is still not complete. Heterogeneous branch outputs, move-only selected-output branch inputs, and sequential fan-in now have implementation slices, including duplicate-output variant routing, explicit raw-vs-unified output validation helpers, negative coverage for move-only predicates that would consume by value, failed-case fan-in aggregation, void-output fan-in aggregation, borrowed-input fan-in for move-only values when all branch stages accept `const input_type&`, and an ordered fan-in aggregate for all cases. Thread-pool backend fan-in now has an implementation slice; preemptive cancellation, dependency backend fan-in, stable external descriptor/export compatibility, release-grade golden export schemas, and broad backend branch execution remain roadmap work.
 
 ## Non-goals for the current MVP
 
@@ -117,9 +117,9 @@ Those decisions belong to a later implementation slice with explicit tests, exam
 
 ## Remaining roadmap items
 
-- backend/parallel fan-in / true backend multi-input join execution
-- backend/parallel fan-in failure aggregation and cancellation policy
-- Stable descriptor/export compatibility with schema docs and release-grade golden outputs
+- dependency backend fan-in / true backend multi-input join execution outside the standard-library thread-pool slice
+- preemptive cancellation and richer backend fan-in failure policies
+- Stable external descriptor/export compatibility with schema docs and release-grade golden outputs
 - Parallel/async backend support for branch execution
 - Broader move-only edge coverage beyond const-reference predicates plus selected-stage consumption
 
@@ -133,13 +133,13 @@ Those decisions belong to a later implementation slice with explicit tests, exam
 - stateful branch storage tested via `sequential_branch_comprehensive.cpp`
 - graph helper coverage: `pb_export_dot_branch_compile_pass`, `pb_export_json_compile_pass`, `pb_export_json_branch_compile_pass`, and helper-output regression coverage in `pb_export_golden_compile_pass`
 
-Backend/parallel fan-in, cancellation policy, stable descriptor/export compatibility, and backend branch execution remain future slices.
+Preemptive cancellation, dependency backend fan-in, stable external descriptor/export compatibility, and broad backend branch execution remain future slices.
 
 ## Release guidance
 
 Release notes and docs should describe branch/join support as:
 
-> sequential branch routing with optional selected-output join stages is supported for homogeneous outputs, heterogeneous outputs through `std::variant` or type-list selected-output joins (including duplicate output alternatives by index), move-only selected-branch input consumption, and explicit sequential fan-in joins through `::fan_in` / `::join_all` with skipped/completed/failed slots, void-output cases, and borrowed move-only inputs; backend/parallel fan-in, cancellation/error policy extensions, stable descriptor/export compatibility, and backend branch execution remain roadmap work
+> sequential branch routing with optional selected-output join stages is supported for homogeneous outputs, heterogeneous outputs through `std::variant` or type-list selected-output joins (including duplicate output alternatives by index), move-only selected-branch input consumption, and explicit sequential fan-in joins through `::fan_in` / `::join_all` with skipped/completed/failed slots, void-output cases, and borrowed move-only inputs; preemptive cancellation/error policy extensions, dependency backend fan-in, stable external descriptor/export compatibility, and broad backend branch execution remain roadmap work
 
 If a future slice adds branch/join support, update this page together with:
 

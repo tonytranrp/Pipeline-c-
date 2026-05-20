@@ -68,7 +68,7 @@ struct has_branch_stage_impl;
 
 template <class... Stages>
 struct has_branch_stage_impl<meta::type_list<Stages...>>
-    : std::bool_constant<(is_selected_branch_node<Stages>::value || ...)> {};
+    : std::bool_constant<((is_selected_branch_node<Stages>::value || is_fan_in_branch_node<Stages>::value) || ...)> {};
 
 template <class Pipeline>
 inline constexpr bool pipeline_has_branch_v =
@@ -108,8 +108,9 @@ inline void append_branch_case_subgraph(std::ostringstream& stream,
 
 template <class Descriptor>
 void append_branch_stage_dot(std::ostringstream& stream, const Descriptor& descriptor, std::size_t stage_index) {
+  const auto& branch_stage = descriptor.stage_records()[stage_index];
   stream << "  branch_" << stage_index << " [shape=diamond, label=";
-  append_dot_label(stream, "branch");
+  append_dot_label(stream, branch_stage.topology == pb::runtime::descriptor_topology::fan_in ? "fan_in" : "branch");
   stream << "];\n\n";
 
   for (const auto& branch_case : descriptor.branch_case_records()) {
@@ -204,7 +205,8 @@ private:
   // ── Stage node emission ──────────────────────────────────────
 
   static auto is_branch_stage(const pb::runtime::descriptor_stage_record& stage) noexcept -> bool {
-    return stage.topology == pb::runtime::descriptor_topology::branch;
+    return stage.topology == pb::runtime::descriptor_topology::branch ||
+           stage.topology == pb::runtime::descriptor_topology::fan_in;
   }
 
   static void emit_stages(std::ostringstream& stream, const descriptor_type& descriptor) {

@@ -1,7 +1,7 @@
 # Graph Export Roadmap / Status
 
 Graph export is currently a **descriptor-backed helper surface** for supported
-linear and branch pipelines, not a stable graph interchange contract. The
+linear, selected-output branch, and explicit fan-in pipelines, not a stable graph interchange contract. The
 current implementation lives in `include/pb/core/export_json.hpp` and
 `include/pb/core/export_dot.hpp`, with schema data sourced from
 `include/pb/runtime/descriptor.hpp`.
@@ -19,8 +19,8 @@ At the JSON helper boundary, the current top-level keys are
 
 Today the repository supports:
 
-- linear and branch-aware DOT helper output
-- JSON helper output with `topology` reporting for branch pipelines
+- linear, branch-aware, and fan-in-aware DOT helper output
+- JSON helper output with `topology` reporting for linear, `branch`, and `fan_in` pipelines
 - descriptor-backed helper rendering for stage, edge, and branch-case records
 - targeted compile-pass coverage for JSON/DOT helper strings and runtime
   descriptor smoke coverage
@@ -29,7 +29,7 @@ Today the repository does **not** support:
 
 - a stable export schema contract
 - CLI/file export of user pipeline definitions
-- backend/parallel graph export semantics
+- backend scheduling/trace graph export semantics
 - release-grade compatibility guarantees for helper field names or ordering
 
 ## Current helper boundary
@@ -42,12 +42,11 @@ pipeline type -> runtime descriptor -> JSON/DOT helper output
 
 The helper schema currently exposes these top-level JSON fields:
 
-Current branch-case helper descriptors also carry deterministic identity fields (`case_id` / `case_key`, `predicate_node_id`, `stage_node_id`) so branch graph rendering and helper tests can refer to a stable per-case identity without claiming a stable external graph schema.
+Current branch/fan-in case helper descriptors also carry deterministic identity fields (`case_id` / `case_key`, `predicate_node_id`, `stage_node_id`) so branch graph rendering and helper tests can refer to a stable per-case identity without claiming a stable external graph schema.
 
 ## Planned implementation checkpoints
 
-In other words, the current branch-stage helper shape is `kind = "branch"`
-with a nested `branch_cases` array.
+In other words, the current selected-output branch-stage helper shape is `kind = "branch"`, the explicit fan-in branch-stage helper shape is `kind = "fan_in"`, and both carry a nested `branch_cases` array.
 
 Runtime descriptor branch metadata such as branch-stage indices and branch-case
 type names stays behind the helper boundary for now.
@@ -102,9 +101,7 @@ Current targeted evidence includes:
 
 Release notes and docs may describe the current slice as:
 
-> Descriptor-backed DOT/JSON helper export for linear and supported branch
-> pipelines, including branch topology in JSON; not a stable graph schema and
-> not a CLI/file export contract.
+> Descriptor-backed DOT/JSON helper export for linear, selected-output branch, and explicit fan-in pipelines, including `branch` and `fan_in` topology in JSON; not a stable graph schema and not a CLI/file export contract.
 
 If a future slice stabilizes the export contract, update this page together with:
 

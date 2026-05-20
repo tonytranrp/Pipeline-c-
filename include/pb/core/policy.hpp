@@ -1,5 +1,9 @@
 #pragma once
 
+#include <concepts>
+#include <cstddef>
+#include <type_traits>
+
 /// @file
 /// @brief Baseline policy DSL — compile-time tag types for pipeline behaviour configuration.
 ///
@@ -112,5 +116,92 @@ struct normal {};
 struct verbose {};
 
 } // namespace diagnostics
+
+} // namespace pb::policy
+
+namespace pb::policy {
+
+// ---------------------------------------------------------------------------
+// Lifetime / ownership policy metadata
+// ---------------------------------------------------------------------------
+namespace lifetime {
+
+/// The pipeline borrows input/state references; caller-owned objects must outlive execution.
+struct borrowed {};
+
+/// The pipeline owns state/resources for the engine lifetime.
+struct owned {};
+
+/// The pipeline shares immutable views across case execution.
+struct shared_view {};
+
+} // namespace lifetime
+
+// ---------------------------------------------------------------------------
+// Clone / fan-out policy metadata
+// ---------------------------------------------------------------------------
+namespace clone {
+
+/// Inputs may be copied for fan-out/fan-in execution.
+struct copyable_input {};
+
+/// Fan-out uses borrowed const views instead of cloning input objects.
+struct borrowed_input {};
+
+/// Future extension point for user-provided clone/projection policy.
+struct custom {};
+
+} // namespace clone
+
+// ---------------------------------------------------------------------------
+// Scheduling / cancellation policy metadata
+// ---------------------------------------------------------------------------
+namespace scheduling {
+
+/// Results are reported in declaration/case-index order even if work runs in parallel.
+struct deterministic_case_order {};
+
+/// Passing branch cases may execute concurrently when the backend supports it.
+struct parallel_cases {};
+
+} // namespace scheduling
+
+namespace cancellation {
+
+/// Do not preempt already-running branch cases; collect all case results before the join.
+struct drain_running_cases {};
+
+/// Future extension point for fail-fast cancellation before work starts.
+struct fail_fast_not_started {};
+
+} // namespace cancellation
+
+// ---------------------------------------------------------------------------
+// Policy bundle and constexpr introspection helpers
+// ---------------------------------------------------------------------------
+
+template <class... Policies>
+struct bundle {
+  static constexpr std::size_t size = sizeof...(Policies);
+};
+
+template <class Policy, class Bundle>
+struct contains : std::false_type {};
+
+template <class Policy, class... Policies>
+struct contains<Policy, bundle<Policies...>> : std::bool_constant<(std::same_as<Policy, Policies> || ...)> {};
+
+template <class Policy, class Bundle>
+inline constexpr bool contains_v = contains<Policy, Bundle>::value;
+
+template <class... Policies>
+[[nodiscard]] consteval auto make_bundle() noexcept -> bundle<Policies...> {
+  return {};
+}
+
+using default_thread_pool_fan_in = bundle<scheduling::deterministic_case_order,
+                                          scheduling::parallel_cases,
+                                          cancellation::drain_running_cases,
+                                          clone::copyable_input>;
 
 } // namespace pb::policy

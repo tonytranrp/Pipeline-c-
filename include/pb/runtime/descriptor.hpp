@@ -25,6 +25,7 @@ inline constexpr std::string_view descriptor_schema_version = "pb.descriptor.v1"
 enum class descriptor_topology : std::uint8_t {
   linear = 0,
   branch = 1,
+  fan_in = 2,
 };
 
 // ---------------------------------------------------------------------------
@@ -238,11 +239,12 @@ struct branch_case_identity_strings {
 // Descriptor view — parameterised by stage count and optional branch-case count
 // ---------------------------------------------------------------------------
 
-template <std::size_t StageCount, std::size_t CaseCount = 0>
+template <std::size_t StageCount, std::size_t CaseCount = 0,
+          descriptor_topology Topology = (CaseCount > 0 ? descriptor_topology::branch
+                                                        : descriptor_topology::linear)>
 struct descriptor_view {
   static constexpr std::string_view schema_version = descriptor_schema_version;
-  static constexpr descriptor_topology topology =
-      CaseCount > 0 ? descriptor_topology::branch : descriptor_topology::linear;
+  static constexpr descriptor_topology topology = Topology;
   static constexpr std::size_t stage_count = StageCount;
   static constexpr std::size_t edge_count = StageCount > 0 ? StageCount - 1 : 0;
   static constexpr std::size_t case_count = CaseCount;
@@ -305,9 +307,8 @@ namespace detail {
 
 template <class Stage>
 [[nodiscard]] constexpr auto stage_type_names() noexcept {
-  if constexpr (pb::core::detail::is_selected_branch_node<Stage>::value) {
-    // For a branch node, input is the branch input_type,
-    // output is the variant-or-single output_type
+  if constexpr (pb::core::detail::is_selected_branch_node<Stage>::value ||
+                pb::core::detail::is_fan_in_branch_node<Stage>::value) {
     return std::pair{type_name<typename Stage::input_type>(),
                      type_name<typename Stage::output_type>()};
   } else {
@@ -318,7 +319,9 @@ template <class Stage>
 
 template <class Stage>
 [[nodiscard]] constexpr auto stage_topology() noexcept -> descriptor_topology {
-  if constexpr (pb::core::detail::is_selected_branch_node<Stage>::value) {
+  if constexpr (pb::core::detail::is_fan_in_branch_node<Stage>::value) {
+    return descriptor_topology::fan_in;
+  } else if constexpr (pb::core::detail::is_selected_branch_node<Stage>::value) {
     return descriptor_topology::branch;
   } else {
     return descriptor_topology::linear;
@@ -331,12 +334,12 @@ template <class Stage>
 //          Stage::case_count on non-branch-node stages.
 // ---------------------------------------------------------------------------
 
-template <class Stage, bool IsBranch = pb::core::detail::is_selected_branch_node<Stage>::value>
+template <class Stage, bool IsBranchLike = (pb::core::detail::is_selected_branch_node<Stage>::value ||
+                                           pb::core::detail::is_fan_in_branch_node<Stage>::value)>
 struct branch_case_count_or_zero : std::integral_constant<std::size_t, 0> {};
 
 template <class Stage>
-struct branch_case_count_or_zero<Stage, true>
-    : std::integral_constant<std::size_t, Stage::case_count> {};
+struct branch_case_count_or_zero<Stage, true> : std::integral_constant<std::size_t, Stage::case_count> {};
 
 template <class StageList>
 struct total_branch_case_count;
@@ -454,7 +457,8 @@ template <std::size_t TotalCases, class... Stages, std::size_t... StageIndexes>
   if constexpr (TotalCases > 0) {
     std::size_t case_offset = 0;
     auto collect_one = [&]<class Stage, std::size_t StageIndex>() {
-      if constexpr (pb::core::detail::is_selected_branch_node<Stage>::value) {
+      if constexpr (pb::core::detail::is_selected_branch_node<Stage>::value ||
+                    pb::core::detail::is_fan_in_branch_node<Stage>::value) {
         constexpr auto node_cases = branch_case_count_or_zero<Stage>::value;
         auto node_records =
             branch_case_records_from_node<Stage, StageIndex>(std::make_index_sequence<node_cases>{});
@@ -488,7 +492,13 @@ template <class Pipeline, class... Stages>
       source, std::make_index_sequence<edge_count>{});
   auto cases_arr = fill_branch_case_records<total_cases>(stages_tl, std::make_index_sequence<stage_count>{});
 
-  return descriptor_view<stage_count, total_cases>{
+  constexpr auto topology = (pb::core::detail::is_fan_in_branch_node<Stages>::value || ...)
+                                ? descriptor_topology::fan_in
+                                : ((pb::core::detail::is_selected_branch_node<Stages>::value || ...)
+                                       ? descriptor_topology::branch
+                                       : descriptor_topology::linear);
+
+  return descriptor_view<stage_count, total_cases, topology>{
       .stages = stages_arr,
       .edges = edges_arr,
       .branch_cases = cases_arr,
