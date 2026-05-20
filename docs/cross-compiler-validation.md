@@ -5,31 +5,31 @@ This page records the latest completed GitHub cross-compiler pass. It is evidenc
 ## Latest completed validation run
 
 ```text
-validated_code_sha=8ae7d596facc59873dc75a31d5c23cdc8cf06763
-date_utc=2026-05-19
+validated_code_sha=87299c14c813753d170911239e251064cbbfee6f
+date_utc=2026-05-20
 workflow=Cross Compiler Validation
-run=https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132278315
+run=https://github.com/tonytranrp/Pipeline-c-/actions/runs/26145779030
 result=PASS
 ```
 
-This is the current code validation run after the fan-in production-hardening commit that added failed-case aggregation, void-output fan-in aggregation, borrowed move-only fan-in, and case-failure observer/trace coverage. The workflow configures, builds, and runs CTest for Linux GCC/Clang C++20 and C++23, validates MSVC C++20 on Windows, and runs the package-release preset in a clean Ubuntu job.
+This is the current code validation run after the backend fan-in/export/policy hardening commit that added the standard-library `thread_pool_backend` fan-in slice, fan-in descriptor/export helper topology, and policy metadata for scheduling/cancellation/clone/lifetime boundaries. The workflow configures, builds, and runs CTest for Linux GCC/Clang C++20 and C++23, validates MSVC C++20 on Windows, and runs the package-release preset in a clean Ubuntu job.
 
 ## Matrix results
 
 | Lane | Environment | Result | Test summary | Compiler/tool evidence |
 | --- | --- | --- | --- | --- |
-| GCC C++20 | Ubuntu GitHub Actions, Ninja Debug | PASS | `162/162` | `g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0`, CMake `3.31.6`, Ninja `1.11.1` |
-| GCC C++23 | Ubuntu GitHub Actions, Ninja Debug | PASS | `162/162` | `g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0`, CMake `3.31.6`, Ninja `1.11.1` |
-| Clang C++20 | Ubuntu GitHub Actions, Ninja Debug | PASS | `162/162` | `Ubuntu clang version 18.1.3 (1ubuntu1)`, CMake `3.31.6`, Ninja `1.11.1` |
-| Clang C++23 | Ubuntu GitHub Actions, Ninja Debug | PASS | `162/162` | `Ubuntu clang version 18.1.3 (1ubuntu1)`, CMake `3.31.6`, Ninja `1.11.1` |
-| MSVC C++20 | Windows GitHub Actions, Visual Studio 2022 Debug | PASS | `161/161` | Visual Studio 2022 Enterprise, MSVC `19.44.35226`, CMake `3.31.6` |
-| Package release clean Ubuntu | `package-release-clang-ninja` preset | PASS | `162/162` + TGZ package generated | `Ubuntu clang version 18.1.3 (1ubuntu1)`, CMake `3.31.6`, Ninja `1.11.1`; generated `build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz` (`/home/runner/work/Pipeline-c-/Pipeline-c-/build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz` in the runner workspace) |
+| GCC C++20 | Ubuntu GitHub Actions, Ninja Debug | PASS | `163/163` | `g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0`, CMake `3.31.6`, Ninja `1.11.1` |
+| GCC C++23 | Ubuntu GitHub Actions, Ninja Debug | PASS | `163/163` | `g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0`, CMake `3.31.6`, Ninja `1.11.1` |
+| Clang C++20 | Ubuntu GitHub Actions, Ninja Debug | PASS | `163/163` | `Ubuntu clang version 18.1.3 (1ubuntu1)`, CMake `3.31.6`, Ninja `1.11.1` |
+| Clang C++23 | Ubuntu GitHub Actions, Ninja Debug | PASS | `163/163` | `Ubuntu clang version 18.1.3 (1ubuntu1)`, CMake `3.31.6`, Ninja `1.11.1` |
+| MSVC C++20 | Windows GitHub Actions, Visual Studio 2022 Debug | PASS | `163/163` | Visual Studio 2022 Enterprise, MSVC `19.44.35226`, CMake `3.31.6` |
+| Package release clean Ubuntu | `package-release-clang-ninja` preset | PASS | `163/163` + TGZ package generated | `Ubuntu clang version 18.1.3 (1ubuntu1)`, CMake `3.31.6`, Ninja `1.11.1`; generated `build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz` (`/home/runner/work/Pipeline-c-/Pipeline-c-/build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz` in the runner workspace) |
 
 The normal CI workflow also passed on the same code SHA:
 
 ```text
 workflow=CI
-run=https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132264545
+run=https://github.com/tonytranrp/Pipeline-c-/actions/runs/26145765932
 result=PASS
 jobs=Clang dev preset, Package release preset, Benchmark smoke preset
 ```
@@ -43,11 +43,9 @@ Before pushing the validated code SHA, the local tree passed:
 ```text
 git diff --check
 cmake --build --preset clang-dev-ninja
-ctest --preset clang-dev-ninja --output-on-failure                 # 162/162
-cmake --build --preset dev-ninja
-ctest --preset dev-ninja --output-on-failure                       # 162/162
+ctest --preset clang-dev-ninja --output-on-failure                 # 163/163
 cmake --build --preset package-release-clang-ninja
-ctest --preset package-release-clang-ninja --output-on-failure     # 162/162
+ctest --preset package-release-clang-ninja --output-on-failure     # 163/163
 cmake --build --preset package-release-clang-ninja --target package
 ```
 
@@ -63,10 +61,9 @@ This pass supports claims that the current tested surface configures, builds, pa
 
 It does **not** mean these roadmap items are implemented:
 
-- thread-pool fan-in work that landed after this validation snapshot; rerun this workflow before release if that code is included
 - stable descriptor/export compatibility beyond descriptor-record-backed helper DOT/JSON output
 - CLI/file export of user pipeline definitions
-- thread-pool / oneTBB / Taskflow / stdexec pipeline backends
+- oneTBB / Taskflow / stdexec pipeline backends
 - C++ modules
 - C++26 reflection/contracts integrations
 - benchmark thresholds or CI-enforced performance budgets

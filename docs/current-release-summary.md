@@ -5,12 +5,12 @@ Status snapshot for the current branch/export, compile-time benchmark, fan-in/th
 ## Candidate snapshot
 
 - Current branch: `main`.
-- Current validated code SHA: `8ae7d596facc59873dc75a31d5c23cdc8cf06763` (`Harden fan-in so joins can inspect every case`).
+- Current validated code SHA: `87299c14c813753d170911239e251064cbbfee6f` (`Support the first thread-pool fan-in backend slice`).
 - Parent fan-in feature SHA: `cfaa7e96b50e54aa83e26c5fa70a858caf270880` (`Add explicit fan-in to close the branch graph gap`).
-- GitHub cross-compiler validation: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132278315> — **passed**.
-- Normal CI workflow: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132264545> — **passed**.
-- Local verification paired with this code: Clang developer full CTest `162/162`, GCC/default developer full CTest `162/162`, package-release full CTest `162/162`, and package artifact `build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz`.
-- Compiler-warning audit: cross-compiler and CI logs for the last exact-SHA candidate had no compiler-style `warning:` diagnostics; GitHub still emits a hosted-runner Node 20 action annotation unrelated to project compiler warnings. The current backend fan-in working tree has fresh local Clang developer and package-release evidence but still needs GitHub cross-compiler rerun after commit.
+- GitHub cross-compiler validation: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26145779030> — **passed**.
+- Normal CI workflow: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26145765932> — **passed**.
+- Local verification paired with this code: Clang developer full CTest `163/163`, targeted backend/policy/export/descriptor CTest `33/33`, package-release full CTest `163/163`, and package artifact `build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz`.
+- Compiler-warning audit: cross-compiler and CI logs for the exact-SHA candidate had no compiler-style `warning:` diagnostics; GitHub still emits a hosted-runner Node 20 action annotation unrelated to project compiler warnings.
 
 ## What can be claimed with current evidence
 
@@ -39,38 +39,36 @@ Status snapshot for the current branch/export, compile-time benchmark, fan-in/th
 
 ## Validation evidence collected
 
-Current local verification for validated code SHA `8ae7d596facc59873dc75a31d5c23cdc8cf06763`:
+Current local verification for validated code SHA `87299c14c813753d170911239e251064cbbfee6f`:
 
 ```text
 git diff --check: passed
 cmake --build --preset clang-dev-ninja: passed
-ctest --preset clang-dev-ninja --output-on-failure: passed, 163/163 (working tree backend fan-in slice)
-cmake --build --preset dev-ninja: passed
-ctest --preset dev-ninja --output-on-failure: passed, 162/162
+ctest --preset clang-dev-ninja --output-on-failure: passed, 163/163
 cmake --build --preset package-release-clang-ninja: passed
-ctest --preset package-release-clang-ninja --output-on-failure: passed, 163/163 (working tree backend fan-in slice)
+ctest --preset package-release-clang-ninja --output-on-failure: passed, 163/163
 cmake --build --preset package-release-clang-ninja --target package: passed
 package artifact: build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz
 ```
 
-Latest exact-SHA GitHub cross-compiler validation run `26132278315` passed for `8ae7d596facc59873dc75a31d5c23cdc8cf06763`:
+Latest exact-SHA GitHub cross-compiler validation run `26145779030` passed for `87299c14c813753d170911239e251064cbbfee6f`:
 
 ```text
 workflow:           Cross Compiler Validation
-run:                https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132278315
-validated SHA:      8ae7d596facc59873dc75a31d5c23cdc8cf06763
-GCC C++20:          passed, 162/162, g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
-GCC C++23:          passed, 162/162, g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
-Clang C++20:        passed, 162/162, Ubuntu clang version 18.1.3 (1ubuntu1)
-Clang C++23:        passed, 162/162, Ubuntu clang version 18.1.3 (1ubuntu1)
-MSVC C++20:         passed, 161/161, Visual Studio 2022 Enterprise, MSVC 19.44.35226
-Package release:    passed, 162/162, package TGZ generated
+run:                https://github.com/tonytranrp/Pipeline-c-/actions/runs/26145779030
+validated SHA:      87299c14c813753d170911239e251064cbbfee6f
+GCC C++20:          passed, 163/163, g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+GCC C++23:          passed, 163/163, g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+Clang C++20:        passed, 163/163, Ubuntu clang version 18.1.3 (1ubuntu1)
+Clang C++23:        passed, 163/163, Ubuntu clang version 18.1.3 (1ubuntu1)
+MSVC C++20:         passed, 163/163, Visual Studio 2022 Enterprise, MSVC 19.44.35226
+Package release:    passed, 163/163, package TGZ generated
 CMake:              3.31.6 in all GitHub Actions lanes
 Ninja:              1.11.1 in GitHub Actions Linux lanes
 package artifact:   /home/runner/work/Pipeline-c-/Pipeline-c-/build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz
 ```
 
-Normal CI also passed on the same SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132264545>.
+Normal CI also passed on the same SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26145765932>.
 
 See [Cross-Compiler Validation Status](cross-compiler-validation.md) for the detailed matrix and workflow notes.
 
@@ -84,4 +82,4 @@ See [Cross-Compiler Validation Status](cross-compiler-validation.md) for the det
 
 ## Release note guardrail
 
-Release notes may mention the GitHub cross-compiler matrix pass only with exact code SHA `8ae7d596facc59873dc75a31d5c23cdc8cf06763` and workflow link <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132278315>. If later non-doc code changes land, rerun the cross-compiler workflow and update this page before tagging.
+Release notes may mention the GitHub cross-compiler matrix pass only with exact code SHA `87299c14c813753d170911239e251064cbbfee6f` and workflow link <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26145779030>. If later non-doc code changes land, rerun the cross-compiler workflow and update this page before tagging.

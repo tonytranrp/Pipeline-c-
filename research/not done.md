@@ -2,11 +2,11 @@
 
 This file tracks what is done, partially done, still missing, and what must be finished before Pipeline-c++ can claim the full original research-plan vision.
 
-Updated after the backend fan-in/export/policy slice that adds a standard-library thread-pool fan-in backend, fan-in descriptor/export helper topology, and policy metadata for scheduling/cancellation/clone/lifetime boundaries. The latest exact-SHA cross-compiler evidence remains current for code SHA `8ae7d596facc59873dc75a31d5c23cdc8cf06763`; rerun cross-compiler/package validation after this non-doc code slice is committed.
+Updated after the backend fan-in/export/policy slice that adds a standard-library thread-pool fan-in backend, fan-in descriptor/export helper topology, and policy metadata for scheduling/cancellation/clone/lifetime boundaries. The latest exact-SHA local, CI, and cross-compiler evidence is current for code SHA `87299c14c813753d170911239e251064cbbfee6f`.
 
 ## Latest evidence snapshot
 
-Current local evidence for this working tree after the backend fan-in/export/policy slice:
+Current local evidence for code SHA `87299c14c813753d170911239e251064cbbfee6f` after the backend fan-in/export/policy slice:
 
 ```text
 - git diff --check: passed
@@ -27,16 +27,16 @@ Latest GitHub validation for the same code SHA is current:
 
 ```text
 - workflow: Cross Compiler Validation
-- run: https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132278315
-- validated SHA: 8ae7d596facc59873dc75a31d5c23cdc8cf06763
-- GCC C++20/C++23: passed, 162/162
-- Clang C++20/C++23: passed, 162/162
-- MSVC C++20: passed, 161/161
-- clean Ubuntu package-release-clang-ninja: passed, 162/162 plus TGZ package generation
+- run: https://github.com/tonytranrp/Pipeline-c-/actions/runs/26145779030
+- validated SHA: 87299c14c813753d170911239e251064cbbfee6f
+- GCC C++20/C++23: passed, 163/163
+- Clang C++20/C++23: passed, 163/163
+- MSVC C++20: passed, 163/163
+- clean Ubuntu package-release-clang-ninja: passed, 163/163 plus TGZ package generation
 - package artifact path in runner: /home/runner/work/Pipeline-c-/Pipeline-c-/build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz
 ```
 
-Normal CI also passed on the same SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26132264545>. The cross-compiler and CI logs for this candidate had no compiler-style `warning:` diagnostics; GitHub still emits a hosted-runner Node 20 action annotation unrelated to compiler warnings.
+Normal CI also passed on the same SHA: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26145765932>. The cross-compiler and CI logs for this candidate had no compiler-style `warning:` diagnostics; GitHub still emits a hosted-runner Node 20 action annotation unrelated to compiler warnings.
 
 ## Done / production-grade for the current supported scope
 
