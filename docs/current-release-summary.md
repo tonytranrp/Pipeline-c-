@@ -75,7 +75,7 @@ See [Cross-Compiler Validation Status](cross-compiler-validation.md) for the det
 ## PR summary draft
 
 - Hardened the explicit fan-in slice with failed-case aggregation, void-output case aggregation, borrowed move-only fan-in, case-failure observer/trace coverage, and first thread-pool backend fan-in scheduling while preserving selected-output branch/join behavior; preemptive cancellation and dependency backends remain out of scope.
-- Hardened DOT/JSON helper output for supported linear and selected-output branch shapes, including branch identity metadata and JSON/DOT escaping coverage.
+- Hardened DOT/JSON helper output for supported linear, selected-output branch, and explicit fan-in shapes, including branch identity metadata, `fan_in` topology, and JSON/DOT escaping coverage.
 - Added developer-preset compile-time/header benchmark smoke targets and the aggregate `pb_compile_time_benchmarks` target; no timing thresholds are enforced.
 - Converted Release smoke tests from assert-only checks to explicit aborting test helpers, keeping Release/NDEBUG checks meaningful and warning-clean.
 - Verified the validated code SHA with local developer/package presets, GitHub cross-compiler validation, and normal CI.

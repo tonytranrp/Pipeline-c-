@@ -32,6 +32,16 @@ See `continue.md` for the resume checklist and next 3-agent long-horizon work qu
 
 Post-`aa3b8f6` branch hardening promoted sequential branch execution into the supported surface. Current branch/join evidence includes public `::branch<...>`, selected-output `::join<...>`, and explicit fan-in `::fan_in<...>` / `::join_all<...>` DSL support; homogeneous branch-output validation; explicit unified-output validation for variant execution output; heterogeneous outputs via `std::variant`; unified-output join validation plus selected-output type-list join dispatch with raw output type-list metadata retained; first-match-wins selected-output routing; all-passing sequential fan-in aggregation with skipped/completed/failed case states; void-output fan-in cases; borrowed move-only fan-in when all case stages accept `const input_type&`; const-input predicate evaluation in per-run and stateful execution; move-only selected-branch input consumption plus bad-predicate negative coverage; observer case events including fan-in case failure; stateful branch predicate/stage storage; branch runtime tests; branch examples; and targeted branch export compile-pass checks. Thread-pool backend fan-in now has a first implementation slice with deterministic case-index aggregation, drain-running-cases behavior, and synchronized observer forwarding. oneTBB/Taskflow/stdexec backends, preemptive cancellation, broad backend branch examples/benchmarks, and stable external descriptor/export compatibility remain roadmap-only until their own implementation and verification slices land.
 
+### Current production-grade boundary table
+
+| Surface | Production-grade for current scope | Partial / not production-grade yet |
+| --- | --- | --- |
+| Linear DSL/runtime | Typed linear DSL, compile-time validation, sequential runtime, result/expected-like handling, adapters, examples, and package smoke are tested and documented. | Full policy DSL, stable observer ABI, and richer runtime error policy are still future work. |
+| Branch/join | Selected-output branch/join, heterogeneous `std::variant` outputs, type-list selected-output joins, explicit sequential fan-in, failed/void fan-in slots, borrowed move-only fan-in, stateful branch storage, and selected-branch move-only consumption are supported. | Preemptive cancellation, dependency backend branch execution, selected-output tagged case-result policy, and broader ownership/lifetime policies remain roadmap-only. |
+| Backend execution | `sequential` plus the standard-library `thread_pool_backend` fan-in slice are supported and validated on the current code SHA. | oneTBB, Taskflow, stdexec, broad backend examples/benchmarks, and backend cancellation/error policy remain incomplete. |
+| Descriptor/export | DOT/JSON helpers and runtime descriptor projections cover linear, selected-output branch, and explicit fan-in helper output with golden tests. | Stable external schema compatibility, CLI/file export, backend graph export, and schema migration policy remain roadmap-only. |
+| Release evidence | Current code SHA has local full/package validation plus GitHub CI and cross-compiler/package evidence. | No published tag/release yet; MSVC C++23, Windows package-release, C++26 gates, and benchmark budgets remain unclaimed. |
+
 ## Local readiness checks
 
 Run the developer build and test loop before relying on the tree:

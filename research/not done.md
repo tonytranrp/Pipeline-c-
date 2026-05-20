@@ -60,6 +60,18 @@ These areas are implemented, tested, documented, and safe to present as supporte
 | Compile-time benchmark smoke scaffolding | Done as smoke/build evidence. | Header inclusion, 5-stage chain, 50-stage chain, aggregate `pb_compile_time_benchmarks`, and CTest labels exist. Timing budgets are not established. |
 | Release/package verification scaffolding | Done for the current candidate evidence. | Package release preset, package smoke, GitHub cross-compiler workflow, release docs, evidence templates, exact code-SHA GitHub matrix evidence, and warning-clean Release smoke checks exist. Publication is still not done. |
 
+### Documentation status by product surface
+
+These are the docs that should be treated as current after the backend fan-in/export/policy slice. If a later code change alters one of these surfaces, update the matching page in the same commit as the tests/evidence.
+
+| Documentation area | Current truth to preserve | Pages to keep synchronized |
+| --- | --- | --- |
+| Branch/join and fan-in | Selected-output branch/join and explicit fan-in are supported for the documented sequential and thread-pool fan-in slices; dependency backends, preemptive cancellation, and richer error/cancellation policies are still roadmap-only. | `docs/branch-join-roadmap.md`, `docs/sequential-branch-execution-limitations.md`, `docs/fan-in-join-design.md`, this file |
+| Backend support | `sequential` is the baseline backend and `thread_pool_backend` is supported only for the standard-library fan-in slice; oneTBB, Taskflow, and stdexec are not implemented. | `docs/optional-backends-roadmap.md`, `docs/research-verification-matrix.md`, `docs/roadmap-gap-map.md` |
+| Descriptor/export helpers | DOT/JSON helpers are documented and golden-tested for linear, selected-output branch, and explicit fan-in pipelines, but remain helper output rather than a stable external schema. | `docs/graph-export-roadmap.md`, `docs/export-helper-schema.md`, `docs/runtime-descriptor-roadmap.md` |
+| Release evidence | Exact-SHA local, CI, cross-compiler, and package evidence exists for code SHA `87299c14c813753d170911239e251064cbbfee6f`; rerun if non-doc code changes land before tagging. | `docs/cross-compiler-validation.md`, `docs/current-release-summary.md`, `docs/production-readiness.md`, `docs/research-verification-matrix.md` |
+| Remaining production gaps | Full policy DSL, stable descriptor/export compatibility, optional dependency backends, benchmark budgets, modules/C++26 gates, and release publication remain incomplete. | `docs/roadmap-gap-map.md`, this file, release notes |
+
 ## Implemented but still partial / almost production-grade
 
 These areas work in meaningful slices, but should not be described as fully production-grade until the missing items in the right column are finished.
@@ -77,7 +89,7 @@ These areas work in meaningful slices, but should not be described as fully prod
 | Stateful stage storage | Sequential stateful storage preserves linear stages and branch predicates/stages under the current policies. | Borrowed/shared/unique ownership policies, reset policy, thread-local future-backend storage, external-resource cleanup policy, and public lifetime diagnostics. |
 | Adapters | Free-function, member-function, function-object/functor, expected-like/result paths, and current void/error behavior are covered. | Coroutine adapter, sender/receiver adapter, C API ownership/error adapter, runtime-bound callable adapter, full overloaded/ref-qualified member handling, reference-lifetime adapter, and policy docs. |
 | Compile-time performance | Smoke targets prove representative translation units build; CMake has time-trace support. | Recorded release timing baselines, branch/join compile-time benchmark, thresholds, CI regression budget, ftime-trace aggregation, compile-time dashboard, and IWYU enforcement. |
-| Cross-compiler validation | GitHub workflow covers GCC/Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release for validated code SHA `8ae7d59`. | MSVC C++23 if supported; Windows package-release; experimental C++26 feature-gate evidence if those gates are claimed; rerun if later non-doc code changes land. |
+| Cross-compiler validation | GitHub workflow covers GCC/Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release for validated code SHA `87299c14c813753d170911239e251064cbbfee6f`. | MSVC C++23 if supported; Windows package-release; experimental C++26 feature-gate evidence if those gates are claimed; rerun if later non-doc code changes land. |
 
 ## Not implemented yet / roadmap-only
 
@@ -241,9 +253,9 @@ Stateful branch storage:                  8.4 / 10
 DOT/JSON helper export:                   8.4 / 10
 Stable descriptor/export contract:        4.5 / 10
 Compile-time benchmark scaffolding:       7.2 / 10
-Optional pipeline backends:               3.2 / 10
+Optional pipeline backends:               4.2 / 10
 Release readiness before tag:             8.4 / 10
-Full original research-plan completion:   6.1 / 10
+Full original research-plan completion:   6.4 / 10
 ```
 
 ## Main conclusion
