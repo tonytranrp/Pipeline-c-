@@ -1,7 +1,6 @@
 #pragma once
 
 #include <concepts>
-#include <optional>
 #include <string>
 #include <string_view>
 #include <tuple>

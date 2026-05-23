@@ -2,7 +2,6 @@
 
 #include <array>
 #include <exception>
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -132,9 +131,7 @@ template <class Stage>
   if (stage_key != "<unnamed>") {
     return stage_id{.key = std::string{stage_key}, .name = std::string{pb::core::stage_traits<Stage>::name()}};
   }
-  std::ostringstream stream;
-  stream << stage_index;
-  return stage_id{.key = stream.str(), .name = std::string{pb::core::stage_traits<Stage>::name()}};
+  return stage_id{.key = std::to_string(stage_index), .name = std::string{pb::core::stage_traits<Stage>::name()}};
 }
 
 template <class Stage>

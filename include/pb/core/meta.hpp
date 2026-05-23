@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstddef>
+#include <tuple>
 #include <type_traits>
+#include <utility>
 
 namespace pb::meta {
 
@@ -35,15 +37,30 @@ struct push_front<T, type_list<Ts...>> { using type = type_list<T, Ts...>; };
 template <class T, class List>
 using push_front_t = typename push_front<T, List>::type;
 
+namespace detail {
+
+template <class List, class T, class IndexSequence>
+struct replace_back_impl;
+
+template <class... Ts, class T, std::size_t... Is>
+struct replace_back_impl<type_list<Ts...>, T, std::index_sequence<Is...>> {
+  using tuple_t = std::tuple<Ts...>;
+  static constexpr std::size_t last = sizeof...(Ts) - 1;
+  using type = type_list<std::conditional_t<Is < last, std::tuple_element_t<Is, tuple_t>, T>...>;
+};
+
+} // namespace detail
+
 template <class List, class T>
 struct replace_back;
 
-template <class Last, class T>
-struct replace_back<type_list<Last>, T> { using type = type_list<T>; };
+template <class T, class U>
+struct replace_back<type_list<T>, U> { using type = type_list<U>; };
 
-template <class First, class Second, class... Rest, class T>
-struct replace_back<type_list<First, Second, Rest...>, T> {
-  using type = push_front_t<First, typename replace_back<type_list<Second, Rest...>, T>::type>;
+template <class... Ts, class T>
+struct replace_back<type_list<Ts...>, T> {
+  using type = typename detail::replace_back_impl<
+      type_list<Ts...>, T, std::make_index_sequence<sizeof...(Ts)>>::type;
 };
 
 template <class List, class T>
@@ -70,18 +87,10 @@ struct all_of<type_list<Ts...>, Pred> : std::bool_constant<(Pred<Ts>::value && .
 template <class List, std::size_t Index>
 struct at;
 
-namespace detail {
-template <std::size_t Index, class Head, class... Tail>
-struct at_impl : at_impl<Index - 1, Tail...> {};
-
-template <class Head, class... Tail>
-struct at_impl<0, Head, Tail...> { using type = Head; };
-} // namespace detail
-
 template <class... Ts, std::size_t Index>
 struct at<type_list<Ts...>, Index> {
   static_assert(Index < sizeof...(Ts), "pb::meta::at index out of range");
-  using type = typename detail::at_impl<Index, Ts...>::type;
+  using type = std::tuple_element_t<Index, std::tuple<Ts...>>;
 };
 
 template <class List, std::size_t Index>
