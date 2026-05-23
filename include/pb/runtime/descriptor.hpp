@@ -116,39 +116,75 @@ template <std::size_t Value>
   return digits;
 }
 
-template <std::size_t BranchStageIdx, std::size_t CaseIdx>
-[[nodiscard]] consteval auto make_branch_case_id_storage() noexcept {
-  constexpr std::size_t total = (sizeof("branch.") - 1) + decimal_digits<BranchStageIdx>() +
-                                (sizeof(".case.") - 1) + decimal_digits<CaseIdx>();
-
-  std::array<char, total + 1> storage{};
+template <std::size_t N>
+struct consteval_buffer {
+  std::array<char, N> data{};
   std::size_t pos = 0;
 
-  auto append_literal = [&storage, &pos](std::string_view text) {
+  constexpr void append_literal(std::string_view text) {
     for (const char ch : text) {
-      storage[pos++] = ch;
+      data[pos++] = ch;
     }
-  };
+  }
 
-  auto append_decimal = [&storage, &pos](std::size_t value) {
+  constexpr void append_decimal(std::size_t value) {
     std::array<char, 20> digits{};
     std::size_t len = 0;
     do {
       digits[len++] = static_cast<char>('0' + (value % 10));
       value /= 10;
     } while (value != 0);
-
     while (len > 0) {
-      storage[pos++] = digits[--len];
+      data[pos++] = digits[--len];
     }
-  };
+  }
 
-  append_literal("branch.");
-  append_decimal(BranchStageIdx);
-  append_literal(".case.");
-  append_decimal(CaseIdx);
-  storage[total] = '\0';
-  return storage;
+  constexpr void null_terminate() { data[pos] = '\0'; }
+
+  [[nodiscard]] constexpr std::string_view view() const { return {data.data(), pos}; }
+};
+
+template <std::size_t BranchStageIdx, std::size_t CaseIdx>
+[[nodiscard]] consteval auto make_branch_case_id_storage() noexcept {
+  constexpr std::size_t total = (sizeof("branch.") - 1) + decimal_digits<BranchStageIdx>() +
+                                (sizeof(".case.") - 1) + decimal_digits<CaseIdx>();
+  consteval_buffer<total + 1> buf{};
+  buf.append_literal("branch.");
+  buf.append_decimal(BranchStageIdx);
+  buf.append_literal(".case.");
+  buf.append_decimal(CaseIdx);
+  buf.null_terminate();
+  return buf.data;
+}
+
+template <std::size_t BranchStageIdx, std::size_t CaseIdx>
+[[nodiscard]] consteval auto make_predicate_node_id_storage() noexcept {
+  constexpr std::string_view suffix{".predicate"};
+  constexpr std::size_t total = (sizeof("branch.") - 1) + decimal_digits<BranchStageIdx>() +
+                                (sizeof(".case.") - 1) + decimal_digits<CaseIdx>() + suffix.size();
+  consteval_buffer<total + 1> buf{};
+  buf.append_literal("branch.");
+  buf.append_decimal(BranchStageIdx);
+  buf.append_literal(".case.");
+  buf.append_decimal(CaseIdx);
+  buf.append_literal(suffix);
+  buf.null_terminate();
+  return buf.data;
+}
+
+template <std::size_t BranchStageIdx, std::size_t CaseIdx>
+[[nodiscard]] consteval auto make_stage_node_id_storage() noexcept {
+  constexpr std::string_view suffix{".stage"};
+  constexpr std::size_t total = (sizeof("branch.") - 1) + decimal_digits<BranchStageIdx>() +
+                                (sizeof(".case.") - 1) + decimal_digits<CaseIdx>() + suffix.size();
+  consteval_buffer<total + 1> buf{};
+  buf.append_literal("branch.");
+  buf.append_decimal(BranchStageIdx);
+  buf.append_literal(".case.");
+  buf.append_decimal(CaseIdx);
+  buf.append_literal(suffix);
+  buf.null_terminate();
+  return buf.data;
 }
 
 template <std::size_t BranchStageIdx, std::size_t CaseIdx>
@@ -157,81 +193,11 @@ struct branch_case_identity_strings {
   static constexpr std::string_view case_id{case_id_storage.data(), case_id_storage.size() - 1};
   static constexpr std::string_view case_key{case_id};
 
-  static constexpr auto predicate_node_id_storage = [] {
-    constexpr std::string_view prefix{"branch."};
-    constexpr std::string_view middle{".case."};
-    constexpr std::string_view suffix{".predicate"};
-    constexpr auto branch_digits = decimal_digits<BranchStageIdx>();
-    constexpr auto case_digits = decimal_digits<CaseIdx>();
-    std::array<char, prefix.size() + branch_digits + middle.size() + case_digits + suffix.size() + 1> storage{};
-    std::size_t pos = 0;
-
-    auto append_literal = [&storage, &pos](std::string_view text) {
-      for (const char ch : text) {
-        storage[pos++] = ch;
-      }
-    };
-    auto append_decimal = [&storage, &pos](std::size_t value) {
-      std::array<char, 20> digits{};
-      std::size_t len = 0;
-      do {
-        digits[len++] = static_cast<char>('0' + (value % 10));
-        value /= 10;
-      } while (value != 0);
-
-      while (len > 0) {
-        storage[pos++] = digits[--len];
-      }
-    };
-
-    append_literal(prefix);
-    append_decimal(BranchStageIdx);
-    append_literal(middle);
-    append_decimal(CaseIdx);
-    append_literal(suffix);
-    storage[pos] = '\0';
-    return storage;
-  }();
-
+  static constexpr auto predicate_node_id_storage = make_predicate_node_id_storage<BranchStageIdx, CaseIdx>();
   static constexpr std::string_view predicate_node_id{predicate_node_id_storage.data(),
                                                       predicate_node_id_storage.size() - 1};
 
-  static constexpr auto stage_node_id_storage = [] {
-    constexpr std::string_view prefix{"branch."};
-    constexpr std::string_view middle{".case."};
-    constexpr std::string_view suffix{".stage"};
-    constexpr auto branch_digits = decimal_digits<BranchStageIdx>();
-    constexpr auto case_digits = decimal_digits<CaseIdx>();
-    std::array<char, prefix.size() + branch_digits + middle.size() + case_digits + suffix.size() + 1> storage{};
-    std::size_t pos = 0;
-
-    auto append_literal = [&storage, &pos](std::string_view text) {
-      for (const char ch : text) {
-        storage[pos++] = ch;
-      }
-    };
-    auto append_decimal = [&storage, &pos](std::size_t value) {
-      std::array<char, 20> digits{};
-      std::size_t len = 0;
-      do {
-        digits[len++] = static_cast<char>('0' + (value % 10));
-        value /= 10;
-      } while (value != 0);
-
-      while (len > 0) {
-        storage[pos++] = digits[--len];
-      }
-    };
-
-    append_literal(prefix);
-    append_decimal(BranchStageIdx);
-    append_literal(middle);
-    append_decimal(CaseIdx);
-    append_literal(suffix);
-    storage[pos] = '\0';
-    return storage;
-  }();
-
+  static constexpr auto stage_node_id_storage = make_stage_node_id_storage<BranchStageIdx, CaseIdx>();
   static constexpr std::string_view stage_node_id{stage_node_id_storage.data(), stage_node_id_storage.size() - 1};
 };
 

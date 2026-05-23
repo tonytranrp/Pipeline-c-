@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <array>
 #include <exception>
@@ -568,34 +568,42 @@ template <class BranchNode, std::size_t StageIndex, class Input, std::size_t Cas
   }
 }
 
-template <class BranchNode, std::size_t StageIndex, class Input, std::size_t CaseIndex, class Case, class... Rest>
-[[nodiscard]] auto run_selected_branch_cases(observer* sink, Input& input) -> result<typename BranchNode::output_type> {
-  using Predicate = typename Case::predicate_type;
-  using BranchStage = typename Case::stage_type;
-
-  auto branch_id = stage_id_for<BranchNode>(StageIndex);
-  auto predicate_id = branch_child_stage_id<BranchNode, Predicate>(StageIndex, CaseIndex, "predicate");
-
-  auto predicate_result = evaluate_branch_predicate<BranchNode, Predicate, StageIndex>(sink, input, CaseIndex);
-  if (!predicate_result.has_value()) {
-    return result<typename BranchNode::output_type>{std::move(predicate_result).error()};
-  }
-  if (predicate_result.value()) {
-    if (sink) sink->on_case_selected(branch_id, CaseIndex, predicate_id);
-    return run_branch_stage<BranchNode, BranchStage, StageIndex, CaseIndex>(sink, std::move(input), CaseIndex);
-  }
-  if (sink) sink->on_case_skipped(branch_id, CaseIndex, predicate_id);
-  if constexpr (sizeof...(Rest) == 0) {
-    return unselected_branch_error<BranchNode, StageIndex, Input>();
-  } else {
-    return run_selected_branch_cases<BranchNode, StageIndex, Input, CaseIndex + 1, Rest...>(sink, input);
-  }
-}
-
 template <class BranchNode, std::size_t StageIndex, class Input, class... Cases>
 [[nodiscard]] auto run_selected_branch(observer* sink, Input& input, pb::meta::type_list<Cases...>)
     -> result<typename BranchNode::output_type> {
-  return run_selected_branch_cases<BranchNode, StageIndex, Input, 0, Cases...>(sink, input);
+  using OutputType = typename BranchNode::output_type;
+  bool matched = false;
+  bool has_error = false;
+  result<OutputType> output = unselected_branch_error<BranchNode, StageIndex, Input>();
+
+  auto process = [&]<std::size_t CaseIndex, class Case>() {
+    if (matched || has_error) return;
+    using Predicate = typename Case::predicate_type;
+    using BranchStage = typename Case::stage_type;
+
+    auto branch_id = stage_id_for<BranchNode>(StageIndex);
+    auto predicate_id = branch_child_stage_id<BranchNode, Predicate>(StageIndex, CaseIndex, "predicate");
+
+    auto predicate_result = evaluate_branch_predicate<BranchNode, Predicate, StageIndex>(sink, input, CaseIndex);
+    if (!predicate_result.has_value()) {
+      has_error = true;
+      output = result<OutputType>{std::move(predicate_result).error()};
+      return;
+    }
+    if (predicate_result.value()) {
+      matched = true;
+      if (sink) sink->on_case_selected(branch_id, CaseIndex, predicate_id);
+      output = run_branch_stage<BranchNode, BranchStage, StageIndex, CaseIndex>(sink, std::move(input), CaseIndex);
+      return;
+    }
+    if (sink) sink->on_case_skipped(branch_id, CaseIndex, predicate_id);
+  };
+
+  [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+    (process.template operator()<Is, Cases>(), ...);
+  }(std::index_sequence_for<Cases...>{});
+
+  return output;
 }
 
 template <class BranchNode, std::size_t StageIndex, class Input>

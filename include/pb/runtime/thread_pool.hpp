@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <condition_variable>
 #include <functional>
@@ -69,14 +69,44 @@ public:
     return future;
   }
 
+
+  template <class Iterator>
+  auto enqueue_range(Iterator begin, Iterator end)
+      -> std::vector<std::future<std::invoke_result_t<typename std::iterator_traits<Iterator>::value_type>>> {
+    using R = std::invoke_result_t<typename std::iterator_traits<Iterator>::value_type>;
+    std::vector<std::future<R>> futures;
+    futures.reserve(std::distance(begin, end));
+
+    {
+      std::unique_lock lock(mutex_);
+      if (stop_) {
+        throw std::runtime_error("enqueue_range on stopped thread_pool");
+      }
+
+      for (auto it = begin; it != end; ++it) {
+        auto task = std::make_shared<std::packaged_task<R()>>(*it);
+        futures.push_back(task->get_future());
+        tasks_.emplace([task] { (*task)(); });
+      }
+    }
+    cv_.notify_all();
+    return futures;
+  }
+
+  [[nodiscard]] std::size_t pending_tasks() const {
+    std::unique_lock lock(mutex_);
+    return tasks_.size();
+  }
+
   [[nodiscard]] std::size_t worker_count() const noexcept { return workers_.size(); }
 
 private:
   std::vector<std::thread> workers_;
   std::queue<std::function<void()>> tasks_;
-  std::mutex mutex_;
+  mutable std::mutex mutex_;
   std::condition_variable cv_;
   bool stop_{false};
 };
 
 } // namespace pb::runtime
+
