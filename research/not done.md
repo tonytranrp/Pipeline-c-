@@ -11,7 +11,7 @@ Current local evidence for the working tree (HEAD `9299bac` — error-policy par
 ```text
 - cmake --preset clang-dev-ninja: passed
 - cmake --build --preset clang-dev-ninja: passed
-- ctest --preset clang-dev-ninja --output-on-failure: passed, 200/200
+- ctest --preset clang-dev-ninja --output-on-failure: passed, 201/201
 ```
 
 The previous validated code SHA `87299c14c813753d170911239e251064cbbfee6f` still has fresh local + GitHub evidence:
@@ -95,7 +95,7 @@ These areas work in meaningful slices, but should not be described as fully prod
 | Runtime error model | `try_run()` captures supported failures into result-like output; expected-like propagation and runtime error formatting exist. The error-policy DSL (`throwing`/`terminating`/`ignoring`/`propagating`/`verbose` engines) is shipped, parity-hardened, composable, and `std::expected`-covered. | Runtime-enforced `::with<pb::policy::...>` DSL beyond marker bundles, no-exception policy, serialized error records, and unified `run()` / `try_run()` policy narrative docs that distinguish wrapper behaviour from baseline-engine `decltype(auto)` semantics. |
 | Diagnostics | Compile-fail tests cover important current structural errors; runtime errors carry stage identity. New compile-fail diagnostics for indexed I/O alias out-of-range now name the failing alias and bound. | Stable diagnostic wording/versioning, machine-readable diagnostic schema, suggested-fix catalog, cross-compiler diagnostic parity, branch/fan-in/backend diagnostic matrix. |
 | Observer/tracing | Sequential observer hooks and trace-related smoke coverage exist; the policy-DSL `verbose_engine` auto-attaches a `verbose_observer` with a stable `[pb.verbose] <event> stage=<key>` line schema. | Stable observer ABI/event schema, observer ownership/lifetime contract, tracing sink API, trace file format, cross-executor behavior, and observer/trace overhead benchmarks. |
-| Stateful stage storage | Sequential stateful storage preserves linear stages and branch predicates/stages under the current policies, including non-copyable owned stage state. | Borrowed/reference, shared/unique ownership policies, reset policy, thread-local future-backend storage, external-resource cleanup policy, and public lifetime diagnostics. |
+| Stateful stage storage | Sequential stateful storage preserves linear stages and branch predicates/stages under the current policies, including non-copyable owned stage state. **Stateful storage DSL** (`pb.state.v1`) ships a thread-local `pb::current_state<S>()` plus the four engine-wrapper factories `pb::with_state` / `pb::with_borrowed_state` / `pb::with_shared_state` / `pb::with_reset_per_run_state` (owned / borrowed / shared / reset_per_run). Composes with every error-policy wrapper, exception-safe through stage failures, observer/descriptor forwarding parity, schema-pinned in `tests/compile_pass/schema_v1_cross_version_regression.cpp`. Header: `include/pb/runtime/state.hpp`. Docs: `docs/state-dsl.md`. Test: `tests/runtime/state_dsl_smoke.cpp`. | Thread-local future-backend storage, external-resource cleanup policy, public lifetime diagnostics for misuse beyond `current_state<T>()` outside-scope, descriptor-record entry for stateful wrappers. |
 | Adapters | Free-function, member-function, function-object/functor, expected-like/result paths, current void/error behavior, and the gated `pb::reflect_stage<T>` scaffold are covered. | Working C++26 reflection-driven adapter (currently scaffold only, falls back on C++20), coroutine adapter, sender/receiver adapter, C API ownership/error adapter, runtime-bound callable adapter, full overloaded/ref-qualified member handling, reference-lifetime adapter, and policy docs. |
 | Compile-time performance | Smoke targets prove representative translation units build; CMake has time-trace support. | Recorded release timing baselines, branch/join compile-time benchmark, thresholds, CI regression budget, ftime-trace aggregation, compile-time dashboard, and IWYU enforcement. |
 | Cross-compiler validation | GitHub workflow covers GCC/Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release for validated code SHA `87299c14c813753d170911239e251064cbbfee6f`. | Rerun the workflow on the new working-tree SHA; MSVC C++23 if supported; Windows package-release; experimental C++26 feature-gate evidence if those gates are claimed. |
@@ -146,7 +146,7 @@ Need to implement:
 - runtime-enforced ::with<pb::policy::...> semantics beyond marker bundles
 - runtime copy/move/clone/projection policy beyond pb::shared_view + pb::projected
 - runtime reference lifetime/shared-view policy
-- state storage policy (borrowed/shared/unique/reset/thread-local)
+- (Closed by stateful storage DSL — `pb::with_state` / `pb::with_borrowed_state` / `pb::with_shared_state` / `pb::with_reset_per_run_state`. Remaining: thread-local backend storage policy + unique-ownership policy.)
 - diagnostic verbosity policy (beyond the verbose_engine wrapper)
 - executor capability policy
 - assertion/contract policy
@@ -231,7 +231,7 @@ Best next steps from lowest risk / highest production-readiness value to highest
 ```text
 1. Rerun cross-compiler validation on the new SHA (release-readiness pack + the committed 9299bac parity-hardening batch).
 2. Broaden the pb_cli surface to accept user-defined pipelines now that schema migration policy is decided.
-3. Finalize state/lifetime policies for owned, borrowed, shared, reset, and resource-owning stages.
+3. Add owned-per-case unique-clone + thread-local backend storage policies on top of the shipped stateful storage DSL.
 4. Add owned per-case unique-clone policy on top of pb::shared_view / pb::projected for the cases shared-view semantics do not cover.
 5. Add thread-pool backend examples, benchmarks, stress tests, and richer cancellation/error policy tests.
 6. Add optional oneTBB / Taskflow / stdexec backends only after the thread-pool backend proves the lowering model.
@@ -251,7 +251,7 @@ Diagnostics current surface:              7.8 / 10  (was 7.6 — indexed-I/O OOB
 Selected-output branch/join execution:    8.6 / 10
 Fan-in join execution:                    9.0 / 10  (was 8.8 — shared_view/projected close the owned-non-copyable case)
 Move-only selected-branch input support:  7.8 / 10  (was 7.6 — shared_view extends the supported envelope)
-Stateful branch storage:                  8.4 / 10
+Stateful branch storage:                  9.0 / 10  (was 8.4 — stateful storage DSL closes the owned/borrowed/shared/reset gap)
 DOT / JSON / text helper export:          8.8 / 10  (was 8.4 — export_text added, v1 contract pinned)
 Stable descriptor/export contract:        5.5 / 10  (was 4.5 — typed v1 schema contract + byte-equal goldens)
 Compile-time benchmark scaffolding:       7.2 / 10
@@ -261,7 +261,7 @@ Release readiness before tag:             8.2 / 10  (was 8.4 — new SHA not yet
 Stable descriptor/export contract:        6.5 / 10  (was 5.5 — v1 stability promise + cross-version regression + v1→v2 migration policy)
 Diagnostics current surface:              8.4 / 10  (was 7.8 — expanded compile-fail goldens, error JSON schema, NDJSON trace, observer ABI/line-schema)
 Observer/tracing surface:                 7.5 / 10  (new line — pb.observer.v1 ABI + pb.observer.verbose.v1 line schema + pb.trace.ndjson.v1 streaming sink)
-Full original research-plan completion:   7.6 / 10  (was 7.2 — release-readiness pack closes 6 production-grade gaps)
+Full original research-plan completion:   7.8 / 10  (was 7.6 — stateful storage DSL closes a major policy-DSL gap with production-grade composability)
 ```
 
 ## Main conclusion

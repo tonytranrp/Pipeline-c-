@@ -25,6 +25,7 @@
 #include "pb/runtime/result.hpp"
 #include "pb/runtime/routing.hpp"
 #include "pb/runtime/sequential.hpp"
+#include "pb/runtime/state.hpp"
 #include "pb/runtime/thread_pool_backend.hpp"
 #include "pb/runtime/trace.hpp"
 
@@ -152,6 +153,8 @@ using runtime::trace_ndjson_schema_version;
 using runtime::tracing_sink;
 using runtime::thread_pool_backend;
 using runtime::trace_sink;
+// state DSL surface is declared directly in namespace pb (state.hpp), so no
+// re-exports are needed here.
 
 // diagnostics
 using diagnostics::diagnostic_collector;

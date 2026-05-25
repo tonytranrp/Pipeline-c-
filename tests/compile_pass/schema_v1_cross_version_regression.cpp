@@ -132,6 +132,8 @@ int main() {
                 "pb.error.v1 JSON-shape identifier is part of the v1 stability promise");
   static_assert(pb::trace_ndjson_schema_version == std::string_view{"pb.trace.ndjson.v1"},
                 "pb.trace.ndjson.v1 streaming-sink identifier is part of the v1 stability promise");
+  static_assert(pb::state_dsl_schema_version == std::string_view{"pb.state.v1"},
+                "pb.state.v1 stateful-storage-DSL identifier is part of the v1 stability promise");
 
   // ── 2. Linear JSON: EdgeRecord 7-field order ──
   //

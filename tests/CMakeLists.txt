@@ -523,6 +523,12 @@ pb_apply_project_options(pb_runtime_tracing_sink_ndjson_smoke PRIVATE)
 add_test(NAME pb_runtime_tracing_sink_ndjson_smoke COMMAND pb_runtime_tracing_sink_ndjson_smoke)
 set_tests_properties(pb_runtime_tracing_sink_ndjson_smoke PROPERTIES LABELS "runtime;trace;ndjson;schema;v1")
 
+add_executable(pb_runtime_state_dsl_smoke runtime/state_dsl_smoke.cpp)
+target_link_libraries(pb_runtime_state_dsl_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_state_dsl_smoke PRIVATE)
+add_test(NAME pb_runtime_state_dsl_smoke COMMAND pb_runtime_state_dsl_smoke)
+set_tests_properties(pb_runtime_state_dsl_smoke PROPERTIES LABELS "runtime;state;policy;schema;v1")
+
 add_executable(pb_runtime_fan_in_shared_view_smoke runtime/fan_in_shared_view_smoke.cpp)
 target_link_libraries(pb_runtime_fan_in_shared_view_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_fan_in_shared_view_smoke PRIVATE)
