@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <ostream>
 #include <span>
 #include <sstream>
 #include <string>
@@ -14,6 +15,19 @@
 namespace pb::runtime {
 
 inline constexpr std::string_view trace_schema_version = "pb.trace.v1";
+
+/// Streaming NDJSON trace-file format identifier.  The streaming
+/// format differs from the batch JSON shape produced by
+/// `pb::runtime::export_json(span<trace_event>)`: NDJSON writes one
+/// JSON object per line, terminated by '\n', and is suitable for
+/// tailing, line-grepping, and streaming consumers that can't
+/// hold the full event list in memory.
+///
+/// The per-event JSON shape itself matches the batch format — both
+/// share `detail::append_trace_event_json`.  Only the framing differs
+/// (batch wraps events in a single `{"schema_version":...,"events":[...]}`
+/// envelope; NDJSON has no envelope and emits one record per line).
+inline constexpr std::string_view trace_ndjson_schema_version = "pb.trace.ndjson.v1";
 
 enum class trace_event_kind : std::uint8_t {
   stage_start,
@@ -249,5 +263,51 @@ inline void append_trace_event_json(std::ostream& stream, const trace_event& eve
 [[nodiscard]] inline auto export_json(const trace_recorder& recorder) -> std::string {
   return export_json(std::span<const trace_event>{recorder.events().data(), recorder.events().size()});
 }
+
+/// Streaming NDJSON trace sink.  Writes one JSON object per event,
+/// each terminated by '\n', to a `std::ostream` (file, stringstream,
+/// std::clog).  Suitable for tailing logs in real time, line-grepping,
+/// and forwarding events to external trace collectors without buffering.
+///
+/// Schema: `pb.trace.ndjson.v1` (see `trace_ndjson_schema_version`).
+/// Per-event JSON shape is identical to the batch format produced by
+/// `export_json(span<trace_event>)` — the difference is purely framing.
+///
+/// Pair with `trace_observer` to capture pipeline events:
+///
+/// @code
+///   std::ofstream file{"trace.ndjson"};
+///   pb::tracing_sink sink{&file};
+///   pb::trace_observer obs{sink};
+///   engine.set_observer(&obs);
+///   engine.run(input);
+/// @endcode
+///
+/// Passing `nullptr` makes the sink a no-op — useful for benchmarking
+/// the cost of the observer indirection itself.  The sink does not
+/// flush — that's the ostream's responsibility (e.g. via line buffering
+/// or explicit `std::flush`).  The sink is not thread-safe; for the
+/// thread-pool backend, fan-in events are forwarded under the runtime's
+/// own synchronization before reaching the sink.
+class tracing_sink final : public trace_sink {
+public:
+  tracing_sink() = default;
+  explicit tracing_sink(std::ostream* stream) noexcept : stream_{stream} {}
+
+  void set_stream(std::ostream* stream) noexcept { stream_ = stream; }
+  [[nodiscard]] auto stream() const noexcept -> std::ostream* { return stream_; }
+
+  void write(const trace_event& event) override {
+    if (stream_ == nullptr) {
+      return;
+    }
+    std::ostringstream line;
+    detail::append_trace_event_json(line, event);
+    *stream_ << line.str() << '\n';
+  }
+
+private:
+  std::ostream* stream_{nullptr};
+};
 
 } // namespace pb::runtime

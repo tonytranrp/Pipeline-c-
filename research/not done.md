@@ -6,12 +6,12 @@ Updated after the production-grade batch that adds the typed `pb.core.graph.v1` 
 
 ## Latest evidence snapshot
 
-Current local evidence for the working tree (HEAD `2ab11d5` — production-grade batch committed and pushed — plus the policy-DSL parity hardening batch on top):
+Current local evidence for the working tree (HEAD `9299bac` — error-policy parity-hardening batch committed and pushed — plus the release-readiness pack on top):
 
 ```text
 - cmake --preset clang-dev-ninja: passed
 - cmake --build --preset clang-dev-ninja: passed
-- ctest --preset clang-dev-ninja --output-on-failure: passed, 194/194
+- ctest --preset clang-dev-ninja --output-on-failure: passed, 200/200
 ```
 
 The previous validated code SHA `87299c14c813753d170911239e251064cbbfee6f` still has fresh local + GitHub evidence:
@@ -229,18 +229,15 @@ Need to finish:
 Best next steps from lowest risk / highest production-readiness value to highest complexity:
 
 ```text
-1. Rerun cross-compiler validation on the new SHA (current uncommitted parity-hardening batch + the committed 2ab11d5 production-grade batch).
-2. Record reproducible compile-time timing baselines for header, 5-stage, and 50-stage smoke targets.
-3. Promote schema v1 from "typed regression net" toward "stable supported schema" by adding v1→v2 migration policy and stability promise docs.
-4. Expand diagnostic golden coverage and suggested-fix docs for supported errors, including the new indexed I/O alias diagnostics.
-5. Broaden the pb_cli surface to accept user-defined pipelines once schema migration policy is decided.
-6. Finalize state/lifetime policies for owned, borrowed, shared, reset, and resource-owning stages.
-7. Add owned per-case unique-clone policy on top of pb::shared_view / pb::projected for the cases shared-view semantics do not cover.
-8. Add thread-pool backend examples, benchmarks, stress tests, and richer cancellation/error policy tests.
-9. Add optional oneTBB / Taskflow / stdexec backends only after the thread-pool backend proves the lowering model.
-10. Add modules and a real C++26 reflection adapter once toolchain baselines exist.
-11. Build the runtime-enforced ::with<pb::policy::...> DSL beyond the existing wrapper-layer error-policy DSL.
-12. Publish v0.1.0 when release notes, exact-SHA validation, package artifact, and unsupported-boundary docs all agree.
+1. Rerun cross-compiler validation on the new SHA (release-readiness pack + the committed 9299bac parity-hardening batch).
+2. Broaden the pb_cli surface to accept user-defined pipelines now that schema migration policy is decided.
+3. Finalize state/lifetime policies for owned, borrowed, shared, reset, and resource-owning stages.
+4. Add owned per-case unique-clone policy on top of pb::shared_view / pb::projected for the cases shared-view semantics do not cover.
+5. Add thread-pool backend examples, benchmarks, stress tests, and richer cancellation/error policy tests.
+6. Add optional oneTBB / Taskflow / stdexec backends only after the thread-pool backend proves the lowering model.
+7. Add modules and a real C++26 reflection adapter once toolchain baselines exist.
+8. Build the runtime-enforced ::with<pb::policy::...> DSL beyond the existing wrapper-layer error-policy DSL.
+9. Publish v0.1.0 when release notes, exact-SHA validation, package artifact, and unsupported-boundary docs all agree — most release-readiness gaps are now closed (schema v1 stability promise + cross-version regression, observer ABI/event-line schema regression, error JSON serialization, NDJSON tracing sink, compile-fail diagnostic goldens expanded, compile-time benchmark baselines recorded).
 ```
 
 ## Current scorecard
@@ -261,7 +258,10 @@ Compile-time benchmark scaffolding:       7.2 / 10
 Optional pipeline backends:               4.2 / 10
 C++26 feature gates and reflection:       5.0 / 10  (new line — typed constants + gated scaffold)
 Release readiness before tag:             8.2 / 10  (was 8.4 — new SHA not yet cross-compiler-validated)
-Full original research-plan completion:   7.2 / 10  (was 6.4 → 7.0 in last batch — parity hardening adds composability + std::expected matrix)
+Stable descriptor/export contract:        6.5 / 10  (was 5.5 — v1 stability promise + cross-version regression + v1→v2 migration policy)
+Diagnostics current surface:              8.4 / 10  (was 7.8 — expanded compile-fail goldens, error JSON schema, NDJSON trace, observer ABI/line-schema)
+Observer/tracing surface:                 7.5 / 10  (new line — pb.observer.v1 ABI + pb.observer.verbose.v1 line schema + pb.trace.ndjson.v1 streaming sink)
+Full original research-plan completion:   7.6 / 10  (was 7.2 — release-readiness pack closes 6 production-grade gaps)
 ```
 
 ## Main conclusion

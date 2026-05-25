@@ -127,6 +127,9 @@ using runtime::has_stage;
 using runtime::is_result_v;
 using runtime::make_result;
 using runtime::observer;
+using runtime::observer_schema_version;
+using runtime::verbose_observer_schema_version;
+using runtime::error_schema_version;
 using runtime::result;
 using runtime::make_route_descriptor;
 using runtime::route_case_record;
@@ -145,6 +148,8 @@ using runtime::trace_event_kind_name;
 using runtime::trace_observer;
 using runtime::trace_recorder;
 using runtime::trace_schema_version;
+using runtime::trace_ndjson_schema_version;
+using runtime::tracing_sink;
 using runtime::thread_pool_backend;
 using runtime::trace_sink;
 

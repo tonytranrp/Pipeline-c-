@@ -499,6 +499,30 @@ pb_apply_project_options(pb_runtime_policy_dsl_std_expected_matrix PRIVATE)
 add_test(NAME pb_runtime_policy_dsl_std_expected_matrix COMMAND pb_runtime_policy_dsl_std_expected_matrix)
 set_tests_properties(pb_runtime_policy_dsl_std_expected_matrix PROPERTIES LABELS "runtime;policy;errors;std-expected")
 
+add_executable(pb_schema_v1_cross_version_regression compile_pass/schema_v1_cross_version_regression.cpp)
+target_link_libraries(pb_schema_v1_cross_version_regression PRIVATE pb::pipeline)
+pb_apply_project_options(pb_schema_v1_cross_version_regression PRIVATE)
+add_test(NAME pb_schema_v1_cross_version_regression COMMAND pb_schema_v1_cross_version_regression)
+set_tests_properties(pb_schema_v1_cross_version_regression PROPERTIES LABELS "compile-pass;schema;v1;regression")
+
+add_executable(pb_runtime_observer_schema_v1_regression runtime/observer_schema_v1_regression.cpp)
+target_link_libraries(pb_runtime_observer_schema_v1_regression PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_observer_schema_v1_regression PRIVATE)
+add_test(NAME pb_runtime_observer_schema_v1_regression COMMAND pb_runtime_observer_schema_v1_regression)
+set_tests_properties(pb_runtime_observer_schema_v1_regression PROPERTIES LABELS "runtime;observer;schema;v1;regression")
+
+add_executable(pb_runtime_error_json_serialization_smoke runtime/error_json_serialization_smoke.cpp)
+target_link_libraries(pb_runtime_error_json_serialization_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_error_json_serialization_smoke PRIVATE)
+add_test(NAME pb_runtime_error_json_serialization_smoke COMMAND pb_runtime_error_json_serialization_smoke)
+set_tests_properties(pb_runtime_error_json_serialization_smoke PROPERTIES LABELS "runtime;diagnostics;json;schema;v1")
+
+add_executable(pb_runtime_tracing_sink_ndjson_smoke runtime/tracing_sink_ndjson_smoke.cpp)
+target_link_libraries(pb_runtime_tracing_sink_ndjson_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_tracing_sink_ndjson_smoke PRIVATE)
+add_test(NAME pb_runtime_tracing_sink_ndjson_smoke COMMAND pb_runtime_tracing_sink_ndjson_smoke)
+set_tests_properties(pb_runtime_tracing_sink_ndjson_smoke PROPERTIES LABELS "runtime;trace;ndjson;schema;v1")
+
 add_executable(pb_runtime_fan_in_shared_view_smoke runtime/fan_in_shared_view_smoke.cpp)
 target_link_libraries(pb_runtime_fan_in_shared_view_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_fan_in_shared_view_smoke PRIVATE)
@@ -765,7 +789,7 @@ add_test(NAME pb_compile_fail_branch_fan_in_without_branch
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
     -DEXPECT_DIAGNOSTIC=Fan-in\ join\ requires\ a\ preceding\ branch
-    -DEXPECTED_DIAGNOSTICS=fan_in
+    "-DEXPECTED_DIAGNOSTICS=fan_in;pipeline_state"
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_branch_fan_in_without_branch
@@ -1043,6 +1067,7 @@ add_test(NAME pb_compile_fail_sink_mismatch
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
     -DEXPECT_DIAGNOSTIC=Pipeline\ sink\ mismatch
+    "-DEXPECTED_DIAGNOSTICS=actual\ final\ output\ type;requested\ sink\ type"
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
   )
 set_tests_properties(pb_compile_fail_sink_mismatch PROPERTIES LABELS "compile-fail;diagnostics")
@@ -1434,10 +1459,21 @@ add_test(NAME pb_compile_fail_pipeline_stage_input_index_oob
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
     -DEXPECT_DIAGNOSTIC=pipeline_stage_input_t:\ pipeline\ stage\ index\ out\ of\ range
-    -DEXPECTED_DIAGNOSTICS=pipeline_size_v
+    "-DEXPECTED_DIAGNOSTICS=pipeline_size_v;Index\ must\ be\ less\ than"
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_pipeline_stage_input_index_oob PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
+add_test(NAME pb_compile_fail_pipeline_stage_input_index_oob_far
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_stage_input_index_oob_far.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pipeline_stage_input_t:\ pipeline\ stage\ index\ out\ of\ range
+    "-DEXPECTED_DIAGNOSTICS=pipeline_size_v;Index\ must\ be\ less\ than"
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_stage_input_index_oob_far PROPERTIES LABELS "compile-fail;diagnostics;metadata;boundary")
 
 add_test(NAME pb_compile_fail_pipeline_stage_output_index_oob
   COMMAND ${CMAKE_COMMAND}
@@ -1445,10 +1481,21 @@ add_test(NAME pb_compile_fail_pipeline_stage_output_index_oob
     -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
     -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
     -DEXPECT_DIAGNOSTIC=pipeline_stage_output_t:\ pipeline\ stage\ index\ out\ of\ range
-    -DEXPECTED_DIAGNOSTICS=pipeline_size_v
+    "-DEXPECTED_DIAGNOSTICS=pipeline_size_v;Index\ must\ be\ less\ than"
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_pipeline_stage_output_index_oob PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
+add_test(NAME pb_compile_fail_pipeline_stage_output_index_oob_far
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_stage_output_index_oob_far.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pipeline_stage_output_t:\ pipeline\ stage\ index\ out\ of\ range
+    "-DEXPECTED_DIAGNOSTICS=pipeline_size_v;Index\ must\ be\ less\ than"
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_stage_output_index_oob_far PROPERTIES LABELS "compile-fail;diagnostics;metadata;boundary")
 
 # ─────────────────────────────────────────────────────────────
 # C++26 feature‑gate compile‑pass test

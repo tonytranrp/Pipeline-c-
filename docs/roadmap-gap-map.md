@@ -182,7 +182,7 @@ The current repository can safely claim:
 - reflection adapter scaffold in `include/pb/adapt/reflect.hpp` gated on `PB_HAS_REFLECTION` with a graceful C++20 fallback
 - substantially expanded `pb_cli` with `tests/run_pb_cli_describe.cmake` test driver
 - compile-pass, compile-fail, runtime, example, package-consumer, and benchmark smoke scaffolding
-- current working tree at **194/194 local ctest** (includes parity-matrix + composability + std::expected hardening for the error-policy DSL); cross-compiler validation on the new SHA pending
+- current working tree at **200/200 local ctest** (includes the error-policy DSL parity-hardening batch + the release-readiness pack: schema v1 stability promise + cross-version regression, observer ABI `pb.observer.v1` + verbose line-schema `pb.observer.verbose.v1`, `pb.error.v1` JSON serialization, `pb.trace.ndjson.v1` streaming `pb::tracing_sink`, expanded compile-fail diagnostic goldens, recorded compile-time benchmark baselines); cross-compiler validation on the new SHA pending
 - release-readiness documentation plus GitHub GCC/Clang/MSVC/package validation evidence and local package evidence for code SHA `87299c14c813753d170911239e251064cbbfee6f`
 
 The current repository should **not** claim:

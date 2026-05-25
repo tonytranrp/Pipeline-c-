@@ -1,9 +1,53 @@
 #include "pb/runtime/error.hpp"
 
+#include <cstdio>
 #include <ostream>
 #include <string>
 
 namespace pb::runtime {
+
+namespace detail {
+
+inline void append_json_string(std::string& out, std::string_view value) {
+  out.push_back('"');
+  for (const char ch : value) {
+    switch (ch) {
+    case '"':
+      out.append("\\\"");
+      break;
+    case '\\':
+      out.append("\\\\");
+      break;
+    case '\b':
+      out.append("\\b");
+      break;
+    case '\f':
+      out.append("\\f");
+      break;
+    case '\n':
+      out.append("\\n");
+      break;
+    case '\r':
+      out.append("\\r");
+      break;
+    case '\t':
+      out.append("\\t");
+      break;
+    default:
+      if (static_cast<unsigned char>(ch) < 0x20U) {
+        char buf[7];
+        std::snprintf(buf, sizeof(buf), "\\u%04x", static_cast<unsigned>(static_cast<unsigned char>(ch)));
+        out.append(buf);
+      } else {
+        out.push_back(ch);
+      }
+      break;
+    }
+  }
+  out.push_back('"');
+}
+
+} // namespace detail
 
 auto category_name(error_category category) noexcept -> std::string_view {
   switch (category) {
@@ -76,6 +120,26 @@ auto operator<<(std::ostream& stream, const stage_id& stage) -> std::ostream& {
 
 auto operator<<(std::ostream& stream, const error& value) -> std::ostream& {
   return stream << describe(value);
+}
+
+auto to_json(const error_record& value) -> std::string {
+  std::string out;
+  out.append("{\"schema_version\":");
+  detail::append_json_string(out, error_schema_version);
+  out.append(",\"stage\":{\"key\":");
+  detail::append_json_string(out, value.stage_key);
+  out.append(",\"name\":");
+  detail::append_json_string(out, value.stage_name);
+  out.append("},\"category\":");
+  detail::append_json_string(out, value.category);
+  out.append(",\"message\":");
+  detail::append_json_string(out, value.message);
+  out.push_back('}');
+  return out;
+}
+
+auto to_json(const error& value) -> std::string {
+  return to_json(to_record(value));
 }
 
 } // namespace pb::runtime
