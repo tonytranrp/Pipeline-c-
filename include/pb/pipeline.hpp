@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pb/adapt/fn.hpp"
+#include "pb/adapt/reflect.hpp"
 #include "pb/adapt/void_adapter.hpp"
 #include "pb/core/concepts.hpp"
 #include "pb/core/describe.hpp"
@@ -8,15 +9,18 @@
 #include "pb/core/fixed_string.hpp"
 #include "pb/core/export_dot.hpp"
 #include "pb/core/export_json.hpp"
+#include "pb/core/export_text.hpp"
 #include "pb/core/meta.hpp"
 #include "pb/core/pipeline_state.hpp"
 #include "pb/core/policy.hpp"
 #include "pb/core/stage_traits.hpp"
 #include "pb/core/validate.hpp"
 #include "pb/core/compile_time_bench.hpp"
+#include "pb/runtime/clone.hpp"
 #include "pb/runtime/descriptor.hpp"
 #include "pb/runtime/backend.hpp"
 #include "pb/runtime/error.hpp"
+#include "pb/runtime/error_policy.hpp"
 #include "pb/runtime/observer.hpp"
 #include "pb/runtime/result.hpp"
 #include "pb/runtime/routing.hpp"
@@ -55,6 +59,7 @@ using core::join_validation;
 using core::describe;
 using core::to_dot;
 using core::to_json;
+using core::to_text;
 using core::fixed_string;
 using core::from;
 using core::is_pipeline_v;
@@ -77,6 +82,8 @@ using core::pipeline;
 using core::pipeline_state;
 using core::pipeline_stage_descriptor_t;
 using core::pipeline_stage_error_t;
+using core::pipeline_stage_input_t;
+using core::pipeline_stage_output_t;
 using core::pipeline_stages_t;
 using core::pipeline_stage_t;
 using core::pipeline_traits;

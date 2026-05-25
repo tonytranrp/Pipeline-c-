@@ -334,4 +334,62 @@ template <ValidPipeline Pipeline, std::size_t Index>
 template <ValidPipeline Pipeline, class Stage>
 inline constexpr bool pipeline_has_stage_v = pipeline_traits<Pipeline>::template has_stage_v<Stage>;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Indexed stage I/O aliases with named out-of-range diagnostics.
+//
+//   pipeline_stage_input_t<P, N>   — input_type of the Nth stage in P
+//   pipeline_stage_output_t<P, N>  — output_type of the Nth stage in P
+//
+// Both fire a static_assert that names the alias when Index >= stage_count,
+// instead of a silent void or an opaque deep backtrace.
+// ─────────────────────────────────────────────────────────────────────────────
+
+namespace detail {
+
+template <class Pipeline, std::size_t Index,
+          std::size_t StageCount = pipeline_traits<Pipeline>::stage_count,
+          bool InRange = (Index < StageCount)>
+struct pipeline_stage_input_at {
+  static_assert(Index < StageCount,
+                "pipeline_stage_input_t: pipeline stage index out of range — "
+                "Index must be less than pipeline_size_v<Pipeline>");
+  using type = void;
+};
+
+template <class Pipeline, std::size_t Index, std::size_t StageCount>
+struct pipeline_stage_input_at<Pipeline, Index, StageCount, true> {
+  using type = typename stage_traits<
+      typename pipeline_traits<Pipeline>::template stage_type<Index>>::input_type;
+};
+
+template <class Pipeline, std::size_t Index,
+          std::size_t StageCount = pipeline_traits<Pipeline>::stage_count,
+          bool InRange = (Index < StageCount)>
+struct pipeline_stage_output_at {
+  static_assert(Index < StageCount,
+                "pipeline_stage_output_t: pipeline stage index out of range — "
+                "Index must be less than pipeline_size_v<Pipeline>");
+  using type = void;
+};
+
+template <class Pipeline, std::size_t Index, std::size_t StageCount>
+struct pipeline_stage_output_at<Pipeline, Index, StageCount, true> {
+  using type = typename stage_traits<
+      typename pipeline_traits<Pipeline>::template stage_type<Index>>::output_type;
+};
+
+} // namespace detail
+
+/// input_type of the stage at position \p Index within \p Pipeline.
+/// Fires a named static_assert when \p Index >= pb::pipeline_size_v<Pipeline>.
+template <ValidPipeline Pipeline, std::size_t Index>
+using pipeline_stage_input_t =
+    typename detail::pipeline_stage_input_at<Pipeline, Index>::type;
+
+/// output_type of the stage at position \p Index within \p Pipeline.
+/// Fires a named static_assert when \p Index >= pb::pipeline_size_v<Pipeline>.
+template <ValidPipeline Pipeline, std::size_t Index>
+using pipeline_stage_output_t =
+    typename detail::pipeline_stage_output_at<Pipeline, Index>::type;
+
 } // namespace pb::core

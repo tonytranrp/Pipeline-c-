@@ -4,8 +4,11 @@ This page documents the current helper-output shape produced by
 `pb::core::to_json<Pipeline>()` / `pb::to_dot<Pipeline>()` and the supporting
 runtime descriptor records in `include/pb/runtime/descriptor.hpp`.
 
-It is a **helper schema**, not a stable external interchange contract.
-For the currently supported linear, selected-output branch, and explicit fan-in branch shapes, the helper output is regression-tested as `pb.core.graph.v1`; CLI/file export and long-term compatibility guarantees remain outside this helper contract.
+As of v0.1.0 this page describes the **v1 stable schema** — see the
+[formal schema spec](export-schema-v1.md) for the v1 contract, conformance
+test list, and migration policy. The v1 output shape is regression-tested
+byte-equal across linear, selected-output branch, and explicit fan-in
+pipelines.
 
 ## Scope
 

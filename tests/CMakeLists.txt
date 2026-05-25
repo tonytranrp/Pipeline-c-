@@ -101,6 +101,7 @@ add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers/runtime_trace.cpp
   compile_pass/public_headers/export_dot.cpp
   compile_pass/public_headers/export_json.cpp
+  compile_pass/public_headers/export_text.cpp
   compile_pass/branch_selection_compile_pass.cpp
 )
 target_link_libraries(pb_public_headers_compile_pass PRIVATE pb::pipeline)
@@ -287,6 +288,30 @@ pb_apply_project_options(pb_runtime_adapt_void_smoke PRIVATE)
 add_test(NAME pb_runtime_adapt_void_smoke COMMAND pb_runtime_adapt_void_smoke)
 set_tests_properties(pb_runtime_adapt_void_smoke PROPERTIES LABELS "runtime;adapter;void")
 
+add_executable(pb_export_text_compile_pass compile_pass/export_text.cpp)
+target_link_libraries(pb_export_text_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_export_text_compile_pass PRIVATE)
+add_test(NAME pb_export_text_compile_pass COMMAND pb_export_text_compile_pass)
+set_tests_properties(pb_export_text_compile_pass PROPERTIES LABELS "compile-pass;export;text")
+
+add_executable(pb_export_text_golden_compile_pass compile_pass/export_text_golden.cpp)
+target_link_libraries(pb_export_text_golden_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_export_text_golden_compile_pass PRIVATE)
+add_test(NAME pb_export_text_golden_compile_pass COMMAND pb_export_text_golden_compile_pass)
+set_tests_properties(pb_export_text_golden_compile_pass PROPERTIES LABELS "compile-pass;export;text;golden;schema-v1")
+
+add_executable(pb_schema_v1_contract_compile_pass compile_pass/schema_v1_contract.cpp)
+target_link_libraries(pb_schema_v1_contract_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_schema_v1_contract_compile_pass PRIVATE)
+add_test(NAME pb_schema_v1_contract_compile_pass COMMAND pb_schema_v1_contract_compile_pass)
+set_tests_properties(pb_schema_v1_contract_compile_pass PROPERTIES LABELS "compile-pass;schema-v1;contract")
+
+add_executable(pb_schema_v1_extended_golden_compile_pass compile_pass/schema_v1_extended_golden.cpp)
+target_link_libraries(pb_schema_v1_extended_golden_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_schema_v1_extended_golden_compile_pass PRIVATE)
+add_test(NAME pb_schema_v1_extended_golden_compile_pass COMMAND pb_schema_v1_extended_golden_compile_pass)
+set_tests_properties(pb_schema_v1_extended_golden_compile_pass PROPERTIES LABELS "compile-pass;schema-v1;golden;fan-in;labeled;heterogeneous")
+
 add_executable(pb_export_dot_compile_pass compile_pass/export_dot.cpp)
 target_link_libraries(pb_export_dot_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_export_dot_compile_pass PRIVATE)
@@ -425,6 +450,36 @@ pb_apply_project_options(pb_runtime_sequential_branch_type_list_join PRIVATE)
 pb_enable_pch_if_requested(pb_runtime_sequential_branch_type_list_join)
 add_test(NAME pb_runtime_sequential_branch_type_list_join COMMAND pb_runtime_sequential_branch_type_list_join)
 set_tests_properties(pb_runtime_sequential_branch_type_list_join PROPERTIES LABELS "runtime;branch;join;type-list")
+
+add_executable(pb_runtime_throw_on_error_smoke runtime/throw_on_error_smoke.cpp)
+target_link_libraries(pb_runtime_throw_on_error_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_throw_on_error_smoke PRIVATE)
+add_test(NAME pb_runtime_throw_on_error_smoke COMMAND pb_runtime_throw_on_error_smoke)
+set_tests_properties(pb_runtime_throw_on_error_smoke PROPERTIES LABELS "runtime;policy;errors;throw")
+
+add_executable(pb_compile_pass_terminate_on_error_smoke compile_pass/terminate_on_error_smoke.cpp)
+target_link_libraries(pb_compile_pass_terminate_on_error_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_compile_pass_terminate_on_error_smoke PRIVATE)
+add_test(NAME pb_compile_pass_terminate_on_error_smoke COMMAND pb_compile_pass_terminate_on_error_smoke)
+set_tests_properties(pb_compile_pass_terminate_on_error_smoke PROPERTIES LABELS "compile-pass;policy;errors;terminate;ignore")
+
+add_executable(pb_runtime_policy_dsl_engine_smoke runtime/policy_dsl_engine_smoke.cpp)
+target_link_libraries(pb_runtime_policy_dsl_engine_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_policy_dsl_engine_smoke PRIVATE)
+add_test(NAME pb_runtime_policy_dsl_engine_smoke COMMAND pb_runtime_policy_dsl_engine_smoke)
+set_tests_properties(pb_runtime_policy_dsl_engine_smoke PROPERTIES LABELS "runtime;policy;errors;diagnostics")
+
+add_executable(pb_runtime_fan_in_shared_view_smoke runtime/fan_in_shared_view_smoke.cpp)
+target_link_libraries(pb_runtime_fan_in_shared_view_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_fan_in_shared_view_smoke PRIVATE)
+add_test(NAME pb_runtime_fan_in_shared_view_smoke COMMAND pb_runtime_fan_in_shared_view_smoke)
+set_tests_properties(pb_runtime_fan_in_shared_view_smoke PROPERTIES LABELS "runtime;branch;fan-in;clone")
+
+add_executable(pb_runtime_projected_stage_smoke runtime/projected_stage_smoke.cpp)
+target_link_libraries(pb_runtime_projected_stage_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_projected_stage_smoke PRIVATE)
+add_test(NAME pb_runtime_projected_stage_smoke COMMAND pb_runtime_projected_stage_smoke)
+set_tests_properties(pb_runtime_projected_stage_smoke PROPERTIES LABELS "runtime;branch;fan-in;clone;projection")
 
 add_executable(pb_runtime_sequential_branch_fan_in runtime/sequential_branch_fan_in.cpp)
 target_link_libraries(pb_runtime_sequential_branch_fan_in PRIVATE pb::pipeline)
@@ -1335,6 +1390,37 @@ add_test(NAME pb_compile_fail_runtime_make_descriptor_non_pipeline_misuse
 set_tests_properties(pb_compile_fail_runtime_make_descriptor_non_pipeline_misuse PROPERTIES LABELS "compile-fail;diagnostics;runtime")
 
 # ─────────────────────────────────────────────────────────────
+# pipeline_stage_input_t / pipeline_stage_output_t aliases
+# ─────────────────────────────────────────────────────────────
+add_executable(pb_pipeline_stage_io_aliases_compile_pass compile_pass/pipeline_stage_io_aliases.cpp)
+target_link_libraries(pb_pipeline_stage_io_aliases_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_pipeline_stage_io_aliases_compile_pass PRIVATE)
+add_test(NAME pb_pipeline_stage_io_aliases_compile_pass COMMAND pb_pipeline_stage_io_aliases_compile_pass)
+set_tests_properties(pb_pipeline_stage_io_aliases_compile_pass PROPERTIES LABELS "compile-pass;metadata")
+
+add_test(NAME pb_compile_fail_pipeline_stage_input_index_oob
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_stage_input_index_oob.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pipeline_stage_input_t:\ pipeline\ stage\ index\ out\ of\ range
+    -DEXPECTED_DIAGNOSTICS=pipeline_size_v
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_stage_input_index_oob PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
+add_test(NAME pb_compile_fail_pipeline_stage_output_index_oob
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/pipeline_stage_output_index_oob.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pipeline_stage_output_t:\ pipeline\ stage\ index\ out\ of\ range
+    -DEXPECTED_DIAGNOSTICS=pipeline_size_v
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_pipeline_stage_output_index_oob PROPERTIES LABELS "compile-fail;diagnostics;metadata")
+
+# ─────────────────────────────────────────────────────────────
 # C++26 feature‑gate compile‑pass test
 # ─────────────────────────────────────────────────────────────
 add_executable(pb_cpp26_features_compile_pass compile_pass/cpp26_features.cpp)
@@ -1342,6 +1428,18 @@ target_link_libraries(pb_cpp26_features_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_cpp26_features_compile_pass PRIVATE)
 add_test(NAME pb_cpp26_features_compile_pass COMMAND pb_cpp26_features_compile_pass)
 set_tests_properties(pb_cpp26_features_compile_pass PROPERTIES LABELS "compile-pass;features;cpp26")
+
+add_executable(pb_cpp26_features_fallback_compile_pass compile_pass/cpp26_features_fallback.cpp)
+target_link_libraries(pb_cpp26_features_fallback_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_cpp26_features_fallback_compile_pass PRIVATE)
+add_test(NAME pb_cpp26_features_fallback_compile_pass COMMAND pb_cpp26_features_fallback_compile_pass)
+set_tests_properties(pb_cpp26_features_fallback_compile_pass PROPERTIES LABELS "compile-pass;features;cpp26;fallback")
+
+add_executable(pb_reflect_stage_gate_compile_pass compile_pass/reflect_stage_gate.cpp)
+target_link_libraries(pb_reflect_stage_gate_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_reflect_stage_gate_compile_pass PRIVATE)
+add_test(NAME pb_reflect_stage_gate_compile_pass COMMAND pb_reflect_stage_gate_compile_pass)
+set_tests_properties(pb_reflect_stage_gate_compile_pass PROPERTIES LABELS "compile-pass;features;cpp26;reflection")
 
 # ─────────────────────────────────────────────────────────────
 # CLI smoke tests
@@ -1355,6 +1453,12 @@ if(PB_BUILD_CLI)
 
   add_test(NAME pb_cli_features    COMMAND pb_cli features)
   set_tests_properties(pb_cli_features PROPERTIES LABELS "cli;features")
+
+  add_test(NAME pb_cli_list        COMMAND pb_cli list)
+  set_tests_properties(pb_cli_list PROPERTIES LABELS "cli;smoke")
+
+  add_test(NAME pb_cli_schema      COMMAND pb_cli schema)
+  set_tests_properties(pb_cli_schema PROPERTIES LABELS "cli;schema;smoke")
 
   add_test(NAME pb_cli_export      COMMAND pb_cli export)
   set_tests_properties(pb_cli_export PROPERTIES LABELS "cli;export")
@@ -1371,4 +1475,126 @@ if(PB_BUILD_CLI)
   add_test(NAME pb_cli_unknown     COMMAND pb_cli nonexistent_command)
   set_tests_properties(pb_cli_unknown PROPERTIES LABELS "cli;error")
   set_tests_properties(pb_cli_unknown PROPERTIES WILL_FAIL TRUE)
+
+  # ─────────────────────────────────────────────────────────────
+  # `pb_cli describe` graph-export smoke
+  #
+  # Each test runs the CLI with --out=<file>, then verifies that the file
+  # contains a small set of stable substrings produced by pb::to_dot /
+  # pb::to_json for the corresponding built-in example pipeline.  These
+  # tests fail loudly if either the CLI argument plumbing or the underlying
+  # export helpers regress.
+  # ─────────────────────────────────────────────────────────────
+  set(pb_cli_describe_dir "${CMAKE_CURRENT_BINARY_DIR}/pb_cli_describe")
+  file(MAKE_DIRECTORY "${pb_cli_describe_dir}")
+
+  add_test(NAME pb_cli_describe_order_linear_dot
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-linear
+      -DFORMAT=dot
+      -DOUT_FILE=${pb_cli_describe_dir}/order_linear.dot
+      "-DEXPECTED_TOKENS=digraph order_linear;stage_0;parse_order;validate_order;persist_order;stage_1 -> stage_2"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
+  )
+  set_tests_properties(pb_cli_describe_order_linear_dot PROPERTIES LABELS "cli;describe;export;dot")
+
+  add_test(NAME pb_cli_describe_order_linear_json
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-linear
+      -DFORMAT=json
+      -DOUT_FILE=${pb_cli_describe_dir}/order_linear.json
+      "-DEXPECTED_TOKENS=\"schema_version\":\"pb.core.graph.v1\";\"topology\":\"linear\";\"stage_count\":3;\"key\":\"parse_order\";\"key\":\"persist_order\""
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
+  )
+  set_tests_properties(pb_cli_describe_order_linear_json PROPERTIES LABELS "cli;describe;export;json")
+
+  add_test(NAME pb_cli_describe_order_branch_dot
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-branch
+      -DFORMAT=dot
+      -DOUT_FILE=${pb_cli_describe_dir}/order_branch.dot
+      "-DEXPECTED_TOKENS=digraph order_branch;branch_0;manual review;auto approve;finalize"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
+  )
+  set_tests_properties(pb_cli_describe_order_branch_dot PROPERTIES LABELS "cli;describe;export;dot;branch")
+
+  add_test(NAME pb_cli_describe_order_branch_json
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-branch
+      -DFORMAT=json
+      -DOUT_FILE=${pb_cli_describe_dir}/order_branch.json
+      "-DEXPECTED_TOKENS=\"schema_version\":\"pb.core.graph.v1\";\"topology\":\"branch\";\"kind\":\"branch\";\"predicate_key\":\"is.high_risk\";\"predicate_key\":\"is.normal\";\"stage_key\":\"review.manual\";\"stage_key\":\"review.auto\""
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
+  )
+  set_tests_properties(pb_cli_describe_order_branch_json PROPERTIES LABELS "cli;describe;export;json;branch")
+
+  add_test(NAME pb_cli_describe_order_fan_in_json
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-fan-in
+      -DFORMAT=json
+      -DOUT_FILE=${pb_cli_describe_dir}/order_fan_in.json
+      "-DEXPECTED_TOKENS=\"schema_version\":\"pb.core.graph.v1\";\"topology\":\"fan_in\";\"predicate_key\":\"pred.above_min\";\"predicate_key\":\"pred.below_max\";\"predicate_key\":\"pred.is_round\""
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
+  )
+  set_tests_properties(pb_cli_describe_order_fan_in_json PROPERTIES LABELS "cli;describe;export;json;fan-in")
+
+  add_test(NAME pb_cli_describe_order_linear_text
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-linear
+      -DFORMAT=text
+      -DOUT_FILE=${pb_cli_describe_dir}/order_linear.txt
+      "-DEXPECTED_TOKENS=# pb.core.graph.v1;topology=linear;stages=3;edges=2;[0] parse_order;[1] validate_order;[2] persist_order;edges:;0 -> 1  parse_order -> validate_order"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
+  )
+  set_tests_properties(pb_cli_describe_order_linear_text PROPERTIES LABELS "cli;describe;export;text")
+
+  add_test(NAME pb_cli_describe_order_branch_text
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-branch
+      -DFORMAT=text
+      -DOUT_FILE=${pb_cli_describe_dir}/order_branch.txt
+      "-DEXPECTED_TOKENS=topology=branch;[0] branch;case 0  predicate=is.high_risk  stage=review.manual;case 1  predicate=is.normal  stage=review.auto;[1] finalize"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
+  )
+  set_tests_properties(pb_cli_describe_order_branch_text PROPERTIES LABELS "cli;describe;export;text;branch")
+
+  add_test(NAME pb_cli_describe_order_fan_in_text
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-fan-in
+      -DFORMAT=text
+      -DOUT_FILE=${pb_cli_describe_dir}/order_fan_in.txt
+      "-DEXPECTED_TOKENS=topology=fan_in;[0] fan_in;predicate=pred.above_min;predicate=pred.below_max;predicate=pred.is_round;[1] finalize.fan_in"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
+  )
+  set_tests_properties(pb_cli_describe_order_fan_in_text PROPERTIES LABELS "cli;describe;export;text;fan-in")
+
+  add_test(NAME pb_cli_describe_unknown_pipeline
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=does-not-exist
+      -DFORMAT=dot
+      -DOUT_FILE=${pb_cli_describe_dir}/should_not_exist.dot
+      -DEXPECT_FAIL=ON
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
+  )
+  set_tests_properties(pb_cli_describe_unknown_pipeline PROPERTIES LABELS "cli;describe;error")
+
+  add_test(NAME pb_cli_describe_invalid_format
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-linear
+      -DFORMAT=xml
+      -DOUT_FILE=${pb_cli_describe_dir}/should_not_exist.xml
+      -DEXPECT_FAIL=ON
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
+  )
+  set_tests_properties(pb_cli_describe_invalid_format PROPERTIES LABELS "cli;describe;error")
 endif()

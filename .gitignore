@@ -40,3 +40,25 @@ build-*/
 # Local AI context/cache outputs
 .context/
 repomix-output.*
+
+# Local Claude Code config (agent definitions, worktrees, hooks, sessions)
+.claude/
+
+# Local IDE / editor caches
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS-generated junk files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment / secrets — never commit
+.env
+.env.*
+*.pem
+*.key

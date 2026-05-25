@@ -1,10 +1,27 @@
 # Continue checkpoint — Pipeline-c++ long-horizon resume
 
-Snapshot UTC: `2026-05-18T20:40:00Z`
-Repo: `/Users/tonytran/Documents/GitHub/Pipeline-c-`
+Snapshot UTC: `2026-05-25T00:00:00Z`
+Repo: `C:\Users\Tonyt\Documents\GitHub\Pipeline-c++`
 Current branch: `main`
-Latest code-validation HEAD: `6805543ede6946aa283be7f24fb3736c762f47b2` — cross-compiler validation passed
-Remote status at checkpoint: pushed to `origin/main` at the validation SHA before this docs-only refresh.
+Last committed HEAD: `cd5a80c` (`Add meta utilities, threadpool APIs and refactor`).
+Working tree at checkpoint: **189/189 local ctest passing** on `clang-dev-ninja` after integrating the 2026-05-25 three-agent wave. Uncommitted: the production-grade batch (schema v1, error-policy DSL, clone/projection, C++26 typed gates, reflection adapter, export_text, pb_cli expansion) PLUS the integrated 3-agent wave additions (indexed stage I/O aliases + `terminate_on_error` compile-pass smoke + docs refresh). Cross-compiler validation has **not** been rerun on the new code; rerun before release tagging.
+
+## 2026-05-25 team wave — integrated
+
+The three-lane wave landed three narrow, verified slices on top of the production-grade batch:
+
+- **core-diagnostics** — added `pb::pipeline_stage_input_t<P, N>` and `pb::pipeline_stage_output_t<P, N>` indexed I/O aliases with named out-of-range `static_assert` diagnostics. Touches `include/pb/core/describe.hpp` (append-only detail helpers + two public aliases) and `include/pb/pipeline.hpp` (two `using` re-exports). New tests: `tests/compile_pass/pipeline_stage_io_aliases.cpp`, `tests/compile_fail/pipeline_stage_input_index_oob.cpp`, `tests/compile_fail/pipeline_stage_output_index_oob.cpp`. The OOB diagnostic begins with the alias name and references `pipeline_size_v<Pipeline>` as the bound, replacing an opaque deep backtrace. **Next:** tighter `Stage` concept diagnostic wording that names which of `input_type` / `output_type` is missing.
+- **runtime-adapters** — added `tests/compile_pass/terminate_on_error_smoke.cpp` exercising `pb::terminating_engine` AND `pb::ignoring_engine` type-instantiation surfaces (`input_type`, `output_type`, `underlying_engine`, `try_result_type`, factory deduction, `underlying()` ref-qualifier overloads, success-path `try_run()`/`run()`). Does NOT trigger `std::terminate`. Symmetry block also covers `ignoring_engine` `set_fallback`/`get_fallback` round-trip. **Next:** audit `run()` / `try_run()` boundaries, result factories, expected-like conversion, observer lifecycle, adapter diagnostics, and descriptor/observer/error identity consistency.
+- **docs-release** — refreshed `docs/roadmap-gap-map.md` and `docs/production-readiness.md` to reflect the production-grade batch: error-policy DSL (`throwing`/`terminating`/`ignoring`/`propagating`/`verbose` engines), `pb::shared_view`, `pb::projected`, schema v1 typed contract (`pb.core.graph.v1`), typed `pb::features::*` C++26 gate constants, gated reflection-adapter scaffold, `pb::export_text`, expanded `pb_cli`. Test-count language bumped 163/163 → 189/189 local with explicit "cross-compiler validation on the new SHA pending" caveat. Did NOT promote: frozen external schema, Taskflow/oneTBB/stdexec, published release, MSVC C++23, C++26 reflection as supported. **Next:** align `docs/research-verification-matrix.md` with the new surfaces after the next code batch lands.
+
+Verification done at integration time: `cmake --preset clang-dev-ninja` clean, `cmake --build --preset clang-dev-ninja` clean (175/175 link targets), `ctest --preset clang-dev-ninja --output-on-failure` → **100% tests passed, 0 tests failed out of 189**.
+
+Worktree from the core-diagnostics agent still exists at `.claude/worktrees/agent-ac89e3bed5d15c9ba` (branch `worktree-agent-ac89e3bed5d15c9ba`); changes are already merged into the main tree, so the worktree can be removed when convenient.
+
+## Historical: 2026-05-18 validation snapshot
+
+Latest code-validation HEAD on GitHub: `6805543ede6946aa283be7f24fb3736c762f47b2` — cross-compiler validation passed.
+Remote status at that checkpoint: pushed to `origin/main` at the validation SHA before that docs refresh.
 
 This checkpoint replaces older OMX team pause notes. Use it to resume the next 3-agent long-horizon wave after usage resets without re-reading the entire prior team transcript.
 
