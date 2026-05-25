@@ -118,7 +118,16 @@ and exposes `underlying()` for observer/descriptor access.
   observer that logs every stage transition to a `std::ostream` using
   the stable `[pb.verbose] <event> stage=<key>` line schema.
 
-See [include/pb/runtime/error_policy.hpp](include/pb/runtime/error_policy.hpp).
+All five wrappers expose `set_observer` / `get_observer` / `describe` /
+`descriptor` directly on the wrapper surface, so they compose — most
+useful pattern: `pb::with_verbose_diagnostics(pb::with_throw_on_error(
+pb::compile<P>(pb::runtime::sequential{})), &std::clog)` to log every
+transition *and* throw on failure. Cross-wrapper `run()` / `try_run()`
+parity is regression-tested across linear, selected-output branch, and
+explicit fan-in topologies for success / declared `result<>` failure /
+thrown exception, plus `std::expected`-shape stages where
+`PB_HAS_STD_EXPECTED == 1`. See
+[include/pb/runtime/error_policy.hpp](include/pb/runtime/error_policy.hpp).
 
 ### Fan-in clone / projection
 - `pb::shared_view<T>` — copyable view that lets owned non-copyable

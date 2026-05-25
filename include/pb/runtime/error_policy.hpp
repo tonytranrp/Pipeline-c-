@@ -124,8 +124,17 @@ public:
     return engine_.try_run(std::move(input));
   }
 
-  /// Mutable access to the wrapped engine so callers can still attach an
-  /// observer, query the descriptor, or read backend-specific state.
+  /// Observer and descriptor forwarding.  Lets the wrapper compose with
+  /// other policy wrappers (e.g. `verbose_engine<throwing_engine<...>>`)
+  /// and matches the underlying engine's public observer/introspection
+  /// surface so callers don't have to reach through `underlying()`.
+  void set_observer(runtime::observer* value) noexcept { engine_.set_observer(value); }
+  [[nodiscard]] auto get_observer() const noexcept -> runtime::observer* { return engine_.get_observer(); }
+  [[nodiscard]] auto describe() const { return engine_.describe(); }
+  [[nodiscard]] auto descriptor() const noexcept { return engine_.descriptor(); }
+
+  /// Mutable access to the wrapped engine for callers that need
+  /// backend-specific state not covered by the forwarding surface above.
   [[nodiscard]] auto underlying() & noexcept -> Engine& { return engine_; }
   [[nodiscard]] auto underlying() const& noexcept -> const Engine& { return engine_; }
   [[nodiscard]] auto underlying() && noexcept -> Engine&& { return std::move(engine_); }
@@ -185,6 +194,11 @@ public:
   auto try_run(input_type input) -> try_result_type {
     return engine_.try_run(std::move(input));
   }
+
+  void set_observer(runtime::observer* value) noexcept { engine_.set_observer(value); }
+  [[nodiscard]] auto get_observer() const noexcept -> runtime::observer* { return engine_.get_observer(); }
+  [[nodiscard]] auto describe() const { return engine_.describe(); }
+  [[nodiscard]] auto descriptor() const noexcept { return engine_.descriptor(); }
 
   [[nodiscard]] auto underlying() & noexcept -> Engine& { return engine_; }
   [[nodiscard]] auto underlying() const& noexcept -> const Engine& { return engine_; }
@@ -255,6 +269,11 @@ public:
 
   [[nodiscard]] auto get_fallback() const& noexcept -> const output_type& { return fallback_; }
 
+  void set_observer(runtime::observer* value) noexcept { engine_.set_observer(value); }
+  [[nodiscard]] auto get_observer() const noexcept -> runtime::observer* { return engine_.get_observer(); }
+  [[nodiscard]] auto describe() const { return engine_.describe(); }
+  [[nodiscard]] auto descriptor() const noexcept { return engine_.descriptor(); }
+
   [[nodiscard]] auto underlying() & noexcept -> Engine& { return engine_; }
   [[nodiscard]] auto underlying() const& noexcept -> const Engine& { return engine_; }
   [[nodiscard]] auto underlying() && noexcept -> Engine&& { return std::move(engine_); }
@@ -309,6 +328,11 @@ public:
   auto try_run(input_type input) -> try_result_type {
     return engine_.try_run(std::move(input));
   }
+
+  void set_observer(runtime::observer* value) noexcept { engine_.set_observer(value); }
+  [[nodiscard]] auto get_observer() const noexcept -> runtime::observer* { return engine_.get_observer(); }
+  [[nodiscard]] auto describe() const { return engine_.describe(); }
+  [[nodiscard]] auto descriptor() const noexcept { return engine_.descriptor(); }
 
   [[nodiscard]] auto underlying() & noexcept -> Engine& { return engine_; }
   [[nodiscard]] auto underlying() const& noexcept -> const Engine& { return engine_; }
@@ -449,6 +473,15 @@ public:
   void set_sink(std::ostream* sink) noexcept { observer_.set_sink(sink); }
 
   [[nodiscard]] auto sink() const noexcept -> std::ostream* { return observer_.sink(); }
+
+  /// Descriptor forwarding for ergonomic access through wrapper stacks.
+  /// `set_observer` / `get_observer` are intentionally *not* exposed —
+  /// the verbose wrapper owns its observer slot and exposing those would
+  /// let callers detach the verbose observer mid-run, defeating the
+  /// wrapper's purpose.  Use `set_sink(nullptr)` to silence the wrapper
+  /// instead.
+  [[nodiscard]] auto describe() const { return engine_.describe(); }
+  [[nodiscard]] auto descriptor() const noexcept { return engine_.descriptor(); }
 
   [[nodiscard]] auto underlying() & noexcept -> Engine& { return engine_; }
   [[nodiscard]] auto underlying() const& noexcept -> const Engine& { return engine_; }
