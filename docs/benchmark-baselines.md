@@ -1,6 +1,6 @@
 # Compile-Time Benchmark Baselines
 
-Reproducible compile-time baseline measurements for the three smoke
+Reproducible compile-time baseline measurements for the smoke
 translation units shipped under `bench/compile_time/`. These are
 **reference numbers**, not release thresholds — they exist so future
 contributors can detect compile-time regressions early, and so release
@@ -26,6 +26,25 @@ they were collected under.
 | `pb_bench_include_pipeline` | **1.31 s** | 1.31 s | 1.38 s | 3 clean rebuilds, single-target ninja |
 | `pb_bench_compile_chain_5`  | **1.33 s** | 1.32 s | 1.35 s | 3 clean rebuilds, single-target ninja |
 | `pb_bench_compile_chain_50` | **1.41 s** | 1.37 s | 1.47 s | 3 clean rebuilds, single-target ninja |
+
+### Branch / fan-in compile-time coverage (added 2026-06-02)
+
+The linear `chain_N` benchmarks only exercise straight-line pipelines. A
+dedicated **branch + fan-in** translation unit now covers the heavier
+topology-instantiation cost (multi-case `::branch<...>` plus
+`::fan_in<...>` plus descriptor/export helper instantiation):
+
+| Translation unit | Median wall time | Method |
+| --- | --- | --- |
+| `pb_bench_compile_branch_fan_in_10` | _to be recorded on candidate SHA_ | 3 clean rebuilds, single-target ninja |
+
+The same target is also exercised inside the default test suite as the
+compile-pass smoke `pb_branch_compile_time_smoke` (label
+`compile-pass;bench;branch`), so branch/fan-in compile health is checked
+on every `ctest` run even when the benchmark numbers are not collected.
+Measure it the same way as the chain targets — add it to the
+`$benches` array below with object path
+`build/clang-dev-ninja/bench/CMakeFiles/pb_bench_compile_branch_fan_in_10.dir/compile_time/branch_fan_in_10.cpp.obj`.
 
 **Reproducer:**
 

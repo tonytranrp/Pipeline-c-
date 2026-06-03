@@ -1,9 +1,27 @@
 # Continue checkpoint — Pipeline-c++ long-horizon resume
 
-Snapshot UTC: `2026-05-25T00:00:00Z`
+Snapshot UTC: `2026-06-02T00:00:00Z`
 Repo: `C:\Users\Tonyt\Documents\GitHub\Pipeline-c++`
 Current branch: `main`
-Last committed HEAD: `cd5a80c` (`Add meta utilities, threadpool APIs and refactor`).
+Last committed HEAD: `b57805b` (`Add wave-1 roadmap features: unique_clone, thread-local state, fan-in observer events, thread-pool demo/stress/bench, branch compile-time bench`).
+
+## 2026-06-02 multi-agent wave 1 — integrated (208/208 ctest, clang-dev-ninja)
+
+A 5-agent isolated-worktree workflow implemented and verified five file-disjoint roadmap gaps from `research/not done.md`; each was build+test verified in its own worktree, then integrated into `main` and re-verified together (208/208, up from 201/201):
+
+- **`pb::unique_clone<T, Clone>`** (`include/pb/runtime/clone.hpp`) — owned per-case unique-clone fan-in policy: a copyable wrapper whose copy ctor deep-copies via `Clone` so each passing fan-in case gets an independently-owned value (contrast `shared_view`). Closes the "owned per-case unique-clone beyond shared-view" gap. Test: `tests/runtime/fan_in_unique_clone_smoke.cpp` + public-header check.
+- **`pb::with_thread_local_state<State>`** (`include/pb/runtime/state.hpp`) — thread-local stateful storage policy so stateful stages stay isolated under concurrent invocation (groundwork for parallel backends). Test: `tests/runtime/state_thread_local_smoke.cpp` (multi-threaded).
+- **Fan-in observer lifecycle events** (`observer.hpp` + `sequential.hpp` + `thread_pool_backend.hpp`) — additive v1-ABI-safe no-op virtuals `on_fan_in_started` / `on_fan_in_case_scheduled` / `on_fan_in_case_completed` / `on_fan_in_completed`, emitted on both sequential and thread-pool fan-in paths. Test: `tests/runtime/fan_in_observer_events_smoke.cpp`.
+- **Thread-pool fan-in example + stress test + runtime benchmark** — `examples/thread_pool_fan_in_demo.cpp`, `tests/runtime/thread_pool_fan_in_stress_smoke.cpp`, `bench/runtime/thread_pool_fan_in.cpp` (builds under `bench-dev-ninja`).
+- **Branch/fan-in compile-time benchmark** — `bench/compile_time/branch_fan_in_10.cpp` + `pb_compile_time_benchmarks` target + `tests/compile_pass/branch_compile_time_smoke.cpp`.
+
+Verification at integration: `cmake --preset clang-dev-ninja` clean, full build clean (208 targets), `ctest --preset clang-dev-ninja` → **100% passed, 0 failed / 208**; `bench-dev-ninja` builds `pb_bench_thread_pool_fan_in` clean. Cross-compiler validation on the new SHA still pending (rerun before tagging).
+
+> Note: freshly-linked `.exe` files can transiently fail ctest with `BAD_COMMAND` / "Permission denied" due to Windows Defender file locks; re-running the single test (or relinking it) clears it. This is environmental, not a code regression.
+
+### Prior checkpoint (superseded below)
+
+Last committed HEAD before this wave: `cd5a80c` (`Add meta utilities, threadpool APIs and refactor`).
 Working tree at checkpoint: **189/189 local ctest passing** on `clang-dev-ninja` after integrating the 2026-05-25 three-agent wave. Uncommitted: the production-grade batch (schema v1, error-policy DSL, clone/projection, C++26 typed gates, reflection adapter, export_text, pb_cli expansion) PLUS the integrated 3-agent wave additions (indexed stage I/O aliases + `terminate_on_error` compile-pass smoke + docs refresh). Cross-compiler validation has **not** been rerun on the new code; rerun before release tagging.
 
 ## 2026-05-25 team wave — integrated
