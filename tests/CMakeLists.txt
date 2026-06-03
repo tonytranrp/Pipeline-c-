@@ -97,6 +97,8 @@ add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers/runtime_result.cpp
   compile_pass/public_headers/runtime_routing.cpp
   compile_pass/public_headers/runtime_clone_unique.cpp
+  compile_pass/public_headers/runtime_fan_in_error.cpp
+  compile_pass/public_headers/adapt_coroutine.cpp
   compile_pass/public_headers/runtime_sequential.cpp
   compile_pass/public_headers/runtime_observer.cpp
   compile_pass/public_headers/runtime_trace.cpp
@@ -1596,6 +1598,14 @@ if(PB_BUILD_CLI)
   set_tests_properties(pb_cli_unknown PROPERTIES LABELS "cli;error")
   set_tests_properties(pb_cli_unknown PROPERTIES WILL_FAIL TRUE)
 
+  add_test(NAME pb_cli_list_registry
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      "-DEXPECTED_TOKENS=order-linear;order-branch;order-fan-in;order-enrich;order-variant"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_list.cmake
+  )
+  set_tests_properties(pb_cli_list_registry PROPERTIES LABELS "cli;registry")
+
   # ─────────────────────────────────────────────────────────────
   # `pb_cli describe` graph-export smoke
   #
@@ -1717,4 +1727,44 @@ if(PB_BUILD_CLI)
       -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
   )
   set_tests_properties(pb_cli_describe_invalid_format PROPERTIES LABELS "cli;describe;error")
+
+  # New registry-provided built-in pipelines, described end-to-end.
+  add_test(NAME pb_cli_describe_order_enrich_text
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-enrich
+      -DFORMAT=text
+      -DOUT_FILE=${pb_cli_describe_dir}/order_enrich.txt
+      "-DEXPECTED_TOKENS=# pb.core.graph.v1;topology=linear;stages=5;[0] ingest;[4] archive"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
+  )
+  set_tests_properties(pb_cli_describe_order_enrich_text PROPERTIES LABELS "cli;registry;describe;text")
+
+  add_test(NAME pb_cli_describe_order_variant_json
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-variant
+      -DFORMAT=json
+      -DOUT_FILE=${pb_cli_describe_dir}/order_variant.json
+      "-DEXPECTED_TOKENS=\"topology\":\"branch\";\"predicate_key\":\"route.refund\";\"predicate_key\":\"route.charge\";\"stage_key\":\"make.refund\";\"stage_key\":\"make.charge\""
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
+  )
+  set_tests_properties(pb_cli_describe_order_variant_json PROPERTIES LABELS "cli;registry;describe;json;branch")
 endif()
+
+# ---------------------------------------------------------------------------
+# Wave-2 additive features: fan-in multi-error envelope, coroutine adapter
+# ---------------------------------------------------------------------------
+
+add_executable(pb_runtime_fan_in_error_envelope_smoke runtime/fan_in_error_envelope_smoke.cpp)
+target_link_libraries(pb_runtime_fan_in_error_envelope_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_fan_in_error_envelope_smoke PRIVATE)
+pb_enable_pch_if_requested(pb_runtime_fan_in_error_envelope_smoke)
+add_test(NAME pb_runtime_fan_in_error_envelope_smoke COMMAND pb_runtime_fan_in_error_envelope_smoke)
+set_tests_properties(pb_runtime_fan_in_error_envelope_smoke PROPERTIES LABELS "runtime;branch;fan-in;errors;envelope")
+
+add_executable(pb_runtime_coroutine_adapter_smoke runtime/coroutine_adapter_smoke.cpp)
+target_link_libraries(pb_runtime_coroutine_adapter_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_coroutine_adapter_smoke PRIVATE)
+add_test(NAME pb_runtime_coroutine_adapter_smoke COMMAND pb_runtime_coroutine_adapter_smoke)
+set_tests_properties(pb_runtime_coroutine_adapter_smoke PROPERTIES LABELS "runtime;adapter;coroutine")

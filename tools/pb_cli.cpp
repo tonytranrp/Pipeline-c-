@@ -13,9 +13,30 @@
 //                  [--out=<path>]                   (default: stdout)
 //   pb_cli export [--dot|--json]                    show export-API docs
 // ─────────────────────────────────────────────────────────────
+//
+// EXTENSION POINT — registering MORE pipelines
+// --------------------------------------------
+// `list` / `describe` are driven by a pb::tooling::pipeline_registry, not a
+// hard-coded switch (see include/pb/tooling/cli_registry.hpp).  To expose your
+// own pipeline in a fork of this CLI:
+//
+//   1. Define a validated pipeline type in pb_cli_examples (or your own TU):
+//          using MyPipeline = pb::from<In>::then<...>::to<Out>;
+//   2. Register it with a single line in build_registry():
+//          registry.add<MyPipeline>("my-name", "my-topology",
+//                                    "One-line description.");
+//
+// Everything else — `pb_cli list`, `pb_cli describe my-name --format=…`, the
+// unknown-name error path — picks it up automatically.  A compiled CLI cannot
+// compile arbitrary user source at runtime, so this single-line registration is
+// the realistic closure for "accept user-defined pipelines".
+// ─────────────────────────────────────────────────────────────
 
 #include <pb/pipeline.hpp>
 #include <pb/core/cpp26_features.hpp>
+#include <pb/tooling/cli_registry.hpp>
+
+#include <variant>
 
 #include <cstdlib>
 #include <fstream>
@@ -188,6 +209,116 @@ using OrderFanInPipeline = pb::from<Order>
 
 static_assert(pb::valid<OrderFanInPipeline>);
 
+// ── Longer linear pipeline: a five-stage enrichment chain ───────────
+//
+// Demonstrates that the registry scales past the original three-stage demo:
+// every stage is registered the same way and renders identically to the short
+// chain, just with more nodes/edges.
+struct IngestText {
+  using input_type  = RawText;
+  using output_type = OrderDraft;
+  static constexpr auto stage_key()  noexcept { return "ingest"; }
+  static constexpr auto stage_name() noexcept { return "ingest text"; }
+  OrderDraft operator()(RawText input) const { return OrderDraft{std::move(input.value)}; }
+};
+struct NormalizeDraft {
+  using input_type  = OrderDraft;
+  using output_type = OrderDraft;
+  static constexpr auto stage_key()  noexcept { return "normalize"; }
+  static constexpr auto stage_name() noexcept { return "normalize draft"; }
+  OrderDraft operator()(OrderDraft draft) const { return draft; }
+};
+struct EnrichDraft {
+  using input_type  = OrderDraft;
+  using output_type = ValidatedOrder;
+  static constexpr auto stage_key()  noexcept { return "enrich"; }
+  static constexpr auto stage_name() noexcept { return "enrich draft"; }
+  ValidatedOrder operator()(OrderDraft draft) const { return ValidatedOrder{std::move(draft.id)}; }
+};
+struct AuditOrder {
+  using input_type  = ValidatedOrder;
+  using output_type = ValidatedOrder;
+  static constexpr auto stage_key()  noexcept { return "audit"; }
+  static constexpr auto stage_name() noexcept { return "audit order"; }
+  ValidatedOrder operator()(ValidatedOrder order) const { return order; }
+};
+struct ArchiveOrder {
+  using input_type  = ValidatedOrder;
+  using output_type = Receipt;
+  static constexpr auto stage_key()  noexcept { return "archive"; }
+  static constexpr auto stage_name() noexcept { return "archive order"; }
+  Receipt operator()(ValidatedOrder order) const { return Receipt{std::move(order.id)}; }
+};
+
+using OrderEnrichPipeline = pb::from<RawText>
+    ::then<IngestText>
+    ::then<NormalizeDraft>
+    ::then<EnrichDraft>
+    ::then<AuditOrder>
+    ::then<ArchiveOrder>
+    ::to<Receipt>;
+
+static_assert(pb::valid<OrderEnrichPipeline>);
+
+// ── Heterogeneous-variant branch: cases yield DIFFERENT output types ─
+//
+// Unlike OrderBranchPipeline (where both cases return Decision), the two cases
+// here return distinct types, so the unified branch output is a std::variant.
+// The join stage consumes that variant — exercising the heterogeneous-branch
+// path through the same one-line registration.
+struct Refund  { int amount{}; };
+struct Charge  { std::string memo; };
+
+struct RefundCasePred {
+  using input_type  = Order;
+  using output_type = bool;
+  static constexpr auto stage_key()  noexcept { return "route.refund"; }
+  static constexpr auto stage_name() noexcept { return "route refund"; }
+  bool operator()(const Order& order) const { return order.amount < 0; }
+};
+struct ChargeCasePred {
+  using input_type  = Order;
+  using output_type = bool;
+  static constexpr auto stage_key()  noexcept { return "route.charge"; }
+  static constexpr auto stage_name() noexcept { return "route charge"; }
+  bool operator()(const Order& order) const { return order.amount >= 0; }
+};
+struct MakeRefund {
+  using input_type  = Order;
+  using output_type = Refund;
+  static constexpr auto stage_key()  noexcept { return "make.refund"; }
+  static constexpr auto stage_name() noexcept { return "make refund"; }
+  Refund operator()(Order order) const { return Refund{-order.amount}; }
+};
+struct MakeCharge {
+  using input_type  = Order;
+  using output_type = Charge;
+  static constexpr auto stage_key()  noexcept { return "make.charge"; }
+  static constexpr auto stage_name() noexcept { return "make charge"; }
+  Charge operator()(Order order) const { return Charge{"order-" + std::to_string(order.amount)}; }
+};
+struct SettleVariant {
+  using input_type  = std::variant<Refund, Charge>;
+  using output_type = Receipt;
+  static constexpr auto stage_key()  noexcept { return "settle"; }
+  static constexpr auto stage_name() noexcept { return "settle variant"; }
+  Receipt operator()(std::variant<Refund, Charge> outcome) const {
+    if (std::holds_alternative<Refund>(outcome)) {
+      return Receipt{"refund-" + std::to_string(std::get<Refund>(outcome).amount)};
+    }
+    return Receipt{std::get<Charge>(outcome).memo};
+  }
+};
+
+using RefundCase = pb::case_<RefundCasePred>::then<MakeRefund>;
+using ChargeCase = pb::case_<ChargeCasePred>::then<MakeCharge>;
+using OrderVariantPipeline = pb::from<Order>
+    ::branch<RefundCase, ChargeCase>
+    ::join<SettleVariant>
+    ::to<Receipt>;
+
+static_assert(pb::valid<OrderVariantPipeline>);
+
 } // namespace pb_cli_examples
 
 // ─────────────────────────────────────────────────────────────
@@ -200,20 +331,47 @@ namespace {
   return cond ? "yes" : "no";
 }
 
-struct example_entry {
-  std::string_view name;
-  std::string_view topology;
-  std::string_view description;
-};
+// ── Pipeline registry ────────────────────────────────────────
+//
+// Every built-in pipeline is registered here with a single `add<...>` line.
+// The registry type-erases each pipeline's export closures, so the rest of the
+// CLI (`list`, `describe`, the unknown-name error path) works against the
+// registry instead of a hard-coded switch.  See the EXTENSION POINT note at the
+// top of this file (and in include/pb/tooling/cli_registry.hpp) for how a fork
+// adds its own pipelines.
+[[nodiscard]] pb::tooling::pipeline_registry build_registry() {
+  using namespace pb_cli_examples;
+  pb::tooling::pipeline_registry registry;
 
-constexpr example_entry kExamples[] = {
-    {"order-linear", "linear",
-     "Three-stage parse → validate → persist linear pipeline."},
-    {"order-branch", "branch",
-     "Branch on order amount, then join on FinalizeDecision."},
-    {"order-fan-in", "fan_in",
-     "Fan-in: every passing predicate runs, results merged."},
-};
+  // The original three examples — names, descriptions, and DOT graph ids are
+  // preserved EXACTLY so the golden `pb_cli describe` tests still pass.
+  registry.add<OrderLinearPipeline>(
+      "order-linear", "linear",
+      "Three-stage parse → validate → persist linear pipeline.");
+  registry.add<OrderBranchPipeline>(
+      "order-branch", "branch",
+      "Branch on order amount, then join on FinalizeDecision.");
+  registry.add<OrderFanInPipeline>(
+      "order-fan-in", "fan_in",
+      "Fan-in: every passing predicate runs, results merged.");
+
+  // Additional built-ins, registered the same way to demonstrate that the
+  // registry scales past the original demo set.
+  registry.add<OrderEnrichPipeline>(
+      "order-enrich", "linear",
+      "Five-stage ingest → normalize → enrich → audit → archive chain.");
+  registry.add<OrderVariantPipeline>(
+      "order-variant", "branch",
+      "Heterogeneous branch: cases yield distinct types joined via std::variant.");
+
+  return registry;
+}
+
+// Process-wide registry, built once on first use.
+[[nodiscard]] const pb::tooling::pipeline_registry& registry() {
+  static const pb::tooling::pipeline_registry instance = build_registry();
+  return instance;
+}
 
 void print_banner() {
   std::cout << "Pipeline-c++ CLI v" << kVersion << "\n";
@@ -336,35 +494,10 @@ void print_schema() {
 
 void print_examples() {
   std::cout << "Built-in example pipelines:\n";
-  for (const auto& entry : kExamples) {
+  for (const auto& entry : registry().entries()) {
     std::cout << "  " << entry.name << "  [" << entry.topology << "]  — " << entry.description << "\n";
   }
   std::cout << "\nRender with: pb_cli describe <name> --format=<dot|json>\n";
-}
-
-// Returns the export string for the requested example/format combo, or empty
-// string if the name is unknown.  The caller has already checked the format.
-template <class Pipeline>
-[[nodiscard]] std::string render_pipeline(std::string_view format, std::string_view graph_name) {
-  if (format == "dot")  return pb::to_dot<Pipeline>(graph_name);
-  if (format == "json") return pb::to_json<Pipeline>();
-  if (format == "text") return pb::to_text<Pipeline>();
-  return {};
-}
-
-[[nodiscard]] std::string render_example(std::string_view name, std::string_view format) {
-  using namespace pb_cli_examples;
-  if (name == "order-linear") return render_pipeline<OrderLinearPipeline>(format, "order_linear");
-  if (name == "order-branch") return render_pipeline<OrderBranchPipeline>(format, "order_branch");
-  if (name == "order-fan-in") return render_pipeline<OrderFanInPipeline>(format, "order_fan_in");
-  return {};
-}
-
-[[nodiscard]] bool is_known_example(std::string_view name) {
-  for (const auto& entry : kExamples) {
-    if (entry.name == name) return true;
-  }
-  return false;
 }
 
 // Split "--key=value" → {key, value}.  If no '=', value is empty.
@@ -410,13 +543,13 @@ int run_describe(int argc, char* argv[]) {
     }
   }
 
-  if (!is_known_example(name)) {
+  if (!registry().contains(name)) {
     std::cerr << "describe: unknown pipeline '" << name
               << "'. Run `pb_cli list` for available names.\n";
     return 2;
   }
 
-  const std::string graph = render_example(name, format);
+  const std::string graph = registry().render(name, format);
   if (graph.empty()) {
     std::cerr << "describe: internal error rendering '" << name << "'.\n";
     return 3;

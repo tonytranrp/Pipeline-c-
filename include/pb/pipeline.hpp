@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pb/adapt/fn.hpp"
+#include "pb/adapt/coroutine.hpp"
 #include "pb/adapt/reflect.hpp"
 #include "pb/adapt/void_adapter.hpp"
 #include "pb/core/concepts.hpp"
@@ -21,6 +22,7 @@
 #include "pb/runtime/backend.hpp"
 #include "pb/runtime/error.hpp"
 #include "pb/runtime/error_policy.hpp"
+#include "pb/runtime/fan_in_error.hpp"
 #include "pb/runtime/observer.hpp"
 #include "pb/runtime/result.hpp"
 #include "pb/runtime/routing.hpp"
