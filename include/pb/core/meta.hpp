@@ -78,6 +78,11 @@ struct transform;
 template <class... Ts, template <class> class F>
 struct transform<type_list<Ts...>, F> { using type = type_list<typename F<Ts>::type...>; };
 
+/// Alias for `transform<List, F>::type` — completes the `_t` convention shared
+/// by every other type-mapping trait in this header.
+template <class List, template <class> class F>
+using transform_t = typename transform<List, F>::type;
+
 template <class List, template <class> class Pred>
 struct all_of;
 
@@ -234,6 +239,7 @@ using ::pb::meta::replace_back_t;
 using ::pb::meta::size;
 using ::pb::meta::size_v;
 using ::pb::meta::transform;
+using ::pb::meta::transform_t;
 using ::pb::meta::type_list;
 using ::pb::meta::unique;
 using ::pb::meta::unique_t;

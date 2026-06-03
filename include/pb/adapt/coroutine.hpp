@@ -192,8 +192,6 @@ struct coroutine_stage {
   using input_type = Input;
   using output_type = adapt_detail::coroutine_result_t<std::invoke_result_t<Coro&, Input>>;
 
-  [[no_unique_address]] Coro coro_{};
-
   static constexpr std::string_view stage_name() noexcept { return "coroutine_stage"; }
 
   [[nodiscard]] output_type operator()(input_type input) const {

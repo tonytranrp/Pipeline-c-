@@ -1,6 +1,7 @@
 #pragma once
 
 #include <concepts>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -119,16 +120,6 @@ struct join_stage_accepts_outputs<Outputs, JoinStage, true, true> {
       stage_invocable_for_output_types<JoinStage, raw_output_types>::value;
 
   static constexpr bool value = accepts_unified_output || accepts_raw_type_list;
-};
-
-template <class... Cases>
-struct first_branch_output {
-  using type = void;
-};
-
-template <class First, class... Rest>
-struct first_branch_output<First, Rest...> {
-  using type = typename branch_case_output<First>::output_type;
 };
 
 template <class Case, bool IsBranchCase = is_branch_case<Case>::value>
