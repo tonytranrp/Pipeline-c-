@@ -73,3 +73,14 @@ pb_apply_project_options(pb_thread_pool_fan_in_demo PRIVATE)
 pb_enable_pch_if_requested(pb_thread_pool_fan_in_demo)
 add_test(NAME pb_example_thread_pool_fan_in_demo COMMAND pb_thread_pool_fan_in_demo)
 set_tests_properties(pb_example_thread_pool_fan_in_demo PROPERTIES LABELS "examples;branch;fan-in;thread-pool")
+
+# ---------------------------------------------------------------------------
+# Policy DSL example (::with<pb::policy::...>)
+# ---------------------------------------------------------------------------
+
+add_executable(pb_policy_dsl_demo policy_dsl_demo.cpp)
+target_link_libraries(pb_policy_dsl_demo PRIVATE pb::pipeline)
+pb_apply_project_options(pb_policy_dsl_demo PRIVATE)
+pb_enable_pch_if_requested(pb_policy_dsl_demo)
+add_test(NAME pb_example_policy_dsl_demo COMMAND pb_policy_dsl_demo)
+set_tests_properties(pb_example_policy_dsl_demo PROPERTIES LABELS "examples;policy;dsl")
