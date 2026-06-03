@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <string_view>
 
 #include "pb/runtime/error.hpp"
@@ -26,13 +27,47 @@ inline constexpr std::string_view observer_schema_version = "pb.observer.v1";
 ///
 /// v1 event surface (locked):
 ///
-///   on_stage_start     (stage_id)
-///   on_stage_success   (stage_id)
-///   on_stage_failure   (stage_id, error)
-///   on_stage_exception (stage_id, error)
-///   on_case_selected   (branch_id, case_index, predicate_id)
-///   on_case_skipped    (branch_id, case_index, predicate_id)
-///   on_case_failed     (branch_id, case_index, case_stage_id, diagnostic)
+///   on_stage_start          (stage_id)
+///   on_stage_success        (stage_id)
+///   on_stage_failure        (stage_id, error)
+///   on_stage_exception      (stage_id, error)
+///   on_case_selected        (branch_id, case_index, predicate_id)
+///   on_case_skipped         (branch_id, case_index, predicate_id)
+///   on_case_failed          (branch_id, case_index, case_stage_id, diagnostic)
+///   on_fan_in_started       (branch_id, case_count)
+///   on_fan_in_case_scheduled(branch_id, case_index, case_stage_id)
+///   on_fan_in_case_completed(branch_id, case_index, case_stage_id, success)
+///   on_fan_in_completed     (branch_id, selected_count, completed_count, failed_count)
+///
+/// The four `on_fan_in_*` methods are additive lifecycle hooks layered
+/// on top of the original v1 surface; they carry no-op default bodies
+/// and so do NOT bump the ABI schema (existing derived observers stay
+/// source- and ABI-compatible).  They bracket a fan-in branch's
+/// execution on both the sequential and thread-pool backends:
+///
+///   started  → emitted once before any case predicate is evaluated,
+///              reporting the total number of cases that will be
+///              considered (`case_count`).
+///   scheduled→ emitted once per case whose predicate selected it,
+///              immediately before its branch stage begins running
+///              (so on the thread-pool backend it precedes the actual
+///              task dispatch).  Always paired with on_case_selected.
+///   completed→ emitted once per scheduled case after its branch stage
+///              finishes, reporting `success` (false on stage failure
+///              or exception).  Always paired with a matching scheduled.
+///   completed (fan-in) → emitted once after the whole branch has been
+///              aggregated, reporting how many cases were `selected`
+///              (predicate matched), how many `completed` successfully,
+///              and how many `failed` (selected-but-errored plus
+///              predicate failures).
+///
+/// Ordering for a single branch is therefore:
+///   started → N×scheduled → N×case_completed → completed
+/// where N == selected_count.  On the thread-pool backend the
+/// per-case events are serialized through the synchronized observer
+/// wrapper, so the scheduled/case_completed events for distinct cases
+/// may interleave, but each case's scheduled always precedes its own
+/// case_completed.
 ///
 /// See docs/observer-schema-v1.md for the formal ABI contract.
 struct observer {
@@ -48,6 +83,21 @@ struct observer {
                                const stage_id& /*predicate_id*/) {}
   virtual void on_case_failed(const stage_id& /*branch_id*/, std::size_t /*case_index*/,
                               const stage_id& /*case_stage_id*/, const error& /*diagnostic*/) {}
+
+  /// Emitted once before a fan-in branch evaluates any case.
+  virtual void on_fan_in_started(const stage_id& /*branch_id*/, std::size_t /*case_count*/) {}
+
+  /// Emitted when a selected case's branch stage is about to run.
+  virtual void on_fan_in_case_scheduled(const stage_id& /*branch_id*/, std::size_t /*case_index*/,
+                                        const stage_id& /*case_stage_id*/) {}
+
+  /// Emitted after a scheduled case's branch stage finishes.
+  virtual void on_fan_in_case_completed(const stage_id& /*branch_id*/, std::size_t /*case_index*/,
+                                        const stage_id& /*case_stage_id*/, bool /*success*/) {}
+
+  /// Emitted once after the whole fan-in branch has been aggregated.
+  virtual void on_fan_in_completed(const stage_id& /*branch_id*/, std::size_t /*selected_count*/,
+                                   std::size_t /*completed_count*/, std::size_t /*failed_count*/) {}
 };
 
 /// Verbose event-line schema identifier.  The `[pb.verbose] <event>

@@ -101,6 +101,106 @@ struct is_shared_view<shared_view<T>> : std::true_type {};
 template <class T>
 inline constexpr bool is_shared_view_v = detail::is_shared_view<std::remove_cvref_t<T>>::value;
 
+/// Default clone policy for `pb::unique_clone`.  Deep-copies a value by
+/// invoking `T`'s copy constructor.  Specialise / replace with a custom
+/// functor when `T` is move-only-but-cloneable (e.g. carries a
+/// `std::unique_ptr` it can deep-copy on demand).
+template <class T>
+struct copy_clone {
+  [[nodiscard]] auto operator()(const T& value) const -> T { return T{value}; }
+};
+
+/// Copyable wrapper for an *owned* value that participates in fan-in (or other
+/// multi-case execution) via the runtime's **copy** strategy while handing each
+/// passing case its own **independent** value.
+///
+/// Where `pb::shared_view<T>` makes the wrapper copyable by *sharing* one
+/// underlying value behind a `std::shared_ptr<const T>`, `unique_clone<T>`
+/// makes the wrapper copyable by *deep-copying* its underlying value on every
+/// copy.  Each copy therefore owns a fully independent `T`: mutating one case's
+/// value never aliases another's.  This suits a `T` that is expensive- or
+/// unsafe-to-share, or a `T` that is move-only-but-cloneable (supply a custom
+/// `Clone` functor whose `operator()(const T&) -> T` produces the deep copy).
+///
+/// The wrapper's COPY constructor produces an independent deep copy by
+/// invoking `Clone{}(const T&) -> T`; its MOVE constructor moves the owned `T`
+/// cheaply without cloning.  Because the wrapper is copy-constructible the
+/// fan-in runtime selects its **copy** strategy
+/// (`pb::fan_in_uses_copy_v == true`), giving every passing case its own
+/// owned value.
+template <class T, class Clone = copy_clone<T>>
+class unique_clone {
+public:
+  using value_type  = T;
+  using clone_type  = Clone;
+
+  /// Take ownership of a value by moving it into the wrapper.
+  explicit unique_clone(T value) : owned_{std::move(value)} {}
+
+  /// Copy constructor: produce an INDEPENDENT deep copy of the owned value via
+  /// `Clone`.  This is what flows a fresh, independently-owned `T` into each
+  /// passing fan-in case under the copy strategy.
+  unique_clone(const unique_clone& other) : owned_{Clone{}(other.owned_)} {}
+
+  /// Move constructor: move the owned value cheaply, no clone performed.
+  unique_clone(unique_clone&&) noexcept(std::is_nothrow_move_constructible_v<T>) = default;
+
+  /// Copy assignment: replace the owned value with an independent deep copy.
+  unique_clone& operator=(const unique_clone& other) {
+    if (this != &other) {
+      owned_ = Clone{}(other.owned_);
+    }
+    return *this;
+  }
+
+  /// Move assignment: move the owned value cheaply, no clone performed.
+  unique_clone& operator=(unique_clone&&) noexcept(std::is_nothrow_move_assignable_v<T>) = default;
+
+  ~unique_clone() = default;
+
+  [[nodiscard]] auto get() noexcept -> T& { return owned_; }
+  [[nodiscard]] auto get() const noexcept -> const T& { return owned_; }
+  [[nodiscard]] auto operator*() noexcept -> T& { return owned_; }
+  [[nodiscard]] auto operator*() const noexcept -> const T& { return owned_; }
+  [[nodiscard]] auto operator->() noexcept -> T* { return std::addressof(owned_); }
+  [[nodiscard]] auto operator->() const noexcept -> const T* { return std::addressof(owned_); }
+
+  /// Produce an independent deep copy of the owned value through `Clone`.
+  [[nodiscard]] auto clone() const -> T { return Clone{}(owned_); }
+
+private:
+  T owned_;
+};
+
+/// Convenience factory using the default deep-copy clone policy.  Lets users
+/// write `pb::make_unique_clone(std::move(heavy))` without spelling the type.
+template <class T>
+[[nodiscard]] auto make_unique_clone(T value) -> unique_clone<std::remove_cvref_t<T>> {
+  return unique_clone<std::remove_cvref_t<T>>{std::move(value)};
+}
+
+/// Convenience factory selecting an explicit `Clone` policy, for move-only or
+/// otherwise non-copy-constructible `T` that nonetheless knows how to deep-copy
+/// itself.  Usage: `pb::make_unique_clone<MyClone>(std::move(value))`.
+template <class Clone, class T>
+[[nodiscard]] auto make_unique_clone(T value) -> unique_clone<std::remove_cvref_t<T>, Clone> {
+  return unique_clone<std::remove_cvref_t<T>, Clone>{std::move(value)};
+}
+
+namespace detail {
+
+template <class T>
+struct is_unique_clone : std::false_type {};
+
+template <class T, class Clone>
+struct is_unique_clone<unique_clone<T, Clone>> : std::true_type {};
+
+} // namespace detail
+
+/// True when `T` is some instantiation of `pb::unique_clone`.
+template <class T>
+inline constexpr bool is_unique_clone_v = detail::is_unique_clone<std::remove_cvref_t<T>>::value;
+
 namespace detail {
 
 template <class BranchNode, bool IsFanIn>

@@ -748,15 +748,24 @@ void mark_fan_in_case_failed(Aggregate& aggregate, const error& diagnostic) {
   slot.mark_failed(diagnostic.message);
 }
 
+/// Running tally of fan-in case outcomes, used to populate the
+/// `on_fan_in_completed` observer event.  Shared by both backends.
+struct fan_in_case_tally {
+  std::size_t selected{};
+  std::size_t completed{};
+  std::size_t failed{};
+};
+
 template <bool UseStorage, class BranchNode, std::size_t StageIndex, class Input, class Aggregate,
           std::size_t CaseIndex, class Case, class... Rest>
 [[nodiscard]] auto run_fan_in_cases(BranchNode* branch_storage, observer* sink, const Input& input,
-                                    Aggregate& aggregate) -> result<void> {
+                                    Aggregate& aggregate, fan_in_case_tally& tally) -> result<void> {
   using Predicate = typename Case::predicate_type;
   using BranchStage = typename Case::stage_type;
 
   auto branch_id = stage_id_for<BranchNode>(StageIndex);
   auto predicate_id = branch_child_stage_id<BranchNode, Predicate>(StageIndex, CaseIndex, "predicate");
+  auto branch_stage_id = branch_child_stage_id<BranchNode, BranchStage>(StageIndex, CaseIndex, "stage");
 
   auto predicate_result = [&] {
     if constexpr (UseStorage) {
@@ -772,9 +781,12 @@ template <bool UseStorage, class BranchNode, std::size_t StageIndex, class Input
   if (!predicate_result.has_value()) {
     auto predicate_error = std::move(predicate_result).error();
     mark_fan_in_case_failed<Aggregate, CaseIndex>(aggregate, predicate_error);
+    ++tally.failed;
     if (sink) sink->on_case_failed(branch_id, CaseIndex, predicate_id, predicate_error);
   } else if (predicate_result.value()) {
+    ++tally.selected;
     if (sink) sink->on_case_selected(branch_id, CaseIndex, predicate_id);
+    if (sink) sink->on_fan_in_case_scheduled(branch_id, CaseIndex, branch_stage_id);
     auto stage_result = [&] {
       if constexpr (UseStorage) {
         auto& stored_stage = std::get<CaseIndex>(branch_storage->branch_stages_);
@@ -786,6 +798,13 @@ template <bool UseStorage, class BranchNode, std::size_t StageIndex, class Input
             branch_stage, sink, branch_id, input, aggregate);
       }
     }();
+    const bool case_succeeded = !aggregate.template get<CaseIndex>().failed();
+    if (case_succeeded) {
+      ++tally.completed;
+    } else {
+      ++tally.failed;
+    }
+    if (sink) sink->on_fan_in_case_completed(branch_id, CaseIndex, branch_stage_id, case_succeeded);
     if (!stage_result.has_value()) {
       return stage_result;
     }
@@ -797,7 +816,7 @@ template <bool UseStorage, class BranchNode, std::size_t StageIndex, class Input
     return {};
   } else {
     return run_fan_in_cases<UseStorage, BranchNode, StageIndex, Input, Aggregate, CaseIndex + 1, Rest...>(
-        branch_storage, sink, input, aggregate);
+        branch_storage, sink, input, aggregate, tally);
   }
 }
 
@@ -806,12 +825,21 @@ template <bool UseStorage, class BranchNode, std::size_t StageIndex, class Input
                                           pb::meta::type_list<Cases...>)
     -> result<typename BranchNode::output_type> {
   typename BranchNode::output_type aggregate{};
-  auto cases_result = run_fan_in_cases<UseStorage, BranchNode, StageIndex, Input, typename BranchNode::output_type, 0,
-                                       Cases...>(branch_storage, sink, input, aggregate);
-  if (!cases_result.has_value()) {
-    return result<typename BranchNode::output_type>{std::move(cases_result).error()};
+  auto branch_id = stage_id_for<BranchNode>(StageIndex);
+  if (sink) sink->on_fan_in_started(branch_id, sizeof...(Cases));
+  fan_in_case_tally tally{};
+  if constexpr (sizeof...(Cases) == 0) {
+    if (sink) sink->on_fan_in_completed(branch_id, tally.selected, tally.completed, tally.failed);
+    return result<typename BranchNode::output_type>{std::move(aggregate)};
+  } else {
+    auto cases_result = run_fan_in_cases<UseStorage, BranchNode, StageIndex, Input, typename BranchNode::output_type, 0,
+                                         Cases...>(branch_storage, sink, input, aggregate, tally);
+    if (sink) sink->on_fan_in_completed(branch_id, tally.selected, tally.completed, tally.failed);
+    if (!cases_result.has_value()) {
+      return result<typename BranchNode::output_type>{std::move(cases_result).error()};
+    }
+    return result<typename BranchNode::output_type>{std::move(aggregate)};
   }
-  return result<typename BranchNode::output_type>{std::move(aggregate)};
 }
 
 template <class BranchNode, std::size_t StageIndex, class Input>

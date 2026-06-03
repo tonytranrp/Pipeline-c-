@@ -76,6 +76,33 @@ public:
     sink_->on_case_failed(branch_id, case_index, case_stage_id, diagnostic);
   }
 
+  void on_fan_in_started(const stage_id& branch_id, std::size_t case_count) override {
+    if (!sink_) return;
+    const std::scoped_lock lock{mutex_};
+    sink_->on_fan_in_started(branch_id, case_count);
+  }
+
+  void on_fan_in_case_scheduled(const stage_id& branch_id, std::size_t case_index,
+                                const stage_id& case_stage_id) override {
+    if (!sink_) return;
+    const std::scoped_lock lock{mutex_};
+    sink_->on_fan_in_case_scheduled(branch_id, case_index, case_stage_id);
+  }
+
+  void on_fan_in_case_completed(const stage_id& branch_id, std::size_t case_index, const stage_id& case_stage_id,
+                                bool success) override {
+    if (!sink_) return;
+    const std::scoped_lock lock{mutex_};
+    sink_->on_fan_in_case_completed(branch_id, case_index, case_stage_id, success);
+  }
+
+  void on_fan_in_completed(const stage_id& branch_id, std::size_t selected_count, std::size_t completed_count,
+                           std::size_t failed_count) override {
+    if (!sink_) return;
+    const std::scoped_lock lock{mutex_};
+    sink_->on_fan_in_completed(branch_id, selected_count, completed_count, failed_count);
+  }
+
 private:
   observer* sink_{};
   std::mutex mutex_{};
@@ -85,17 +112,24 @@ template <class BranchNode, class BranchStage, class BranchStageObject, std::siz
           std::size_t CaseIndex, class Input, class Aggregate>
 [[nodiscard]] auto enqueue_fan_in_case(thread_pool& pool, BranchStageObject&& branch_stage, synchronized_observer& sink,
                                        const stage_id& branch_id, const Input& input, Aggregate& aggregate) {
+  auto branch_stage_id = detail::branch_child_stage_id<BranchNode, BranchStage>(StageIndex, CaseIndex, "stage");
   if constexpr (std::copy_constructible<Input>) {
-    return pool.enqueue([stage = std::forward<BranchStageObject>(branch_stage), &sink, branch_id, &aggregate,
-                         input_copy = Input{input}]() mutable {
-      return detail::run_fan_in_case_stage<BranchNode, BranchStage, decltype(stage), StageIndex, CaseIndex>(
+    return pool.enqueue([stage = std::forward<BranchStageObject>(branch_stage), &sink, branch_id, branch_stage_id,
+                         &aggregate, input_copy = Input{input}]() mutable {
+      auto stage_result = detail::run_fan_in_case_stage<BranchNode, BranchStage, decltype(stage), StageIndex, CaseIndex>(
           stage, &sink, branch_id, input_copy, aggregate);
+      const bool case_succeeded = !aggregate.template get<CaseIndex>().failed();
+      sink.on_fan_in_case_completed(branch_id, CaseIndex, branch_stage_id, case_succeeded);
+      return stage_result;
     });
   } else {
-    return pool.enqueue([stage = std::forward<BranchStageObject>(branch_stage), &sink, branch_id, &aggregate,
-                         input_ptr = &input]() mutable {
-      return detail::run_fan_in_case_stage<BranchNode, BranchStage, decltype(stage), StageIndex, CaseIndex>(
+    return pool.enqueue([stage = std::forward<BranchStageObject>(branch_stage), &sink, branch_id, branch_stage_id,
+                         &aggregate, input_ptr = &input]() mutable {
+      auto stage_result = detail::run_fan_in_case_stage<BranchNode, BranchStage, decltype(stage), StageIndex, CaseIndex>(
           stage, &sink, branch_id, *input_ptr, aggregate);
+      const bool case_succeeded = !aggregate.template get<CaseIndex>().failed();
+      sink.on_fan_in_case_completed(branch_id, CaseIndex, branch_stage_id, case_succeeded);
+      return stage_result;
     });
   }
 }
@@ -120,12 +154,14 @@ template <class Futures>
 template <class BranchNode, std::size_t StageIndex, class Input, class Aggregate,
           std::size_t CaseIndex, class Case, class... Rest>
 void schedule_fan_in_cases(thread_pool& pool, synchronized_observer& sink, const Input& input,
-                           Aggregate& aggregate, std::vector<std::future<result<void>>>& futures) {
+                           Aggregate& aggregate, std::vector<std::future<result<void>>>& futures,
+                           detail::fan_in_case_tally& tally) {
   using Predicate = typename Case::predicate_type;
   using BranchStage = typename Case::stage_type;
 
   auto branch_id = detail::stage_id_for<BranchNode>(StageIndex);
   auto predicate_id = detail::branch_child_stage_id<BranchNode, Predicate>(StageIndex, CaseIndex, "predicate");
+  auto branch_stage_id = detail::branch_child_stage_id<BranchNode, BranchStage>(StageIndex, CaseIndex, "stage");
 
   auto predicate = Predicate{};
   auto predicate_result = detail::evaluate_fan_in_predicate<BranchNode, Predicate, decltype(predicate), StageIndex>(
@@ -134,9 +170,12 @@ void schedule_fan_in_cases(thread_pool& pool, synchronized_observer& sink, const
   if (!predicate_result.has_value()) {
     auto predicate_error = std::move(predicate_result).error();
     detail::mark_fan_in_case_failed<Aggregate, CaseIndex>(aggregate, predicate_error);
+    ++tally.failed;
     sink.on_case_failed(branch_id, CaseIndex, predicate_id, predicate_error);
   } else if (predicate_result.value()) {
+    ++tally.selected;
     sink.on_case_selected(branch_id, CaseIndex, predicate_id);
+    sink.on_fan_in_case_scheduled(branch_id, CaseIndex, branch_stage_id);
     auto branch_stage = BranchStage{};
     futures.push_back(enqueue_fan_in_case<BranchNode, BranchStage, decltype(branch_stage), StageIndex, CaseIndex>(
         pool, std::move(branch_stage), sink, branch_id, input, aggregate));
@@ -146,8 +185,20 @@ void schedule_fan_in_cases(thread_pool& pool, synchronized_observer& sink, const
 
   if constexpr (sizeof...(Rest) > 0) {
     schedule_fan_in_cases<BranchNode, StageIndex, Input, Aggregate, CaseIndex + 1, Rest...>(
-        pool, sink, input, aggregate, futures);
+        pool, sink, input, aggregate, futures, tally);
   }
+}
+
+template <class Aggregate, std::size_t... Is>
+void tally_fan_in_completions(const Aggregate& aggregate, detail::fan_in_case_tally& tally,
+                              std::index_sequence<Is...>) {
+  // Count slots that finished their branch stage successfully.  Predicate
+  // failures leave a slot in the failed state and were already tallied during
+  // scheduling, so only successfully-completed selected cases match here.
+  auto account = [&]<std::size_t Index>() {
+    if (aggregate.template get<Index>().completed()) ++tally.completed;
+  };
+  (account.template operator()<Is>(), ...);
 }
 
 template <class BranchNode, std::size_t StageIndex, class Input, class... Cases>
@@ -158,12 +209,28 @@ template <class BranchNode, std::size_t StageIndex, class Input, class... Cases>
   std::vector<std::future<result<void>>> futures;
   futures.reserve(sizeof...(Cases));
 
+  auto branch_id = detail::stage_id_for<BranchNode>(StageIndex);
+  synchronized.on_fan_in_started(branch_id, sizeof...(Cases));
+  detail::fan_in_case_tally tally{};
+
   if constexpr (sizeof...(Cases) > 0) {
     schedule_fan_in_cases<BranchNode, StageIndex, Input, typename BranchNode::output_type, 0, Cases...>(
-        pool, synchronized, input, aggregate, futures);
+        pool, synchronized, input, aggregate, futures, tally);
   }
 
   auto wait_result = wait_for_fan_in_cases(futures);
+
+  // Each selected case marked its slot as completed or failed in its worker
+  // task.  The selected count and the predicate-failure failures were tallied
+  // during scheduling; here we add the stage-level completions, then derive the
+  // selected-but-failed stages as `selected - completed`.
+  if constexpr (sizeof...(Cases) > 0) {
+    tally_fan_in_completions(aggregate, tally, std::index_sequence_for<Cases...>{});
+  }
+  tally.failed += (tally.selected - tally.completed);
+
+  synchronized.on_fan_in_completed(branch_id, tally.selected, tally.completed, tally.failed);
+
   if (!wait_result.has_value()) {
     return result<typename BranchNode::output_type>{std::move(wait_result).error()};
   }

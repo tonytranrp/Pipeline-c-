@@ -62,3 +62,14 @@ pb_apply_project_options(pb_branch_heterogeneous_demo PRIVATE)
 pb_enable_pch_if_requested(pb_branch_heterogeneous_demo)
 add_test(NAME pb_example_branch_heterogeneous_demo COMMAND pb_branch_heterogeneous_demo)
 set_tests_properties(pb_example_branch_heterogeneous_demo PROPERTIES LABELS "examples;branch;heterogeneous")
+
+# ---------------------------------------------------------------------------
+# Thread-pool fan-in example
+# ---------------------------------------------------------------------------
+
+add_executable(pb_thread_pool_fan_in_demo thread_pool_fan_in_demo.cpp)
+target_link_libraries(pb_thread_pool_fan_in_demo PRIVATE pb::pipeline)
+pb_apply_project_options(pb_thread_pool_fan_in_demo PRIVATE)
+pb_enable_pch_if_requested(pb_thread_pool_fan_in_demo)
+add_test(NAME pb_example_thread_pool_fan_in_demo COMMAND pb_thread_pool_fan_in_demo)
+set_tests_properties(pb_example_thread_pool_fan_in_demo PROPERTIES LABELS "examples;branch;fan-in;thread-pool")

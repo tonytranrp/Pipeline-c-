@@ -96,6 +96,7 @@ add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers/runtime_error.cpp
   compile_pass/public_headers/runtime_result.cpp
   compile_pass/public_headers/runtime_routing.cpp
+  compile_pass/public_headers/runtime_clone_unique.cpp
   compile_pass/public_headers/runtime_sequential.cpp
   compile_pass/public_headers/runtime_observer.cpp
   compile_pass/public_headers/runtime_trace.cpp
@@ -140,6 +141,12 @@ target_link_libraries(pb_runtime_thread_pool_fan_in_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_thread_pool_fan_in_smoke PRIVATE)
 add_test(NAME pb_runtime_thread_pool_fan_in_smoke COMMAND pb_runtime_thread_pool_fan_in_smoke)
 set_tests_properties(pb_runtime_thread_pool_fan_in_smoke PROPERTIES LABELS "runtime;thread-pool;fan-in;backend")
+
+add_executable(pb_runtime_thread_pool_fan_in_stress_smoke runtime/thread_pool_fan_in_stress_smoke.cpp)
+target_link_libraries(pb_runtime_thread_pool_fan_in_stress_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_thread_pool_fan_in_stress_smoke PRIVATE)
+add_test(NAME pb_runtime_thread_pool_fan_in_stress_smoke COMMAND pb_runtime_thread_pool_fan_in_stress_smoke)
+set_tests_properties(pb_runtime_thread_pool_fan_in_stress_smoke PROPERTIES LABELS "runtime;branch;fan-in;thread-pool;stress")
 
 add_executable(pb_runtime_sequential_policy_dsl_smoke runtime/sequential_policy_dsl_smoke.cpp)
 target_link_libraries(pb_runtime_sequential_policy_dsl_smoke PRIVATE pb::pipeline)
@@ -529,11 +536,23 @@ pb_apply_project_options(pb_runtime_state_dsl_smoke PRIVATE)
 add_test(NAME pb_runtime_state_dsl_smoke COMMAND pb_runtime_state_dsl_smoke)
 set_tests_properties(pb_runtime_state_dsl_smoke PROPERTIES LABELS "runtime;state;policy;schema;v1")
 
+add_executable(pb_runtime_state_thread_local_smoke runtime/state_thread_local_smoke.cpp)
+target_link_libraries(pb_runtime_state_thread_local_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_state_thread_local_smoke PRIVATE)
+add_test(NAME pb_runtime_state_thread_local_smoke COMMAND pb_runtime_state_thread_local_smoke)
+set_tests_properties(pb_runtime_state_thread_local_smoke PROPERTIES LABELS "runtime;state;policy;thread-local")
+
 add_executable(pb_runtime_fan_in_shared_view_smoke runtime/fan_in_shared_view_smoke.cpp)
 target_link_libraries(pb_runtime_fan_in_shared_view_smoke PRIVATE pb::pipeline)
 pb_apply_project_options(pb_runtime_fan_in_shared_view_smoke PRIVATE)
 add_test(NAME pb_runtime_fan_in_shared_view_smoke COMMAND pb_runtime_fan_in_shared_view_smoke)
 set_tests_properties(pb_runtime_fan_in_shared_view_smoke PROPERTIES LABELS "runtime;branch;fan-in;clone")
+
+add_executable(pb_runtime_fan_in_unique_clone_smoke runtime/fan_in_unique_clone_smoke.cpp)
+target_link_libraries(pb_runtime_fan_in_unique_clone_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_fan_in_unique_clone_smoke PRIVATE)
+add_test(NAME pb_runtime_fan_in_unique_clone_smoke COMMAND pb_runtime_fan_in_unique_clone_smoke)
+set_tests_properties(pb_runtime_fan_in_unique_clone_smoke PROPERTIES LABELS "runtime;branch;fan-in;clone")
 
 add_executable(pb_runtime_projected_stage_smoke runtime/projected_stage_smoke.cpp)
 target_link_libraries(pb_runtime_projected_stage_smoke PRIVATE pb::pipeline)
@@ -547,6 +566,12 @@ pb_apply_project_options(pb_runtime_sequential_branch_fan_in PRIVATE)
 pb_enable_pch_if_requested(pb_runtime_sequential_branch_fan_in)
 add_test(NAME pb_runtime_sequential_branch_fan_in COMMAND pb_runtime_sequential_branch_fan_in)
 set_tests_properties(pb_runtime_sequential_branch_fan_in PROPERTIES LABELS "runtime;branch;fan-in;join;observer")
+
+add_executable(pb_runtime_fan_in_observer_events_smoke runtime/fan_in_observer_events_smoke.cpp)
+target_link_libraries(pb_runtime_fan_in_observer_events_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_fan_in_observer_events_smoke PRIVATE)
+add_test(NAME pb_runtime_fan_in_observer_events_smoke COMMAND pb_runtime_fan_in_observer_events_smoke)
+set_tests_properties(pb_runtime_fan_in_observer_events_smoke PROPERTIES LABELS "runtime;branch;fan-in;observer;events")
 
 add_test(NAME pb_compile_fail_branch_builder_source_mismatch
   COMMAND ${CMAKE_COMMAND}
@@ -1523,6 +1548,18 @@ target_link_libraries(pb_reflect_stage_gate_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_reflect_stage_gate_compile_pass PRIVATE)
 add_test(NAME pb_reflect_stage_gate_compile_pass COMMAND pb_reflect_stage_gate_compile_pass)
 set_tests_properties(pb_reflect_stage_gate_compile_pass PROPERTIES LABELS "compile-pass;features;cpp26;reflection")
+
+# ─────────────────────────────────────────────────────────────
+# Branch / fan-in compile-time smoke (mirrors the
+# bench/compile_time/branch_fan_in_10 benchmark at a smaller
+# scale so branch compile-time coverage runs in the default suite)
+# ─────────────────────────────────────────────────────────────
+add_executable(pb_branch_compile_time_smoke compile_pass/branch_compile_time_smoke.cpp)
+target_link_libraries(pb_branch_compile_time_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_branch_compile_time_smoke PRIVATE)
+pb_enable_pch_if_requested(pb_branch_compile_time_smoke)
+add_test(NAME pb_branch_compile_time_smoke COMMAND pb_branch_compile_time_smoke)
+set_tests_properties(pb_branch_compile_time_smoke PROPERTIES LABELS "compile-pass;bench;branch")
 
 # ─────────────────────────────────────────────────────────────
 # CLI smoke tests

@@ -1,10 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
 #include <ostream>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -62,7 +65,7 @@
 ///
 /// @section state-storage Storage policies
 ///
-/// Four policies cover the lifetime patterns users actually need:
+/// Five policies cover the lifetime patterns users actually need:
 ///
 /// - `pb::policy::state::owned` (default) — engine owns the state,
 ///   persisted across every `run()` until the engine is destroyed.
@@ -77,6 +80,11 @@
 /// - `pb::policy::state::reset_per_run` — owned, but reset to a
 ///   default-constructed value before every `run()`.  Useful for
 ///   per-run scratch state that must not leak between calls.
+/// - `pb::policy::state::thread_local_owned` — owned, but the storage is
+///   a per-thread instance.  When the same wrapped engine is invoked
+///   concurrently from multiple threads, each thread gets its own
+///   isolated `State`.  This is the storage policy required before
+///   parallel backends can safely carry stateful stages.
 ///
 /// @section state-thread-safety Thread safety
 ///
@@ -122,6 +130,16 @@ struct shared {};
 /// before every `run()`.  Useful for per-run scratch state that must
 /// not leak between calls.
 struct reset_per_run {};
+
+/// Engine owns the state, but the storage is a per-**thread** instance
+/// (`thread_local`).  When the same wrapped engine is invoked
+/// concurrently from multiple threads, each thread sees its own
+/// isolated `State` rather than a single shared one.  This is the
+/// storage policy required before parallel backends can safely carry
+/// stateful stages — each worker thread carries an independent state.
+/// Synchronization is therefore unnecessary because no two threads ever
+/// touch the same `State` object.
+struct thread_local_owned {};
 
 } // namespace policy::state
 
@@ -245,6 +263,46 @@ struct stateful_storage<State, ::pb::policy::state::reset_per_run> {
 };
 
 template <class State>
+struct stateful_storage<State, ::pb::policy::state::thread_local_owned> {
+  /// Per-thread `State` instances owned by *this* storage object.  Keyed
+  /// by `std::thread::id` so each thread that runs through the wrapping
+  /// engine gets its own isolated instance, and the whole table dies
+  /// with the engine (so a recycled engine address can never resurrect a
+  /// stale state — unlike a process-wide `thread_local`).  The map is
+  /// guarded by `mutex_` only for the insert/lookup of the per-thread
+  /// slot; the `State` objects themselves are touched exclusively by
+  /// their owning thread, so stage access never races.
+  struct thread_table {
+    std::mutex mutex{};
+    std::unordered_map<std::thread::id, std::unique_ptr<State>> slots{};
+  };
+
+  /// Optional seed copied into every thread's slot on first access.
+  std::shared_ptr<const State> seed_{};
+  /// Heap-held so the storage object stays movable (mutex is not).
+  std::unique_ptr<thread_table> table_{std::make_unique<thread_table>()};
+
+  stateful_storage() = default;
+  explicit stateful_storage(State init)
+      : seed_{std::make_shared<const State>(std::move(init))} {}
+
+  /// Return the calling thread's own `State` instance, lazily created on
+  /// first access from that thread (copy-constructed from `seed_` when a
+  /// seed was supplied, otherwise default-constructed) and persisted for
+  /// the lifetime of this storage object.
+  [[nodiscard]] auto active(State* /*caller*/ = nullptr) -> State* {
+    const auto id = std::this_thread::get_id();
+    std::lock_guard<std::mutex> guard{table_->mutex};
+    auto it = table_->slots.find(id);
+    if (it == table_->slots.end()) {
+      auto fresh = seed_ ? std::make_unique<State>(*seed_) : std::make_unique<State>();
+      it = table_->slots.emplace(id, std::move(fresh)).first;
+    }
+    return it->second.get();
+  }
+};
+
+template <class State>
 struct stateful_storage<State, ::pb::policy::state::shared> {
   std::shared_ptr<State> value_{std::make_shared<State>()};
 
@@ -357,7 +415,8 @@ public:
   /// pipelines.
   [[nodiscard]] auto state() const& noexcept -> const State&
     requires (!std::same_as<StoragePolicy, policy::state::borrowed> &&
-              !std::same_as<StoragePolicy, policy::state::shared>)
+              !std::same_as<StoragePolicy, policy::state::shared> &&
+              !std::same_as<StoragePolicy, policy::state::thread_local_owned>)
   {
     return storage_.value_;
   }
@@ -366,7 +425,8 @@ public:
   /// pipelines.
   [[nodiscard]] auto state_mut() & noexcept -> State&
     requires (!std::same_as<StoragePolicy, policy::state::borrowed> &&
-              !std::same_as<StoragePolicy, policy::state::shared>)
+              !std::same_as<StoragePolicy, policy::state::shared> &&
+              !std::same_as<StoragePolicy, policy::state::thread_local_owned>)
   {
     return storage_.value_;
   }
@@ -374,7 +434,8 @@ public:
   /// Replace the owned state with a new value.
   void set_state(State value)
     requires (!std::same_as<StoragePolicy, policy::state::borrowed> &&
-              !std::same_as<StoragePolicy, policy::state::shared>)
+              !std::same_as<StoragePolicy, policy::state::shared> &&
+              !std::same_as<StoragePolicy, policy::state::thread_local_owned>)
   {
     storage_.value_ = std::move(value);
   }
@@ -384,9 +445,22 @@ public:
   /// every `run()`.
   void reset_state()
     requires (!std::same_as<StoragePolicy, policy::state::borrowed> &&
-              !std::same_as<StoragePolicy, policy::state::shared>)
+              !std::same_as<StoragePolicy, policy::state::shared> &&
+              !std::same_as<StoragePolicy, policy::state::thread_local_owned>)
   {
     storage_.value_ = State{};
+  }
+
+  /// Access **this thread's** owned state instance for the
+  /// `thread_local_owned` policy.  Each thread that has run at least
+  /// once through this engine gets its own isolated `State`; this
+  /// returns the calling thread's instance, lazily creating it if the
+  /// calling thread has not run yet.  Only available for the
+  /// `thread_local_owned` storage policy.
+  [[nodiscard]] auto thread_local_state() & -> State&
+    requires std::same_as<StoragePolicy, policy::state::thread_local_owned>
+  {
+    return *storage_.active();
   }
 
   /// Read access to the shared state pointer.  Only available for the
@@ -470,6 +544,42 @@ template <class State, class Engine>
 [[nodiscard]] auto with_reset_per_run_state(Engine engine, State init)
     -> stateful_engine<Engine, State, policy::state::reset_per_run> {
   return stateful_engine<Engine, State, policy::state::reset_per_run>{std::move(engine), std::move(init)};
+}
+
+/// Factory: wrap `engine` with **per-thread** owned state of type
+/// `State`.  Stages access the state via `pb::current_state<State>()`,
+/// exactly like `pb::with_state<State>`, but the storage is a
+/// `thread_local` instance: when the same wrapped engine is invoked
+/// concurrently from multiple threads (e.g. driving independent runs in
+/// parallel, or a future parallel backend), each thread observes its own
+/// isolated `State` rather than a single shared one.  No synchronization
+/// is required because no two threads ever touch the same `State`.
+///
+/// Lifetime semantics: each calling thread's `State` instance is created
+/// lazily on that thread's first `run()` (default-constructed by this
+/// overload) and then
+/// **persists across subsequent `run()` calls on that same thread** —
+/// i.e. it behaves like the owned policy, but partitioned per thread.
+/// The instance lives until this engine is destroyed.  Distinct engine
+/// instances keep distinct per-thread states (each engine owns its own
+/// per-thread table), so two engines on the same thread never alias —
+/// and a recycled engine address can never resurrect a stale state.
+template <class State, class Engine>
+[[nodiscard]] auto with_thread_local_state(Engine engine)
+    -> stateful_engine<Engine, State, policy::state::thread_local_owned> {
+  return stateful_engine<Engine, State, policy::state::thread_local_owned>{std::move(engine)};
+}
+
+/// Factory: wrap `engine` with per-thread owned state seeded from
+/// `init`.  The seed is captured once; each thread's `State` instance is
+/// **copy-constructed from the seed** the first time that thread runs,
+/// then persists across that thread's subsequent runs.  Requires `State`
+/// to be copy-constructible.
+template <class State, class Engine>
+[[nodiscard]] auto with_thread_local_state(Engine engine, State init)
+    -> stateful_engine<Engine, State, policy::state::thread_local_owned> {
+  return stateful_engine<Engine, State, policy::state::thread_local_owned>{std::move(engine),
+                                                                           std::move(init)};
 }
 
 } // namespace pb
