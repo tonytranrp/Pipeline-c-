@@ -1105,44 +1105,28 @@ private:
 
 namespace detail {
 
-/// Scan a policy `type_list` for the first error-policy marker.  Resolves to
-/// `void` when the pipeline carries no error policy.
-template <class List>
-struct first_error_policy {
+/// Scan a policy `type_list` for the first marker satisfying the predicate
+/// trait `Pred` (e.g. `pb::policy::is_error_policy`).  Resolves to `void` when
+/// no element matches.  This single template backs the error / diagnostics /
+/// copying policy lookups below.
+template <template <class> class Pred, class List>
+struct first_policy_matching {
   using type = void;
 };
 
-template <class Head, class... Tail>
-struct first_error_policy<pb::meta::type_list<Head, Tail...>> {
-  using type = std::conditional_t<pb::policy::is_error_policy_v<Head>, Head,
-                                  typename first_error_policy<pb::meta::type_list<Tail...>>::type>;
+template <template <class> class Pred, class Head, class... Tail>
+struct first_policy_matching<Pred, pb::meta::type_list<Head, Tail...>> {
+  using type = std::conditional_t<
+      Pred<Head>::value, Head,
+      typename first_policy_matching<Pred, pb::meta::type_list<Tail...>>::type>;
 };
 
-/// Scan a policy `type_list` for the first diagnostics-policy marker.  Resolves
-/// to `void` when the pipeline carries no diagnostics policy.
 template <class List>
-struct first_diagnostics_policy {
-  using type = void;
-};
-
-template <class Head, class... Tail>
-struct first_diagnostics_policy<pb::meta::type_list<Head, Tail...>> {
-  using type = std::conditional_t<pb::policy::is_diagnostics_policy_v<Head>, Head,
-                                  typename first_diagnostics_policy<pb::meta::type_list<Tail...>>::type>;
-};
-
-/// Scan a policy `type_list` for the first copying-policy marker.  Resolves to
-/// `void` when the pipeline carries no copying policy.
+using first_error_policy_t = typename first_policy_matching<pb::policy::is_error_policy, List>::type;
 template <class List>
-struct first_copying_policy {
-  using type = void;
-};
-
-template <class Head, class... Tail>
-struct first_copying_policy<pb::meta::type_list<Head, Tail...>> {
-  using type = std::conditional_t<pb::policy::is_copying_policy_v<Head>, Head,
-                                  typename first_copying_policy<pb::meta::type_list<Tail...>>::type>;
-};
+using first_diagnostics_policy_t = typename first_policy_matching<pb::policy::is_diagnostics_policy, List>::type;
+template <class List>
+using first_copying_policy_t = typename first_policy_matching<pb::policy::is_copying_policy, List>::type;
 
 template <class Pipeline, class = void>
 struct pipeline_policies {
@@ -1160,7 +1144,7 @@ struct pipeline_policies<Pipeline, std::void_t<typename Pipeline::policies>> {
 /// `pb::policy::errors` runtime markers), or `void` when none is present.
 template <class Pipeline>
 using pipeline_error_policy_t =
-    typename detail::first_error_policy<typename detail::pipeline_policies<Pipeline>::type>::type;
+    detail::first_error_policy_t<typename detail::pipeline_policies<Pipeline>::type>;
 
 /// True when `Pipeline` carries one of the runtime-enforced
 /// `pb::policy::errors` markers in its policy list.
@@ -1172,7 +1156,7 @@ inline constexpr bool has_error_policy_v = !std::is_same_v<pipeline_error_policy
 /// `void` when none is present.
 template <class Pipeline>
 using pipeline_diagnostics_policy_t =
-    typename detail::first_diagnostics_policy<typename detail::pipeline_policies<Pipeline>::type>::type;
+    detail::first_diagnostics_policy_t<typename detail::pipeline_policies<Pipeline>::type>;
 
 /// True when `Pipeline` carries one of the runtime-enforced
 /// `pb::policy::diagnostics` markers (`verbose` / `quiet`) in its policy list.
@@ -1189,7 +1173,7 @@ inline constexpr bool has_diagnostics_policy_v =
 /// `compile<>` does not change runtime copy/move behaviour based on it.
 template <class Pipeline>
 using pipeline_copying_policy_t =
-    typename detail::first_copying_policy<typename detail::pipeline_policies<Pipeline>::type>::type;
+    detail::first_copying_policy_t<typename detail::pipeline_policies<Pipeline>::type>;
 
 /// True when `Pipeline` carries one of the `pb::policy::copying` markers in its
 /// policy list.
