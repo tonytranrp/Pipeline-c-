@@ -126,6 +126,15 @@
       "cacheVariables": {
         "PB_WARNINGS_AS_ERRORS": "ON"
       }
+    },
+    {
+      "name": "modules-ninja",
+      "displayName": "C++20 Module Build (Clang, Ninja)",
+      "inherits": "clang-dev-ninja",
+      "binaryDir": "${sourceDir}/build/modules-ninja",
+      "cacheVariables": {
+        "PB_BUILD_MODULE": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -176,6 +185,10 @@
     {
       "name": "warnings-as-errors-ninja",
       "configurePreset": "warnings-as-errors-ninja"
+    },
+    {
+      "name": "modules-ninja",
+      "configurePreset": "modules-ninja"
     }
   ],
   "testPresets": [
@@ -283,6 +296,13 @@
     {
       "name": "warnings-as-errors-ninja",
       "configurePreset": "warnings-as-errors-ninja",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "modules-ninja",
+      "configurePreset": "modules-ninja",
       "output": {
         "outputOnFailure": true
       }

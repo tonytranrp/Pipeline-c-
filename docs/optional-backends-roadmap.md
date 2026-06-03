@@ -16,7 +16,7 @@ Today the repository supports:
 
 Today the repository does **not** support:
 
-- public oneTBB, Taskflow, or stdexec backend adapters
+- public oneTBB, Taskflow, or stdexec backend *adapters* (only dormant, compile-guarded scaffold headers + availability constants exist; see "Gated backend scaffolds")
 - backend-specific examples or benchmarks beyond targeted runtime tests
 - stable async/parallel execution semantics across multiple executors
 - preemptive cancellation of already-running case stages
@@ -34,6 +34,34 @@ The current matrix is exposed through `pb::runtime::backend_features()` / `pb::b
 | `stdexec` | experimental | no | yes | future sender/receiver adapter |
 
 `PB_BACKEND_TASKFLOW`, `PB_BACKEND_TBB`, and `PB_BACKEND_STDEXEC` intentionally stop configuration with a clear error today rather than silently producing a build without backend support.
+
+## Gated backend scaffolds (integration seam)
+
+To close the research-plan "optional pipeline execution backends" *design* seam without requiring the libraries to be installed, the repository now ships three compile-guarded scaffold headers. They reserve the public namespace, document the intended lowering, and stay **completely dormant** on the default build:
+
+| Header | Tag type | Availability constant | Gate macro | Lowering target |
+| --- | --- | --- | --- | --- |
+| `pb/backends/tbb.hpp` | `pb::runtime::tbb_backend` | `pb::runtime::tbb_backend_available_v` | `PB_HAS_TBB` | oneTBB `parallel_pipeline` filter chain |
+| `pb/backends/taskflow.hpp` | `pb::runtime::taskflow_backend` | `pb::runtime::taskflow_backend_available_v` | `PB_HAS_TASKFLOW` | Taskflow task graph |
+| `pb/backends/stdexec.hpp` | `pb::runtime::stdexec_backend` | `pb::runtime::stdexec_backend_available_v` | `PB_HAS_STDEXEC` | stdexec sender/receiver chain |
+
+Seam rules (mirroring the existing feature-gate style):
+
+- The backend **tag struct** (`*_backend`) and all lowering code live entirely inside `#if defined(PB_HAS_*)`. When the macro is undefined — which is always the case on the default standard-library build — the header contributes nothing but an include guard, a doxygen design note, and the availability constant.
+- Each **`*_available_v` constant is visible UNGATED** on every toolchain: it is `true` only when its `PB_HAS_*` macro is defined and `false` otherwise. User code and the scaffold smoke test can therefore branch on backend presence without first knowing whether the dependency was found.
+- The scaffold headers are **not** pulled in by `pb/pipeline.hpp`; callers include `pb/backends/<name>.hpp` directly, so the default public include surface is unchanged and stays dependency-free.
+
+Documented lowering plans captured in the headers:
+
+- **oneTBB** (`tbb.hpp`): linear stages map to a `tbb::parallel_pipeline` filter chain (`make_filter` per stage); serial-in-order vs. parallel filter modes; `max_number_of_live_tokens` as the backpressure/token-limit knob.
+- **Taskflow** (`taskflow.hpp`): stages map to `tf::Task` nodes with precedence edges; fan-in lowers to scatter/gather sibling tasks; the central correctness rule is **worker participation via `executor.corun(...)`** so a Taskflow worker never blocks on its own graph.
+- **stdexec** (`stdexec.hpp`): linear stages map to a `schedule | then | ...` sender chain; documents the value/error/stopped **completion signatures**, the `set_error(pb::error)` / `set_error(std::exception_ptr)` **error channel**, and **cancellation via the receiver-environment `stop_token`**.
+
+### Enabling the scaffolds (kept OFF)
+
+Three root CMake options gate the macros — `PB_ENABLE_TBB`, `PB_ENABLE_TASKFLOW`, `PB_ENABLE_STDEXEC`, all **default OFF**. When turned ON, each option `find_package`s the corresponding dependency and, on success, adds the matching `PB_HAS_*` compile definition to `pb::pipeline`. Because the dependencies are not installed and no execution adapter exists yet, these options are intentionally **left OFF and unwired in the default build**; they exist only to mark the seam. These are distinct from the older fail-fast `PB_BACKEND_*` flags, which still hard-error to prevent claiming unimplemented execution support.
+
+The `pb_backend_scaffolds_smoke_compile_pass` test (labels `compile-pass;backend;scaffold`) includes all three headers and `static_assert`s that every `*_available_v` is `false` on the default build, proving the seam is dormant and the default build is unaffected.
 
 ## Why optional backends matter
 

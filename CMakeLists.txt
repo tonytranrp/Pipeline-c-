@@ -30,6 +30,14 @@ option(PB_ENABLE_PACKAGE_SMOKE "Enable CTest smoke coverage for the installed CM
 option(PB_BACKEND_TASKFLOW "Enable optional Taskflow backend integration" OFF)
 option(PB_BACKEND_TBB "Enable optional oneTBB backend integration" OFF)
 option(PB_BACKEND_STDEXEC "Enable experimental stdexec backend integration" OFF)
+option(PB_BUILD_MODULE "Build the experimental C++20 named module (pb.pipeline)" OFF)
+# Scaffold-activation options (distinct from the fail-fast PB_BACKEND_* flags
+# above): when ON these locate the dependency and define PB_HAS_* so the gated
+# scaffold headers in include/pb/backends/*.hpp activate. Kept OFF because the
+# dependencies are not installed and no execution adapter exists yet.
+option(PB_ENABLE_TBB "Locate oneTBB and enable the gated tbb_backend scaffold (PB_HAS_TBB)" OFF)
+option(PB_ENABLE_TASKFLOW "Locate Taskflow and enable the gated taskflow_backend scaffold (PB_HAS_TASKFLOW)" OFF)
+option(PB_ENABLE_STDEXEC "Locate stdexec and enable the gated stdexec_backend scaffold (PB_HAS_STDEXEC)" OFF)
 
 if(PB_BACKEND_TASKFLOW OR PB_BACKEND_TBB OR PB_BACKEND_STDEXEC)
   message(FATAL_ERROR
@@ -72,6 +80,40 @@ if(PB_ENABLE_UNITY)
   set_target_properties(pb_runtime PROPERTIES UNITY_BUILD ON)
 endif()
 pb_enable_ipo_if_requested(pb_runtime)
+
+# Optional backend scaffold activation (default OFF; deps absent => no-op).
+if(PB_ENABLE_TBB)
+  find_package(TBB REQUIRED)
+  target_link_libraries(pb_runtime PUBLIC TBB::tbb)
+  target_compile_definitions(pb_runtime PUBLIC PB_HAS_TBB)
+endif()
+if(PB_ENABLE_TASKFLOW)
+  find_package(Taskflow REQUIRED)
+  target_link_libraries(pb_runtime PUBLIC Taskflow::Taskflow)
+  target_compile_definitions(pb_runtime PUBLIC PB_HAS_TASKFLOW)
+endif()
+if(PB_ENABLE_STDEXEC)
+  find_package(stdexec REQUIRED)
+  target_link_libraries(pb_runtime PUBLIC STDEXEC::stdexec)
+  target_compile_definitions(pb_runtime PUBLIC PB_HAS_STDEXEC)
+endif()
+
+# Experimental C++20 named module (pb.pipeline). Default OFF so the header-only
+# build and every existing test stay unaffected on toolchains without module
+# support. See docs/modules.md. FILE_SET CXX_MODULES needs CMake >= 3.28.
+if(PB_BUILD_MODULE)
+  add_library(pb_module STATIC)
+  add_library(pb::module ALIAS pb_module)
+  target_sources(pb_module
+    PUBLIC
+      FILE_SET CXX_MODULES
+      BASE_DIRS ${PROJECT_SOURCE_DIR}/include
+      FILES ${PROJECT_SOURCE_DIR}/include/pb/pipeline.mpp
+  )
+  target_link_libraries(pb_module PUBLIC pb::pipeline)
+  target_compile_features(pb_module PUBLIC cxx_std_20)
+  pb_apply_project_options(pb_module PRIVATE)
+endif()
 
 if(PB_BUILD_CLI)
   add_executable(pb_cli tools/pb_cli.cpp)

@@ -3,6 +3,7 @@
 #include "pb/adapt/fn.hpp"
 #include "pb/adapt/coroutine.hpp"
 #include "pb/adapt/reflect.hpp"
+#include "pb/adapt/runtime_callable.hpp"
 #include "pb/adapt/void_adapter.hpp"
 #include "pb/core/concepts.hpp"
 #include "pb/core/describe.hpp"
