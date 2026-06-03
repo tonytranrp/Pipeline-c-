@@ -132,8 +132,8 @@ struct pipeline_edge_descriptor_at<StageList, Index, EdgeCount, false> {
 template <class Pipeline>
 struct pipeline_traits;
 
-template <class Input, class Output, class... Stages>
-struct pipeline_traits<pipeline<Input, Output, meta::type_list<Stages...>>> {
+template <class Input, class Output, class... Stages, class Policies>
+struct pipeline_traits<pipeline<Input, Output, meta::type_list<Stages...>, Policies>> {
   using input_type = Input;
   using output_type = Output;
   using stages = meta::type_list<Stages...>;

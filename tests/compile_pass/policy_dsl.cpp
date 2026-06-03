@@ -127,11 +127,18 @@ struct Finish {
 // Baseline pipeline (no policies)
 using Baseline = pb::from<Raw>::then<Parse>::then<Finish>::to<Done>;
 
-// Pipeline with a single policy — type identity is unchanged
+// Pipeline with a single policy — the policy marker is now carried in the
+// finalized pipeline's 4th template parameter, so the pipeline *type* differs
+// from the baseline.  The structural identity (input/output/stages) is still
+// preserved; only the policy annotation distinguishes them.
 using WithOnePolicy =
     pb::from<Raw>::then<Parse>::template with<pb::policy::storage::persistent>::then<Finish>::to<Done>;
-static_assert(std::same_as<Baseline, WithOnePolicy>,
-              "with<Policy> must be a pass-through that preserves pipeline type identity");
+static_assert(!std::same_as<Baseline, WithOnePolicy>,
+              "with<Policy> now carries the marker into the pipeline type — identity must differ from baseline");
+static_assert(std::same_as<pb::pipeline_input_t<WithOnePolicy>, Raw>);
+static_assert(std::same_as<pb::pipeline_output_t<WithOnePolicy>, Done>);
+static_assert(pb::pipeline_size_v<WithOnePolicy> == 2,
+              "with<Policy> preserves the structural stage list even though it carries a policy");
 
 // Pipeline with multiple policies
 using WithManyPolicies =
@@ -139,10 +146,16 @@ using WithManyPolicies =
         with<pb::policy::storage::persistent,
              pb::policy::contracts::strict,
              pb::policy::diagnostics::verbose>::then<Finish>::to<Done>;
-static_assert(std::same_as<Baseline, WithManyPolicies>,
-              "with<Policy...> with multiple policies must preserve pipeline type identity");
+static_assert(!std::same_as<Baseline, WithManyPolicies>,
+              "with<Policy...> now carries the markers into the pipeline type — identity must differ from baseline");
+static_assert(std::same_as<typename WithManyPolicies::policies,
+                           pb::meta::type_list<pb::policy::storage::persistent,
+                                               pb::policy::contracts::strict,
+                                               pb::policy::diagnostics::verbose>>,
+              "with<Policy...> accumulates markers in declaration order into the carried policy type_list");
 
-// Pipeline with zero policies (empty pack)
+// Pipeline with zero policies (empty pack) — identical to the baseline because
+// no marker is appended.
 using WithZeroPolicies =
     pb::from<Raw>::then<Parse>::template with<>::then<Finish>::to<Done>;
 static_assert(std::same_as<Baseline, WithZeroPolicies>,

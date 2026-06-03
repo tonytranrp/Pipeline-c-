@@ -31,6 +31,40 @@ struct terminate {};
 /// Use with caution — only for best-effort / fire-and-forget workloads.
 struct ignore {};
 
+// ---------------------------------------------------------------------------
+// Runtime-enforced error-policy markers (carried by ::with<...> into the
+// finalized pipeline type and acted upon by pb::compile<P>(sequential{})).
+//
+// These five named markers select a concrete engine wrapper from
+// pb/runtime/error_policy.hpp at compile time:
+//   throwing     -> pb::with_throw_on_error      (throws pipeline_exception)
+//   terminating  -> pb::with_terminate_on_error  (std::terminate on failure)
+//   ignoring     -> pb::with_ignore_errors       (fallback value on failure)
+//   propagating  -> no wrapper (baseline result-returning engine)
+//   result       -> no wrapper (baseline result-returning engine)
+//
+// They are intentionally distinct from the legacy `expected`/`terminate`/
+// `ignore` tags above so existing introspection-only DSL usage keeps its
+// zero-runtime-behaviour contract.
+// ---------------------------------------------------------------------------
+
+/// Throw `pb::pipeline_exception` on stage failure.
+struct throwing {};
+
+/// Call `std::terminate()` on stage failure.
+struct terminating {};
+
+/// Substitute a fallback value on stage failure (best-effort execution).
+struct ignoring {};
+
+/// Surface stage exceptions while preserving result-based failures.
+/// Selects no compile<> wrapper (baseline engine) by default.
+struct propagating {};
+
+/// Explicit "return result<T>" marker — the library default.
+/// Selects no compile<> wrapper (baseline engine).
+struct result {};
+
 } // namespace errors
 
 // ---------------------------------------------------------------------------
@@ -198,6 +232,31 @@ template <class... Policies>
 [[nodiscard]] consteval auto make_bundle() noexcept -> bundle<Policies...> {
   return {};
 }
+
+// ---------------------------------------------------------------------------
+// Error-policy marker trait
+// ---------------------------------------------------------------------------
+
+/// True for exactly the five runtime-enforced error-policy markers in
+/// `pb::policy::errors`: throwing, terminating, ignoring, propagating, result.
+/// The legacy `expected`/`terminate`/`ignore` introspection tags are NOT
+/// error policies for this trait — they never drive compile<> wrapping.
+template <class T>
+struct is_error_policy : std::false_type {};
+
+template <>
+struct is_error_policy<errors::throwing> : std::true_type {};
+template <>
+struct is_error_policy<errors::terminating> : std::true_type {};
+template <>
+struct is_error_policy<errors::ignoring> : std::true_type {};
+template <>
+struct is_error_policy<errors::propagating> : std::true_type {};
+template <>
+struct is_error_policy<errors::result> : std::true_type {};
+
+template <class T>
+inline constexpr bool is_error_policy_v = is_error_policy<T>::value;
 
 using default_thread_pool_fan_in = bundle<scheduling::deterministic_case_order,
                                           scheduling::parallel_cases,

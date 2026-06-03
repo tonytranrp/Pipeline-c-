@@ -53,7 +53,7 @@ struct fan_in_output;
 template <class... Cases>
 using fan_in_output_t = typename fan_in_output<Cases...>::type;
 
-template <class Input, class Current, class... Stages>
+template <class Policies, class Input, class Current, class... Stages>
 struct pipeline_state;
 
 namespace detail {
@@ -362,12 +362,12 @@ struct last_stage_or_void<First, Rest...> {
   using type = meta::back_t<meta::type_list<First, Rest...>>;
 };
 
-template <class Input, class Current, class List>
+template <class Policies, class Input, class Current, class List>
 struct pipeline_state_from_list;
 
-template <class Input, class Current, class... Stages>
-struct pipeline_state_from_list<Input, Current, meta::type_list<Stages...>> {
-  using type = pipeline_state<Input, Current, Stages...>;
+template <class Policies, class Input, class Current, class... Stages>
+struct pipeline_state_from_list<Policies, Input, Current, meta::type_list<Stages...>> {
+  using type = pipeline_state<Policies, Input, Current, Stages...>;
 };
 
 template <class IndexSequence, class... Cases>
@@ -660,15 +660,16 @@ struct join_validation : detail::join_validation_impl<Outputs, Join> {};
 template <class Outputs, class JoinStage>
 struct join_builder_validation : detail::join_builder_validation_impl<Outputs, JoinStage> {};
 
-template <class Input, class Output, class StageList>
+template <class Input, class Output, class StageList, class Policies = pb::meta::type_list<>>
 struct pipeline {
   using input_type = Input;
   using output_type = Output;
   using stages = StageList;
+  using policies = Policies;
   static constexpr bool valid = true;
 };
 
-template <class Input, class Current, class... Stages>
+template <class Policies, class Input, class Current, class... Stages>
 struct pipeline_state;
 
 namespace detail {
@@ -676,21 +677,21 @@ namespace detail {
 template <class State, class Stage>
 struct append_stage;
 
-template <class Input, class Current, class... Stages, class StageType>
-struct append_stage<pipeline_state<Input, Current, Stages...>, StageType> {
+template <class Policies, class Input, class Current, class... Stages, class StageType>
+struct append_stage<pipeline_state<Policies, Input, Current, Stages...>, StageType> {
   static_assert(Stage<StageType>, "Pipeline stage is invalid: define input_type and output_type");
   static_assert(Connectable<Current, StageType>,
                 "Pipeline edge mismatch: previous output_type (or pipeline input) must exactly match next "
                 "stage input_type; inspect pb::connectable_v<PreviousOutput, NextStage> or "
                 "pb::AdjacentStages<PreviousStage, NextStage>");
-  using type = pipeline_state<Input, stage_output_t<StageType>, Stages..., StageType>;
+  using type = pipeline_state<Policies, Input, stage_output_t<StageType>, Stages..., StageType>;
 };
 
 template <class State, class JoinStage>
 struct append_join;
 
-template <class Input, class Current, class... Stages, class JoinStage>
-struct append_join<pipeline_state<Input, Current, Stages...>, JoinStage> {
+template <class Policies, class Input, class Current, class... Stages, class JoinStage>
+struct append_join<pipeline_state<Policies, Input, Current, Stages...>, JoinStage> {
   using last_stage = typename detail::last_stage_or_void<Stages...>::type;
 
   static_assert(!std::is_same_v<last_stage, void>,
@@ -709,14 +710,14 @@ struct append_join<pipeline_state<Input, Current, Stages...>, JoinStage> {
                 "or raw branch output_types type_list; type-list joins must be invocable for every "
                 "branch output_type");
 
-  using type = pipeline_state<Input, stage_output_t<JoinStage>, Stages..., JoinStage>;
+  using type = pipeline_state<Policies, Input, stage_output_t<JoinStage>, Stages..., JoinStage>;
 };
 
 template <class State, class JoinStage>
 struct append_fan_in;
 
-template <class Input, class Current, class... Stages, class JoinStage>
-struct append_fan_in<pipeline_state<Input, Current, Stages...>, JoinStage> {
+template <class Policies, class Input, class Current, class... Stages, class JoinStage>
+struct append_fan_in<pipeline_state<Policies, Input, Current, Stages...>, JoinStage> {
   using last_stage = typename detail::last_stage_or_void<Stages...>::type;
 
   static_assert(!std::is_same_v<last_stage, void>,
@@ -737,30 +738,30 @@ struct append_fan_in<pipeline_state<Input, Current, Stages...>, JoinStage> {
 
   using replaced_stages = meta::replace_back_t<meta::type_list<Stages...>, fan_in_stage>;
   using with_join = meta::push_back_t<replaced_stages, JoinStage>;
-  using type = typename detail::pipeline_state_from_list<Input, stage_output_t<JoinStage>, with_join>::type;
+  using type = typename detail::pipeline_state_from_list<Policies, Input, stage_output_t<JoinStage>, with_join>::type;
 };
 
 template <class State, class Output>
 struct finalize_pipeline;
 
-template <class Input, class Current, class... Stages, class Output>
-struct finalize_pipeline<pipeline_state<Input, Current, Stages...>, Output> {
+template <class Policies, class Input, class Current, class... Stages, class Output>
+struct finalize_pipeline<pipeline_state<Policies, Input, Current, Stages...>, Output> {
   static_assert(std::same_as<Current, Output>,
                 "Pipeline sink mismatch: actual final output type does not match requested sink type");
-  using type = pipeline<Input, Output, meta::type_list<Stages...>>;
+  using type = pipeline<Input, Output, meta::type_list<Stages...>, Policies>;
 };
 
 template <class State, class... Cases>
 struct append_branch;
 
-template <class Input, class Current, class... Stages>
-struct append_branch<pipeline_state<Input, Current, Stages...>> {
-  static_assert(always_false_v<pipeline_state<Input, Current, Stages...>>,
+template <class Policies, class Input, class Current, class... Stages>
+struct append_branch<pipeline_state<Policies, Input, Current, Stages...>> {
+  static_assert(always_false_v<pipeline_state<Policies, Input, Current, Stages...>>,
                 "Branch node requires at least one pb::case_<Predicate>::then<Stage>");
 };
 
-template <class Input, class Current, class... Stages, class... Cases>
-struct append_branch<pipeline_state<Input, Current, Stages...>, Cases...> {
+template <class Policies, class Input, class Current, class... Stages, class... Cases>
+struct append_branch<pipeline_state<Policies, Input, Current, Stages...>, Cases...> {
   using branch_input = typename branch_node_input<Cases...>::type;
 
   static_assert(std::same_as<Current, branch_input>,
@@ -768,16 +769,20 @@ struct append_branch<pipeline_state<Input, Current, Stages...>, Cases...> {
                 "before pb::from<...>::branch<...>");
 
   using branch_stage = selected_branch_node<Cases...>;
-  using type = pipeline_state<Input, typename branch_stage::output_type, Stages..., branch_stage>;
+  using type = pipeline_state<Policies, Input, typename branch_stage::output_type, Stages..., branch_stage>;
 };
 
 } // namespace detail
 
-template <class Input, class Current, class... Stages>
+template <class Policies, class Input, class Current, class... Stages>
 struct pipeline_state {
   using input_type = Input;
   using current_type = Current;
   using stages = meta::type_list<Stages...>;
+
+  /// Accumulated policy markers carried by ::with<...>.  Threaded into the
+  /// finalized pipeline's 4th template parameter at ::to<Output>.
+  using policies = Policies;
 
   template <class StageType>
   using then = typename detail::append_stage<pipeline_state, StageType>::type;
@@ -797,15 +802,17 @@ struct pipeline_state {
   template <class... Cases>
   using branch = typename detail::append_branch<pipeline_state, Cases...>::type;
 
-  /// Policy tag — pass-through that carries policy type metadata.
-  /// Policies are stored as type-level annotations; the compiler eliminates
-  /// every tag at zero runtime cost.  Future extensions will inspect the
-  /// policy pack to drive compile-time behavioural selection.
-  template <class... Policies>
-  using with = pipeline_state;
+  /// Policy marker accumulator — appends the supplied markers to the carried
+  /// `Policies` type-list and returns the updated pipeline_state.  The markers
+  /// are pure type-level annotations (zero runtime cost) until inspected by a
+  /// backend such as pb::compile<P>(pb::runtime::sequential{}), which selects
+  /// an error-policy engine wrapper from any pb::policy::errors marker present.
+  template <class... NewPolicies>
+  using with = pipeline_state<meta::concat_t<Policies, meta::type_list<NewPolicies...>>,
+                              Input, Current, Stages...>;
 };
 
 template <class Input>
-using from = pipeline_state<Input, Input>;
+using from = pipeline_state<meta::type_list<>, Input, Input>;
 
 } // namespace pb::core

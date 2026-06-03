@@ -10,9 +10,11 @@
 #include <variant>
 
 #include "pb/core/meta.hpp"
+#include "pb/core/policy.hpp"
 #include "pb/core/validate.hpp"
 #include "pb/runtime/descriptor.hpp"
 #include "pb/runtime/error.hpp"
+#include "pb/runtime/error_policy.hpp"
 #include "pb/runtime/observer.hpp"
 #include "pb/runtime/result.hpp"
 
@@ -1028,10 +1030,11 @@ template <class FinalOutput, class StageStorage, class Input, class Stage, class
 template <class Pipeline, class StageStoragePolicy>
 class sequential_engine;
 
-template <class Input, class Output, class... Stages, class StageStoragePolicy>
-class sequential_engine<pb::core::pipeline<Input, Output, pb::meta::type_list<Stages...>>, StageStoragePolicy> {
+template <class Input, class Output, class... Stages, class Policies, class StageStoragePolicy>
+class sequential_engine<pb::core::pipeline<Input, Output, pb::meta::type_list<Stages...>, Policies>,
+                        StageStoragePolicy> {
 public:
-  using pipeline_type = pb::core::pipeline<Input, Output, pb::meta::type_list<Stages...>>;
+  using pipeline_type = pb::core::pipeline<Input, Output, pb::meta::type_list<Stages...>, Policies>;
   using input_type = Input;
   using output_type = Output;
   using stages = pb::meta::type_list<Stages...>;
@@ -1087,15 +1090,93 @@ private:
 
 } // namespace detail
 
+// ---------------------------------------------------------------------------
+// Error-policy extraction from a finalized pipeline's carried policy list.
+//
+// A pipeline produced via `pb::from<In>::with<pb::policy::errors::...>::...`
+// records the marker in `Pipeline::policies` (a `pb::meta::type_list<...>`).
+// The helpers below locate the first `pb::policy::errors` marker for which
+// `pb::policy::is_error_policy_v` is true, and `compile<P>(sequential{})`
+// uses it to select an engine wrapper from `pb/runtime/error_policy.hpp`.
+// Pipelines without such a marker compile to the bare engine, byte-for-byte
+// identical to the pre-feature behaviour.
+// ---------------------------------------------------------------------------
+
+namespace detail {
+
+/// Scan a policy `type_list` for the first error-policy marker.  Resolves to
+/// `void` when the pipeline carries no error policy.
+template <class List>
+struct first_error_policy {
+  using type = void;
+};
+
+template <class Head, class... Tail>
+struct first_error_policy<pb::meta::type_list<Head, Tail...>> {
+  using type = std::conditional_t<pb::policy::is_error_policy_v<Head>, Head,
+                                  typename first_error_policy<pb::meta::type_list<Tail...>>::type>;
+};
+
+template <class Pipeline, class = void>
+struct pipeline_policies {
+  using type = pb::meta::type_list<>;
+};
+
+template <class Pipeline>
+struct pipeline_policies<Pipeline, std::void_t<typename Pipeline::policies>> {
+  using type = typename Pipeline::policies;
+};
+
+} // namespace detail
+
+/// The error-policy marker carried by `Pipeline` (one of the five
+/// `pb::policy::errors` runtime markers), or `void` when none is present.
+template <class Pipeline>
+using pipeline_error_policy_t =
+    typename detail::first_error_policy<typename detail::pipeline_policies<Pipeline>::type>::type;
+
+/// True when `Pipeline` carries one of the runtime-enforced
+/// `pb::policy::errors` markers in its policy list.
+template <class Pipeline>
+inline constexpr bool has_error_policy_v = !std::is_same_v<pipeline_error_policy_t<Pipeline>, void>;
+
+namespace detail {
+
+template <pb::core::ValidPipeline Pipeline, class StageStoragePolicy>
+[[nodiscard]] constexpr auto apply_error_policy(sequential_engine<Pipeline, StageStoragePolicy> engine) {
+  using ErrorPolicy = pipeline_error_policy_t<Pipeline>;
+  using Output = typename sequential_engine<Pipeline, StageStoragePolicy>::output_type;
+  if constexpr (std::is_same_v<ErrorPolicy, pb::policy::errors::throwing>) {
+    return pb::with_throw_on_error(std::move(engine));
+  } else if constexpr (std::is_same_v<ErrorPolicy, pb::policy::errors::terminating>) {
+    return pb::with_terminate_on_error(std::move(engine));
+  } else if constexpr (std::is_same_v<ErrorPolicy, pb::policy::errors::ignoring>) {
+    static_assert(!std::is_void_v<Output>,
+                  "pb::policy::errors::ignoring requires a non-void pipeline output_type — the ignore "
+                  "policy substitutes a fallback value, which is meaningless for void-returning pipelines");
+    // The DSL ignore policy has no place to attach a user-provided fallback,
+    // so it uses a value-initialized output as the fallback.  Callers who need
+    // a custom fallback should wrap explicitly with pb::with_ignore_errors.
+    return pb::with_ignore_errors(std::move(engine), Output{});
+  } else {
+    // propagating / result / no marker -> bare engine, unchanged.
+    return engine;
+  }
+}
+
+} // namespace detail
+
 template <pb::core::ValidPipeline Pipeline, class SequentialPolicy>
   requires requires { typename SequentialPolicy::stage_storage_policy; }
 [[nodiscard]] constexpr auto compile(SequentialPolicy) {
   using StageStoragePolicy = typename SequentialPolicy::stage_storage_policy;
-  return detail::sequential_engine<Pipeline, StageStoragePolicy>{};
+  return detail::apply_error_policy(detail::sequential_engine<Pipeline, StageStoragePolicy>{});
 }
 
 } // namespace pb::runtime
 
 namespace pb {
 using runtime::compile;
+using runtime::has_error_policy_v;
+using runtime::pipeline_error_policy_t;
 } // namespace pb

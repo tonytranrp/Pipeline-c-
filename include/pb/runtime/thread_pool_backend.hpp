@@ -288,10 +288,10 @@ template <std::size_t StageIndex, class FinalOutput, class Input, class Stage, c
 template <class Pipeline>
 class thread_pool_engine;
 
-template <class Input, class Output, class... Stages>
-class thread_pool_engine<pb::core::pipeline<Input, Output, pb::meta::type_list<Stages...>>> {
+template <class Input, class Output, class... Stages, class Policies>
+class thread_pool_engine<pb::core::pipeline<Input, Output, pb::meta::type_list<Stages...>, Policies>> {
 public:
-  using pipeline_type = pb::core::pipeline<Input, Output, pb::meta::type_list<Stages...>>;
+  using pipeline_type = pb::core::pipeline<Input, Output, pb::meta::type_list<Stages...>, Policies>;
   using input_type = Input;
   using output_type = Output;
   using stages = pb::meta::type_list<Stages...>;
