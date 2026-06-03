@@ -2,6 +2,7 @@
 
 #include <array>
 #include <exception>
+#include <iostream>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -1117,6 +1118,32 @@ struct first_error_policy<pb::meta::type_list<Head, Tail...>> {
                                   typename first_error_policy<pb::meta::type_list<Tail...>>::type>;
 };
 
+/// Scan a policy `type_list` for the first diagnostics-policy marker.  Resolves
+/// to `void` when the pipeline carries no diagnostics policy.
+template <class List>
+struct first_diagnostics_policy {
+  using type = void;
+};
+
+template <class Head, class... Tail>
+struct first_diagnostics_policy<pb::meta::type_list<Head, Tail...>> {
+  using type = std::conditional_t<pb::policy::is_diagnostics_policy_v<Head>, Head,
+                                  typename first_diagnostics_policy<pb::meta::type_list<Tail...>>::type>;
+};
+
+/// Scan a policy `type_list` for the first copying-policy marker.  Resolves to
+/// `void` when the pipeline carries no copying policy.
+template <class List>
+struct first_copying_policy {
+  using type = void;
+};
+
+template <class Head, class... Tail>
+struct first_copying_policy<pb::meta::type_list<Head, Tail...>> {
+  using type = std::conditional_t<pb::policy::is_copying_policy_v<Head>, Head,
+                                  typename first_copying_policy<pb::meta::type_list<Tail...>>::type>;
+};
+
 template <class Pipeline, class = void>
 struct pipeline_policies {
   using type = pb::meta::type_list<>;
@@ -1139,6 +1166,36 @@ using pipeline_error_policy_t =
 /// `pb::policy::errors` markers in its policy list.
 template <class Pipeline>
 inline constexpr bool has_error_policy_v = !std::is_same_v<pipeline_error_policy_t<Pipeline>, void>;
+
+/// The diagnostics-policy marker carried by `Pipeline` (one of the
+/// `pb::policy::diagnostics` runtime markers — `verbose` or `quiet`), or
+/// `void` when none is present.
+template <class Pipeline>
+using pipeline_diagnostics_policy_t =
+    typename detail::first_diagnostics_policy<typename detail::pipeline_policies<Pipeline>::type>::type;
+
+/// True when `Pipeline` carries one of the runtime-enforced
+/// `pb::policy::diagnostics` markers (`verbose` / `quiet`) in its policy list.
+template <class Pipeline>
+inline constexpr bool has_diagnostics_policy_v =
+    !std::is_same_v<pipeline_diagnostics_policy_t<Pipeline>, void>;
+
+/// The copying-policy marker carried by `Pipeline` (one of the
+/// `pb::policy::copying` markers — `value` / `move_only` / `shared` / `clone`),
+/// or `void` when none is present.
+///
+/// The copying axis is carried + queryable but only partially enforced: this
+/// extracts the pinned intent so tooling / user `static_assert`s can read it.
+/// `compile<>` does not change runtime copy/move behaviour based on it.
+template <class Pipeline>
+using pipeline_copying_policy_t =
+    typename detail::first_copying_policy<typename detail::pipeline_policies<Pipeline>::type>::type;
+
+/// True when `Pipeline` carries one of the `pb::policy::copying` markers in its
+/// policy list.
+template <class Pipeline>
+inline constexpr bool has_copying_policy_v =
+    !std::is_same_v<pipeline_copying_policy_t<Pipeline>, void>;
 
 namespace detail {
 
@@ -1164,13 +1221,32 @@ template <pb::core::ValidPipeline Pipeline, class StageStoragePolicy>
   }
 }
 
+/// Compose the diagnostics axis on top of the (possibly error-policy-wrapped)
+/// engine.  When `Pipeline` carries `pb::policy::diagnostics::verbose`, the
+/// engine is additionally wrapped in `pb::with_verbose_diagnostics(...)` so the
+/// verbose wrapper sits *around* any error-policy wrapper (throwing inside,
+/// verbose outside).  The default sink is `&std::clog`; callers retarget it at
+/// runtime via the wrapper's `set_sink(...)`.  `quiet` / no marker leave the
+/// engine unwrapped, byte-for-byte identical to the pre-feature behaviour.
+template <pb::core::ValidPipeline Pipeline, class Engine>
+[[nodiscard]] auto apply_diagnostics_policy(Engine&& engine) {
+  using DiagnosticsPolicy = pipeline_diagnostics_policy_t<Pipeline>;
+  if constexpr (std::is_same_v<DiagnosticsPolicy, pb::policy::diagnostics::verbose>) {
+    return pb::with_verbose_diagnostics(std::forward<Engine>(engine), &std::clog);
+  } else {
+    // quiet / no marker -> engine unchanged.
+    return std::forward<Engine>(engine);
+  }
+}
+
 } // namespace detail
 
 template <pb::core::ValidPipeline Pipeline, class SequentialPolicy>
   requires requires { typename SequentialPolicy::stage_storage_policy; }
 [[nodiscard]] constexpr auto compile(SequentialPolicy) {
   using StageStoragePolicy = typename SequentialPolicy::stage_storage_policy;
-  return detail::apply_error_policy(detail::sequential_engine<Pipeline, StageStoragePolicy>{});
+  return detail::apply_diagnostics_policy<Pipeline>(
+      detail::apply_error_policy(detail::sequential_engine<Pipeline, StageStoragePolicy>{}));
 }
 
 } // namespace pb::runtime
@@ -1179,4 +1255,8 @@ namespace pb {
 using runtime::compile;
 using runtime::has_error_policy_v;
 using runtime::pipeline_error_policy_t;
+using runtime::has_diagnostics_policy_v;
+using runtime::pipeline_diagnostics_policy_t;
+using runtime::has_copying_policy_v;
+using runtime::pipeline_copying_policy_t;
 } // namespace pb

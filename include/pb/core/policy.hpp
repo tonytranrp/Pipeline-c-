@@ -147,9 +147,64 @@ struct silent {};
 struct normal {};
 
 /// Detailed diagnostics — every stage transition, timing, and value dump.
+///
+/// Runtime-enforced marker: when carried by `::with<diagnostics::verbose>`,
+/// `pb::compile<P>(sequential{})` wraps the (possibly error-policy-wrapped)
+/// engine in `pb::with_verbose_diagnostics(...)`, which auto-attaches a
+/// `pb::verbose_observer` that logs every stage transition.
 struct verbose {};
 
+/// Explicit "no verbose wrapper" marker — the diagnostics-axis counterpart of
+/// `errors::result`.  Carrying `::with<diagnostics::quiet>` records intent in
+/// the policy list without changing `compile<>` behaviour: the engine is the
+/// bare (or error-policy-wrapped) engine, byte-for-byte identical to carrying
+/// no diagnostics marker at all.
+struct quiet {};
+
 } // namespace diagnostics
+
+// ---------------------------------------------------------------------------
+// Copy / move / borrow value-category policies (carried marker axis)
+// ---------------------------------------------------------------------------
+///
+/// The `copying` markers pin the *intended* value-category contract for values
+/// flowing between stages and through fan-out/fan-in branches.  Unlike the
+/// `errors` and `diagnostics` axes, the `copying` axis is **carried + queryable
+/// but only partially enforced**: `pb::compile<P>(sequential{})` does NOT change
+/// runtime copy/move behaviour based on these markers.  Enforcement of value
+/// category beyond the existing `pb::shared_view` / `pb::unique_clone` fan-in
+/// strategies (see `pb/runtime/clone.hpp`) is forward-looking.
+///
+/// What the markers buy you today:
+///   * They are threaded into the finalized pipeline's `policies` type-list by
+///     `::with<copying::...>` and surface through `pb::has_copying_policy_v<P>`
+///     / `pb::pipeline_copying_policy_t<P>`.
+///   * Tooling and user `static_assert`s can READ the pinned intent to document
+///     a pipeline's ownership model, or to gate higher-level adapters.
+///
+/// They are intentionally distinct from the introspection-only `memory` tags
+/// (`copy`/`move`/`borrow`) above so existing zero-runtime-behaviour DSL usage
+/// is unaffected.
+namespace copying {
+
+/// Values are passed by value (copied) between stages.  The default-intent
+/// marker; semantically equivalent to carrying no copying marker for the bare
+/// sequential engine.
+struct value {};
+
+/// Values are move-only — each value has a single owner and is moved, never
+/// copied, between stages.  Pins intent for move-only payloads.
+struct move_only {};
+
+/// Values are shared through a copyable view (cf. `pb::shared_view`): one
+/// underlying object behind shared ownership, cheap to copy at the boundary.
+struct shared {};
+
+/// Values are deep-cloned per consumer (cf. `pb::unique_clone`): every fan-out
+/// consumer receives an independently-owned copy.
+struct clone {};
+
+} // namespace copying
 
 } // namespace pb::policy
 
@@ -257,6 +312,48 @@ struct is_error_policy<errors::result> : std::true_type {};
 
 template <class T>
 inline constexpr bool is_error_policy_v = is_error_policy<T>::value;
+
+// ---------------------------------------------------------------------------
+// Diagnostics-policy marker trait
+// ---------------------------------------------------------------------------
+
+/// True for exactly the two runtime-enforced diagnostics-policy markers in
+/// `pb::policy::diagnostics`: `verbose` (selects the verbose engine wrapper)
+/// and `quiet` (selects no wrapper).  The legacy `silent`/`normal`
+/// introspection tags are NOT diagnostics policies for this trait — they never
+/// drive `compile<>` wrapping.
+template <class T>
+struct is_diagnostics_policy : std::false_type {};
+
+template <>
+struct is_diagnostics_policy<diagnostics::verbose> : std::true_type {};
+template <>
+struct is_diagnostics_policy<diagnostics::quiet> : std::true_type {};
+
+template <class T>
+inline constexpr bool is_diagnostics_policy_v = is_diagnostics_policy<T>::value;
+
+// ---------------------------------------------------------------------------
+// Copying-policy marker trait
+// ---------------------------------------------------------------------------
+
+/// True for the four `pb::policy::copying` markers: `value`, `move_only`,
+/// `shared`, `clone`.  These are carried + queryable but only partially
+/// enforced — see the `copying` namespace docs.
+template <class T>
+struct is_copying_policy : std::false_type {};
+
+template <>
+struct is_copying_policy<copying::value> : std::true_type {};
+template <>
+struct is_copying_policy<copying::move_only> : std::true_type {};
+template <>
+struct is_copying_policy<copying::shared> : std::true_type {};
+template <>
+struct is_copying_policy<copying::clone> : std::true_type {};
+
+template <class T>
+inline constexpr bool is_copying_policy_v = is_copying_policy<T>::value;
 
 using default_thread_pool_fan_in = bundle<scheduling::deterministic_case_order,
                                           scheduling::parallel_cases,

@@ -1787,3 +1787,19 @@ target_link_libraries(pb_with_policy_dsl_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_with_policy_dsl_compile_pass PRIVATE)
 add_test(NAME pb_with_policy_dsl_compile_pass COMMAND pb_with_policy_dsl_compile_pass)
 set_tests_properties(pb_with_policy_dsl_compile_pass PROPERTIES LABELS "compile-pass;policy;dsl")
+
+# ---------------------------------------------------------------------------
+# Policy DSL axes: diagnostics (enforced) + copying (carried) on ::with<>
+# ---------------------------------------------------------------------------
+
+add_executable(pb_runtime_policy_axes_runtime_smoke runtime/policy_axes_runtime_smoke.cpp)
+target_link_libraries(pb_runtime_policy_axes_runtime_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_policy_axes_runtime_smoke PRIVATE)
+add_test(NAME pb_runtime_policy_axes_runtime_smoke COMMAND pb_runtime_policy_axes_runtime_smoke)
+set_tests_properties(pb_runtime_policy_axes_runtime_smoke PROPERTIES LABELS "runtime;policy;diagnostics;dsl;with")
+
+add_executable(pb_policy_axes_compile_pass compile_pass/policy_axes_compile_pass.cpp)
+target_link_libraries(pb_policy_axes_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_policy_axes_compile_pass PRIVATE)
+add_test(NAME pb_policy_axes_compile_pass COMMAND pb_policy_axes_compile_pass)
+set_tests_properties(pb_policy_axes_compile_pass PROPERTIES LABELS "compile-pass;policy;dsl;axes")
