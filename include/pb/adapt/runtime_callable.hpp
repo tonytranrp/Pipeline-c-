@@ -125,7 +125,7 @@ struct runtime_callable {
   ///      (established by `pb::with_runtime_callable_binding`); else
   ///   2. this stage's own owned callable (constructor-supplied).
   /// Throws `std::bad_function_call` if neither is bound.
-  output_type operator()(input_type input) const {
+  [[nodiscard]] output_type operator()(input_type input) const {
     if (auto* bound = active_binding(); bound != nullptr) {
       return (*bound)(std::move(input));
     }
@@ -226,7 +226,7 @@ struct c_function_stage {
 
   static constexpr std::string_view stage_name() noexcept { return "c_function_stage"; }
 
-  constexpr output_type operator()(input_type input) const
+  [[nodiscard]] constexpr output_type operator()(input_type input) const
       noexcept(noexcept(Fn(std::move(input)))) {
     return Fn(std::move(input));
   }

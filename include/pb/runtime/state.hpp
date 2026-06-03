@@ -400,13 +400,13 @@ public:
   /// call.  Available for every storage policy: even owned pipelines
   /// can opt to use a caller-supplied state on a per-call basis,
   /// shadowing the engine-owned one.
-  auto run_with_state(input_type input, State& state) {
+  [[nodiscard]] auto run_with_state(input_type input, State& state) {
     state_context<State> frame{state};
     return engine_.run(std::move(input));
   }
 
   /// Result-returning variant of `run_with_state()`.
-  auto try_run_with_state(input_type input, State& state) -> try_result_type {
+  [[nodiscard]] auto try_run_with_state(input_type input, State& state) -> try_result_type {
     state_context<State> frame{state};
     return engine_.try_run(std::move(input));
   }

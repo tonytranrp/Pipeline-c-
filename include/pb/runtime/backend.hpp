@@ -62,8 +62,6 @@ inline constexpr auto backend_feature_matrix = std::array{
                     .note = "future sender/receiver adapter gated on compiler and library maturity"},
 };
 
-[[nodiscard]] constexpr auto backend_features() noexcept -> std::span<const backend_feature>;
-
 [[nodiscard]] constexpr auto backend_features() noexcept -> std::span<const backend_feature> {
   return {backend_feature_matrix.data(), backend_feature_matrix.size()};
 }
