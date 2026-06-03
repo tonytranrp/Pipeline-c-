@@ -3,7 +3,46 @@
 Snapshot UTC: `2026-06-02T00:00:00Z`
 Repo: `C:\Users\Tonyt\Documents\GitHub\Pipeline-c++`
 Current branch: `main`
-Last committed HEAD: `b57805b` (`Add wave-1 roadmap features: unique_clone, thread-local state, fan-in observer events, thread-pool demo/stress/bench, branch compile-time bench`).
+Last committed HEAD: `f9cbe26` (`Add wave-3 features: runtime-callable adapter, backend scaffolds, C++20 module build`).
+
+## 2026-06-02 multi-agent waves 1–3 — ALL integrated and green
+
+Three long-horizon multi-agent waves closed the codeable roadmap gaps. Default preset `clang-dev-ninja`: **220/220 ctest, 0 failures**. Also verified: `warnings-as-errors-ninja` builds clean (`-Werror`); `package-release-clang-ninja` 220/220 + `pipebuilder-0.1.0-win64.tar.gz` generated; `bench-dev-ninja` builds the new benches; `modules-ninja` builds the C++20 module and `pb_use_module` (`import pb.pipeline;`) passes.
+
+Session commits on top of `8d612b1`:
+
+```
+f9cbe26 wave-3: runtime-callable adapter, backend scaffolds, C++20 module build
+e9605fd ::with policy DSL diagnostics + copying axes
+99fc579 cooperative cancellation token (thread-pool fan-in)
+94d59ba runtime-enforced ::with<pb::policy::errors::...> DSL
+6ecf98b wave-2 batch1: fan-in multi-error envelope, coroutine adapter, pb_cli registry
+331c6e8 docs: wave-1 + branch/fan-in compile-time benchmark
+b57805b wave-1: unique_clone, thread-local state, fan-in observer events, thread-pool demo/stress/bench, branch compile-time bench
+```
+
+### Wave 2 (commits 6ecf98b, 94d59ba, 99fc579) — 208 → 216
+- `pb::fan_in_error_envelope` + `pb::collect_fan_in_errors` — structured multi-error aggregation, stable `pb.fan_in.errors.v1` text schema (`runtime/fan_in_error.hpp`).
+- Synchronous coroutine stage adapter: `pb::coro::sync_task<T>`, `pb::coroutine_stage` / `adapt_coroutine` (`adapt/coroutine.hpp`).
+- `pb::tooling::pipeline_registry` + `pb_cli` refactor: registry-driven CLI; 3 original built-ins re-registered byte-identically + 2 new (`order-enrich`, `order-variant`).
+- **Runtime-enforced `::with<pb::policy::errors::{throwing,terminating,ignoring,propagating,result}>` DSL** — `pb::core::pipeline` gained a 4th defaulted `Policies` type-list param; `compile<>(sequential{})` wraps the engine in the matching `error_policy.hpp` wrapper; `pb::has_error_policy_v`. (All `pipeline<...>` specializations updated for the 4th param.)
+- Cooperative cancellation: `pb::cancellation_source`/`token` (`pb.cancel.v1`); `thread_pool_backend.cancel` skips not-yet-started fan-in cases. Preemptive interruption documented as out-of-scope.
+
+### Wave 3 (commits e9605fd, f9cbe26) — 216 → 220
+- `::with` policy axes: `pb::policy::diagnostics::{verbose,quiet}` (verbose enforced via `with_verbose_diagnostics`, composes around the error wrapper) + `pb::policy::copying::{value,move_only,shared,clone}` (carried + queryable; enforcement forward-looking). `has_diagnostics_policy_v` / `has_copying_policy_v`.
+- `pb::runtime_callable` / `bind_callable` / `c_function_stage` — runtime-bound stateful-callable + C-style function-pointer adapters (`adapt/runtime_callable.hpp`).
+- Optional backend SCAFFOLDS `include/pb/backends/{tbb,taskflow,stdexec}.hpp` — compile-guarded (`#if PB_HAS_*`), dormant by default, ungated `*_backend_available_v`; `PB_ENABLE_{TBB,TASKFLOW,STDEXEC}` options.
+- C++20 named module build: `PB_BUILD_MODULE` + `FILE_SET CXX_MODULES` on `include/pb/pipeline.mpp` + `modules-ninja` preset; verified building + `import pb.pipeline;` passing.
+
+### Still roadmap-only / blocked (NOT shipped)
+- WORKING oneTBB / Taskflow / stdexec backends (only the gated seam exists; deps absent).
+- Real C++26 reflection adapter (gated scaffold only; needs a C++26 reflection toolchain).
+- Preemptive (non-cooperative) cancellation (impossible in portable standard C++).
+- Cross-compiler validation rerun on the new SHA (needs CI/push; latest validated SHA is older).
+- v0.1.0 release publication / tag.
+
+### Environment note
+Windows Defender / WDAC intermittently blocks freshly-linked `.exe`s, causing false `BAD_COMMAND` / "Process not started" ctest failures. Recover by relinking the target (`rm` the `.exe` + rebuild) and re-running — it is environmental, never a code regression.
 
 ## 2026-06-02 multi-agent wave 1 — integrated (208/208 ctest, clang-dev-ninja)
 

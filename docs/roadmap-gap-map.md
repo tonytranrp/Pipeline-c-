@@ -2,13 +2,15 @@
 
 This page maps the major themes in `research/pipeline_builder_cpp_research_plan.md` to the repository evidence that exists **today**. Use it to separate shipped MVP support from roadmap-only gaps, and to identify the next safe documentation or implementation slices without overstating production readiness.
 
-
 For a compact release-governance table that maps each gap to evidence, tests, release status, and the next required slice, see [Research Verification Matrix](research-verification-matrix.md).
+
 ## Current audited baseline
 
-Historical local audit baseline: `aa3b8f6` on `main`. That MVP audit found the linear pipeline builder sound and locally green: developer configure/build/CTest completed with **78/78 tests passed**. Later branch hardening updates promoted sequential branch execution into the supported surface, so use current candidate verification rather than the old audit when making branch/join claims.
+Historical local audit baseline: `aa3b8f6` on `main`. That MVP audit found the linear pipeline builder sound and locally green: developer configure/build/CTest completed with **78/78 tests passed**.
 
-This baseline supports planning and documentation claims only for the linear MVP. Any later code change should refresh the evidence before release-facing wording is updated.
+Current working tree HEAD `f9cbe26` (wave-1/2/3 features integrated): **220/220 ctest** on `clang-dev-ninja`. The `modules-ninja` preset builds the C++20 module and `pb_use_module` passes.
+
+The previous cross-compiler-validated SHA is still `87299c14c813753d170911239e251064cbbfee6f`; cross-compiler validation has not yet been rerun on the new SHA.
 
 ## Reading this map
 
@@ -34,16 +36,15 @@ Each theme below records four things:
 
 ### 2. Sequential runtime execution
 
-- **Current repository evidence:** The repository documents and ships the sequential runtime path for validated linear pipelines.
+- **Current repository evidence:** The repository documents and ships the sequential runtime path for validated linear pipelines. The sequential engine gained the 4th `Policies` type-list parameter enabling runtime-enforced `::with<>` DSL.
 - **Current support level:** **Shipped MVP support.**
 - **Proof points:**
   - `docs/production-readiness.md`
   - `include/pb/runtime/sequential.hpp`
   - runtime smoke coverage under `tests/runtime/`
-  - benchmark smoke references in `docs/build.md` and `docs/benchmark-workflow.md`
-- **Safe next slice:** keep runtime behavior, docs, and smoke coverage aligned while known `run()` / `try_run()` parity and exception-handling hardening work remains explicit.
-- **Current policy note:** exception capture is documented as split behavior today (`run()` versus `try_run()`), so roadmap-facing claims should avoid wording that implies unified exception-policy semantics.
-- **Additional proof point for the policy note:** `docs/error-model-tutorial.md` explicitly documents the split and its current limits.
+  - `tests/runtime/with_policy_dsl_runtime_smoke.cpp`
+  - `tests/compile_pass/with_policy_dsl_compile_pass.cpp`
+- **Safe next slice:** keep runtime behavior, docs, and smoke coverage aligned; the runtime-enforced `::with<>` error-policy DSL is now active.
 
 ### 3. Diagnostics and compile-fail guidance
 
@@ -70,101 +71,146 @@ Each theme below records four things:
 
 ### 5. Branch/join topology
 
-- **Current repository evidence:** Public branch/join DSL with compile-time validation, runtime sequential branch execution (first-match-wins with short-circuit), observer events (`on_case_selected`, `on_case_skipped`, `on_case_failed`), stateful storage, join stages, error propagation, heterogeneous outputs through `std::variant`, selected-output type-list joins, explicit sequential fan-in with skipped/completed/failed slots, void-output cases, borrowed move-only fan-in, move-only selected-branch input consumption, first thread-pool fan-in backend scheduling, and comprehensive tests and examples. For non-copyable fan-in inputs, `pb::shared_view<T>` provides a copy-cheap shared-ptr-backed wrapper so each case receives its own wrapper copy without cloning the owned value. `pb::projected<From, Projection, Stage>` is the projection adapter that wraps an existing stage with a user-supplied projection callable, enabling fan-in branches and linear chains to plug arbitrary extract/borrow strategies into stages that expect a narrower input type.
-- **Current support level:** **Supported for homogeneous outputs, heterogeneous outputs through `std::variant`, selected-output type-list joins, explicit sequential fan-in, thread-pool fan-in scheduling, borrowed move-only fan-in, move-only selected-branch input consumption, `pb::shared_view<T>` non-copyable fan-in inputs, and `pb::projected` projection adapters.**
+- **Current repository evidence:** Full wave-1/2/3 fan-in surface: public branch/join DSL, sequential and thread-pool fan-in, fan-in multi-error envelope (`pb.fan_in_error_envelope` + `pb::collect_fan_in_errors`, schema `"pb.fan_in.errors.v1"`), fan-in observer lifecycle events (`on_fan_in_started` / `on_fan_in_case_scheduled` / `on_fan_in_case_completed` / `on_fan_in_completed` — additive v1-ABI-safe no-op virtuals), `pb::unique_clone<T, Clone>` owned per-case deep-copy policy, cooperative cancellation (`pb::cancellation_source` / `pb::cancellation_token`, schema `"pb.cancel.v1"`), and comprehensive tests and examples.
+- **Current support level:** **Supported for homogeneous outputs, heterogeneous outputs through `std::variant`, selected-output type-list joins, explicit sequential fan-in, thread-pool fan-in scheduling with cooperative cancellation, borrowed move-only fan-in, move-only selected-branch input consumption, `pb::shared_view<T>` non-copyable fan-in inputs, `pb::unique_clone<T, Clone>` owned per-case cloning, `pb::projected` projection adapters, multi-error envelope, and fan-in lifecycle observer events.**
 - **Proof points:**
   - `docs/branch-join-roadmap.md`
   - `include/pb/core/pipeline_state.hpp` (public `::branch<...>::join<...>` DSL)
-  - `include/pb/runtime/sequential.hpp` (runtime branch routing with storage)
-  - `include/pb/runtime/clone.hpp` (`pb::shared_view<T>`, `pb::projected`, `pb::fan_in_uses_copy_v`, `pb::fan_in_uses_borrow_v`)
-  - `tests/runtime/sequential_branch_comprehensive.cpp`
+  - `include/pb/runtime/sequential.hpp`
+  - `include/pb/runtime/clone.hpp` (`pb::shared_view<T>`, `pb::unique_clone<T,Clone>`, `pb::projected`, introspection variable templates)
+  - `include/pb/runtime/fan_in_error.hpp` (`pb::fan_in_error_envelope`, `pb::collect_fan_in_errors`, schema `"pb.fan_in.errors.v1"`)
+  - `include/pb/runtime/cancellation.hpp` (`pb::cancellation_source`, `pb::cancellation_token`, schema `"pb.cancel.v1"`)
+  - `include/pb/runtime/observer.hpp` (four `on_fan_in_*` virtuals)
+  - `tests/runtime/fan_in_observer_events_smoke.cpp`
+  - `tests/runtime/fan_in_unique_clone_smoke.cpp`
+  - `tests/runtime/fan_in_error_envelope_smoke.cpp`
+  - `tests/runtime/thread_pool_cancellation_smoke.cpp`
   - `tests/runtime/fan_in_shared_view_smoke.cpp`
   - `tests/runtime/projected_stage_smoke.cpp`
-  - `examples/branch_routing_demo.cpp`, `examples/branch_error_handling.cpp`
-- **Safe next slice:** keep preemptive cancellation/scheduling policy, broader move-only ownership policies, dependency backend fan-in, and broad backend branch execution as separate design/implementation phases.
+  - `examples/thread_pool_fan_in_demo.cpp`
+- **Safe next slice:** keep preemptive (non-cooperative) cancellation, dependency backend fan-in, and broad backend branch execution as separate design/implementation phases.
 
 ### 6. Graph export
 
-- **Current repository evidence:** DOT/JSON helper slices exist for linear and supported branch pipelines, including branch topology detection in JSON. A `pb::export_text` text-format helper (`include/pb/core/export_text.hpp`) now ships alongside the JSON/DOT helpers. The export schema is backed by a typed contract (`docs/export-schema-v1.md`, `tests/compile_pass/schema_v1_contract.cpp`, `tests/compile_pass/schema_v1_extended_golden.cpp`) that pins the literal `"pb.core.graph.v1"` schema-version string and the field layout against byte-equal regression tests.
-- **Current support level:** **Partial descriptor-record-backed export helper support including `pb::export_text`; the `pb.core.graph.v1` typed contract governs the current helper output. The contract is typed, not yet a promised frozen external interchange schema — field additions are permitted without bumping the major, but breaking changes require a version bump to `pb.core.graph.v2`.**
+- **Current repository evidence:** DOT/JSON/text helper slices exist for linear and supported branch pipelines, including branch topology detection in JSON. `pb::export_text` ships alongside the JSON/DOT helpers. The export schema is backed by a typed contract (`docs/export-schema-v1.md`) with byte-equal regression tests.
+- **Current support level:** **Partial descriptor-record-backed export helper support including `pb::export_text`; the `pb.core.graph.v1` typed contract governs the current helper output. The contract is typed, not yet a promised frozen external interchange schema.**
 - **Proof points:**
   - `docs/graph-export-roadmap.md`
-  - `docs/export-schema-v1.md` (formal v1 schema specification)
-  - `docs/export-helper-schema.md`
+  - `docs/export-schema-v1.md`
   - `include/pb/core/export_text.hpp`
   - `tests/compile_pass/schema_v1_contract.cpp`
   - `tests/compile_pass/schema_v1_extended_golden.cpp`
   - `tests/compile_pass/export_text.cpp`, `tests/compile_pass/export_text_golden.cpp`
-  - `tests/compile_pass/public_headers/export_text.cpp`
 - **Safe next slice:** keep helper output aligned with the v1 contract; claim a frozen external schema only after stability promises, CLI/file export, and schema migration policy are established.
-- **Coordination note:** the DOT/JSON/text helper APIs are narrower than full graph export. Release notes must distinguish them from a stable frozen graph schema, CLI/file export, and backend graph-execution claims.
 
 ### 7. Observer hooks
 
-- **Current repository evidence:** Runtime observer callbacks are shipped for the sequential executor (`set_observer`, `observer`) with runtime smoke tests.
-- **Current support level:** **Partially shipped MVP support (sequential runtime).**
+- **Current repository evidence:** Runtime observer callbacks are shipped for the sequential executor plus the four additive fan-in lifecycle events (`on_fan_in_started`, `on_fan_in_case_scheduled`, `on_fan_in_case_completed`, `on_fan_in_completed`) on both sequential and thread-pool fan-in paths.
+- **Current support level:** **Shipped for sequential runtime and fan-in lifecycle. v1-ABI-safe (no-op virtual defaults).**
 - **Proof points:**
   - `docs/observer-hooks-roadmap.md`
+  - `include/pb/runtime/observer.hpp`
   - `tests/runtime/sequential_observer_smoke.cpp`
-  - `tests/runtime/sequential_observer_accessor_smoke.cpp`
-  - `tests/runtime/sequential_observer_try_run_exception_smoke.cpp`
-  - `tests/runtime/sequential_custom_error_observer_smoke.cpp`
+  - `tests/runtime/fan_in_observer_events_smoke.cpp`
+  - `tests/runtime/thread_pool_fan_in_stress_smoke.cpp`
 - **Safe next slice:** add observer examples/benchmarks and harden public contract details (ABI/stability, lifecycle, ordering) before claiming full support.
 
 ### 8. Optional backends
 
-- **Current repository evidence:** The repository explicitly limits current execution support to the standard-library sequential path and marks alternative backends as future work.
-- **Current support level:** **Roadmap-only gap beyond sequential execution.**
+- **Current repository evidence:** The repository supports the standard-library sequential path and the `thread_pool_backend` for fan-in. Optional backend integration seams for oneTBB, Taskflow, and stdexec exist as compile-guarded scaffolds under `include/pb/backends/{tbb,taskflow,stdexec}.hpp` — dormant by default; each exposes `*_backend_available_v == false` on the standard build. `PB_ENABLE_{TBB,TASKFLOW,STDEXEC}` CMake options are wired but off.
+- **Current support level:** **Sequential + thread-pool fan-in slice supported. Optional backend seams are dormant scaffolds — working external backends are NOT implemented.**
 - **Proof points:**
   - `docs/optional-backends-roadmap.md`
-  - `docs/production-readiness.md`
-  - `docs/build.md` notes that backend flags remain intentionally off in the base scaffold
-- **Safe next slice:** keep dependency/runtime-backend claims off the supported surface until adapter targets, tests, and performance evidence exist.
+  - `include/pb/backends/tbb.hpp`, `include/pb/backends/taskflow.hpp`, `include/pb/backends/stdexec.hpp`
+  - `tests/compile_pass/backend_scaffolds_smoke.cpp` (static-asserts all three `*_backend_available_v == false`)
+  - `include/pb/runtime/thread_pool_backend.hpp`
+- **Safe next slice:** activate a working backend behind `PB_ENABLE_TBB` only after `find_package(TBB)` integration, isolation tests, and matrix evidence are in place.
 
 ### 9. Stable runtime descriptor
 
-- **Current repository evidence:** A narrow linear runtime-descriptor helper exists today (`pb::make_descriptor<Pipeline>()` and `engine.descriptor()`), alongside compile-time introspection and runtime diagnostic stage-identity checks. The `pb.core.graph.v1` schema-version string is now backed by a typed contract (`tests/compile_pass/schema_v1_contract.cpp`) that enforces the literal identifier at compile time, giving the descriptor/export surface a formal versioned anchor for the first time.
-- **Current support level:** **Partially shipped linear metadata support with a typed `pb.core.graph.v1` version contract; stable external export/compatibility guarantees (frozen schema, versioned migration path, CLI/file export) remain roadmap-only.**
+- **Current repository evidence:** A narrow linear runtime-descriptor helper exists, alongside compile-time introspection and runtime diagnostic stage-identity checks. The `pb.core.graph.v1` schema-version string is backed by a typed contract.
+- **Current support level:** **Partially shipped linear metadata support with a typed `pb.core.graph.v1` version contract; stable external export/compatibility guarantees remain roadmap-only.**
 - **Proof points:**
   - `docs/runtime-descriptor-roadmap.md`
   - `docs/export-schema-v1.md`
-  - `docs/production-readiness.md`
   - `include/pb/core/describe.hpp`
   - `include/pb/runtime/descriptor.hpp`
-  - `tests/compile_pass/public_headers/runtime_descriptor.cpp`
-  - `tests/runtime/descriptor_smoke.cpp`
   - `tests/compile_pass/schema_v1_contract.cpp`
   - `tests/compile_pass/schema_v1_extended_golden.cpp`
 - **Safe next slice:** keep the current linear helper documented and tested at its real boundary; treat the v1 typed contract as a regression net rather than a frozen external promise until schema migration policy is documented.
 
-### 10. Benchmark evidence and performance budgets
+### 10. Policy DSL (three axes)
 
-- **Current repository evidence:** Benchmark lanes are documented as smoke/profiling scaffolding, not release thresholds.
+- **Current repository evidence:** The `::with<>` DSL now carries and runtime-enforces three independent, order-insensitive policy axes: `errors` (five markers, selects wrapper via `compile<>`), `diagnostics` (two markers, `verbose` selects verbose wrapper), and `copying` (four markers, carried + queryable, runtime enforcement forward-looking). `pb::has_error_policy_v<P>`, `pb::has_diagnostics_policy_v<P>`, `pb::has_copying_policy_v<P>` expose compile-time queries.
+- **Current support level:** **Shipped for errors and diagnostics axes (runtime-enforced via `compile<>`). Copying axis carried + queryable; runtime enforcement is forward-looking.**
+- **Proof points:**
+  - `include/pb/core/policy.hpp`
+  - `include/pb/runtime/sequential.hpp` (4th Policies param + wrapper selection)
+  - `tests/runtime/with_policy_dsl_runtime_smoke.cpp`
+  - `tests/compile_pass/with_policy_dsl_compile_pass.cpp`
+  - `tests/runtime/policy_axes_runtime_smoke.cpp`
+  - `tests/compile_pass/policy_axes_compile_pass.cpp`
+- **Safe next slice:** runtime enforcement of the copying axis and additional policy axes (executor capability, contracts) are future work.
+
+### 11. Adapters (extended surface)
+
+- **Current repository evidence:** Free-function, member-function, function-object/functor, `pb::runtime_callable<In,Out>` (type-erased runtime-bound stateful callable), `pb::bind_callable` (factory), `pb::c_function_stage<In,Out,Fn>` (C-style function-pointer non-type-template-param adapter), and the synchronous coroutine adapter (`pb::coro::sync_task<T>` + `pb::coroutine_stage<Stage>` / `pb::adapt_coroutine`).
+- **Current support level:** **Shipped for all the above adapter shapes.**
+- **Proof points:**
+  - `include/pb/adapt/fn.hpp`
+  - `include/pb/adapt/runtime_callable.hpp`
+  - `include/pb/adapt/coroutine.hpp`
+  - `tests/runtime/runtime_callable_adapter_smoke.cpp`
+  - `tests/runtime/coroutine_adapter_smoke.cpp`
+  - `tests/compile_pass/public_headers/adapt_runtime_callable.cpp`
+  - `tests/compile_pass/public_headers/adapt_coroutine.cpp`
+- **Safe next slice:** async/sender coroutine backends and working C++26 reflection-driven adapter remain future work.
+
+### 12. C++20 named module
+
+- **Current repository evidence:** `PB_BUILD_MODULE` CMake option builds `include/pb/pipeline.mpp` via `FILE_SET CXX_MODULES`; `modules-ninja` preset; `tests/module/use_module.cpp` does `import pb.pipeline;` and passes. Verified on clang 22 (llvm-mingw), CMake 4.3, Ninja. Default header build unaffected.
+- **Current support level:** **Shipped for the documented preset on clang 22.**
+- **Proof points:**
+  - `docs/modules.md`
+  - `CMakePresets.json` (`modules-ninja` preset)
+  - `include/pb/pipeline.mpp`
+  - `tests/module/use_module.cpp`
+- **Safe next slice:** broader compiler/standard library compatibility evidence and install/export story for module consumers.
+
+### 13. Benchmark evidence and performance budgets
+
+- **Current repository evidence:** Benchmark lanes are documented as smoke/profiling scaffolding, not release thresholds. Branch/fan-in compile-time benchmark (`bench/compile_time/branch_fan_in_10.cpp`) and thread-pool fan-in runtime benchmark (`bench/runtime/thread_pool_fan_in.cpp`) exist.
 - **Current support level:** **Shipped smoke scaffolding with roadmap-only performance governance.**
 - **Proof points:**
   - `docs/build.md`
   - `docs/benchmark-workflow.md`
   - `docs/release-readiness-checklist.md`
+  - `bench/compile_time/branch_fan_in_10.cpp`
+  - `bench/runtime/thread_pool_fan_in.cpp`
 - **Safe next slice:** collect reproducible benchmark evidence with context, but keep thresholds/regression budgets labeled as future work until explicitly established.
 
 ## Active missing-feature priority queue
 
-This queue is the durable docs-lane view of the current missing-feature push. It is not a release claim: move an item to “supported” only after the implementation commit is integrated, tests pass on the candidate branch, and release-facing docs/examples are updated.
+This queue is the durable docs-lane view of the current missing-feature push. It is not a release claim: move an item to "supported" only after the implementation commit is integrated, tests pass on the candidate branch, and release-facing docs/examples are updated.
 
 | Priority | Missing feature / evidence gap | Current docs-lane status | Promotion gate |
 | --- | --- | --- | --- |
-| 1 | `run()` / `try_run()` error-policy hardening and exception behavior evidence | **DSL shipped and parity-proven.** Five named wrappers are factory-built and engine-tested: `pb::with_throw_on_error` → `throwing_engine`, `pb::with_terminate_on_error` → `terminating_engine`, `pb::with_ignore_errors` → `ignoring_engine`, `pb::with_propagate_exceptions` → `propagating_engine`, `pb::with_verbose_diagnostics` → `verbose_engine` (owns a `pb::verbose_observer`). Cross-wrapper `run()` / `try_run()` parity is proven across linear, selected-output branch, and explicit fan-in topologies — every (wrapper, method, case) cell over success / declared `result<>` failure / thrown exception — via the parity matrix lane: `tests/runtime/policy_dsl_parity_matrix_linear.cpp`, `tests/runtime/policy_dsl_parity_matrix_branch.cpp`, `tests/runtime/policy_dsl_parity_matrix_fan_in.cpp`. Composability is shipped (`tests/runtime/policy_dsl_composability_smoke.cpp`): `verbose_engine` can wrap any of the other four wrappers because all five expose `set_observer` / `get_observer` / `describe` / `descriptor` directly on the wrapper surface. `std::expected`-shape stages flow through every wrapper with `error_category::expected_error` normalization (`tests/runtime/policy_dsl_std_expected_matrix.cpp`). | Promote when these surfaces are reflected in release-notes wording. Remaining work belongs to a separate gap (runtime-enforced `::with<pb::policy::...>` DSL beyond marker bundles). |
-| 2 | `std::expected` / expected-like result policy evidence | Expected-like support exists, but direct standard-library matrix coverage remains a release-hardening gap. | Compile/runtime tests on the supported compiler/library matrix, or explicit fallback wording when `std::expected` is unavailable. |
-| 3 | Compile-time benchmark baselines for 5-stage and 50-stage chains | Benchmark smoke scaffolding exists; baseline evidence and thresholds remain separate. | Recorded baseline artifacts with preset/compiler/commit context. |
-| 4 | Explicit stateful stage storage policy | Narrow public guarantee exists for default-initializable sequential stages: per-run construction versus engine-stored state, including non-copyable owned stage state, is covered by policy aliases, runtime tests, and examples. Borrowed/shared/unique ownership policies, reset policy, and thread-local future-backend storage remain gaps. | API decisions, tests, and docs for borrowed/reference/shared/unique ownership, reset behavior, and future parallel/thread-local storage. |
-| 5 | Branch output compatibility/routing validation | Accepted validation evidence exists; keep the claim scoped to compile-time compatibility validation until final candidate logs are attached. | Candidate branch includes branch-output validation implementation plus compatible/incompatible compile-pass/compile-fail tests. |
-| 6 | Join consumption/compatibility validation | Accepted validation evidence exists; keep the claim scoped to join consumption/compatibility validation, not runtime execution. | Candidate branch includes join validation implementation plus misuse/mismatch compile-fail tests. |
-| 7 | Sequential branch execution | **Done for the supported slice.** Homogeneous outputs, heterogeneous outputs through `std::variant`, selected-output type-list joins, move-only selected-branch input consumption, selected-output join stages, explicit sequential fan-in joins with failed-case diagnostics, void-output cases, borrowed move-only fan-in, observer events, stateful storage, compile-time join validation, first thread-pool fan-in backend scheduling, runtime tests, and examples are all present. | Keep docs/examples aligned with supported boundary; preemptive cancellation, dependency backend fan-in, and broad backend branch execution remain future work. |
-| 8 | Runtime descriptor/export contract | **Typed schema-version contract landed.** The `"pb.core.graph.v1"` identifier is now enforced by `tests/compile_pass/schema_v1_contract.cpp` and golden output is regression-locked in `tests/compile_pass/schema_v1_extended_golden.cpp`. A frozen external interchange schema, CLI/file export, and versioned migration policy remain roadmap-only. | Stability promise (no v1 field removal without major bump), schema-migration docs, CLI/file export, and compatibility tests on an external schema boundary. |
-| 9 | DOT/JSON graph export | Partial descriptor-record-backed DOT/JSON helpers exist for linear, supported branch, and explicit fan-in pipelines; stable descriptor/export compatibility remains roadmap-only. | Candidate export evidence plus clear distinction between helper output and stable schemas, golden fixtures, CLI/file export, and backend graph-execution claims. |
-| 10 | Backend feature matrix | Documented in `docs/optional-backends-roadmap.md`; `sequential` and the current standard-library `thread_pool_backend` fan-in slice are supported, while oneTBB, Taskflow, stdexec, preemptive cancellation, and broad backend examples/benchmarks remain roadmap-only. | Keep the matrix current before any backend implementation/support claim. |
-| 11 | Full release compiler matrix | GitHub evidence exists for code SHA `87299c14c813753d170911239e251064cbbfee6f`: GCC C++20/C++23, Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release passed `163/163`. MSVC C++23, C++26 gates, and Windows package-release remain unclaimed. | Keep compiler ID/version plus configure/build/test/package evidence attached to the final candidate SHA; rerun if later non-doc code changes land. |
-| 12 | Release/package evidence on candidate SHA | Clean Ubuntu package-release GitHub evidence exists for code SHA `87299c14c813753d170911239e251064cbbfee6f`: configure/build/CTest `163/163` and TGZ package generation passed. The same SHA also passed local `package-release-clang-ninja` configure/build/CTest `163/163` plus package generation at `build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz`. | Rerun package-release on the final tag SHA when required and record archive path plus workflow URL. |
+| 1 | Cross-compiler validation rerun on HEAD f9cbe26 | **Not yet run.** 220/220 ctest on `clang-dev-ninja`; `modules-ninja` preset passes. Last cross-compiler-validated SHA is `87299c14c813753d170911239e251064cbbfee6f`. | Rerun the GitHub Cross Compiler Validation workflow on HEAD f9cbe26; record GCC/Clang/MSVC/package results. |
+| 2 | Runtime-enforced `::with<pb::policy::errors::...>` DSL | **Shipped.** `compile<P>(sequential{})` inspects the `Policies` type-list and wraps the engine in the matching error-policy wrapper; `pb::has_error_policy_v<P>` is queryable. Tests: `tests/runtime/with_policy_dsl_runtime_smoke.cpp`, `tests/compile_pass/with_policy_dsl_compile_pass.cpp`. | Promote when reflected in release-notes wording. |
+| 3 | Diagnostics policy axis (`::with<diagnostics::verbose/quiet>`) | **Shipped.** `::with<diagnostics::verbose>` wraps the (possibly error-policy-wrapped) engine in `pb::with_verbose_diagnostics`. Tests: `tests/runtime/policy_axes_runtime_smoke.cpp`, `tests/compile_pass/policy_axes_compile_pass.cpp`. | Promote when reflected in release-notes wording. |
+| 4 | Copying policy axis (`::with<copying::...>`) | **Shipped as carried + queryable.** Runtime enforcement of the copying axis beyond `pb::shared_view` / `pb::unique_clone` is forward-looking. | Add runtime enforcement; update docs. |
+| 5 | Fan-in multi-error envelope | **Shipped.** `pb::fan_in_error_envelope` + `pb::collect_fan_in_errors`, schema `"pb.fan_in.errors.v1"`. | Promote when reflected in release-notes wording. |
+| 6 | Fan-in observer lifecycle events | **Shipped.** Four additive v1-ABI-safe virtuals: `on_fan_in_started`, `on_fan_in_case_scheduled`, `on_fan_in_case_completed`, `on_fan_in_completed`. Emitted on sequential + thread-pool fan-in. | Promote when reflected in release-notes wording. |
+| 7 | Cooperative cancellation | **Shipped.** `pb::cancellation_source` / `pb::cancellation_token`, schema `"pb.cancel.v1"`. Thread-pool fan-in checks the token before enqueueing each case. | Promote when reflected in release-notes wording. |
+| 8 | `pb::unique_clone<T, Clone>` | **Shipped.** Owned per-case deep-copy fan-in policy. Header: `include/pb/runtime/clone.hpp`. Test: `tests/runtime/fan_in_unique_clone_smoke.cpp`. | Promote when reflected in release-notes wording. |
+| 9 | Runtime-bound callable adapters | **Shipped.** `pb::runtime_callable<In,Out>` + `pb::bind_callable` + `pb::c_function_stage<In,Out,Fn>`. Header: `include/pb/adapt/runtime_callable.hpp`. | Promote when reflected in release-notes wording. |
+| 10 | Synchronous coroutine stage adapter | **Shipped.** `pb::coro::sync_task<T>` + `pb::coroutine_stage<Stage>` / `pb::adapt_coroutine`. Header: `include/pb/adapt/coroutine.hpp`. Async/sender backends remain future work. | Promote when reflected in release-notes wording. |
+| 11 | Optional backend integration seams | **Shipped as dormant compile-guarded scaffolds.** `include/pb/backends/{tbb,taskflow,stdexec}.hpp`; `*_backend_available_v == false` on default build. | Working backend promotion requires `find_package` integration, isolation tests, and matrix evidence. |
+| 12 | C++20 named module build | **Shipped.** `PB_BUILD_MODULE` + `modules-ninja` preset + `tests/module/use_module.cpp` passing on clang 22. | Broader compiler compatibility evidence and install/export story. |
+| 13 | `pb::tooling::pipeline_registry` + pb_cli refactor | **Shipped.** Five built-in pipelines; `pb::tooling::pipeline_registry` is the documented extension point. | Stable CLI contract for arbitrary user-defined pipelines. |
+| 14 | Release/package evidence on candidate SHA | Current working tree at 220/220 ctest. Last cross-compiler-validated SHA has local full/package validation plus GitHub CI evidence. | Rerun package-release on HEAD f9cbe26 and record archive path plus workflow URL. |
+| 15 | Backend feature matrix | `sequential` and `thread_pool_backend` supported; oneTBB/Taskflow/stdexec dormant scaffolds only. | Working backend promotion requires activation, isolation tests, matrix evidence. |
+| 16 | Full release compiler matrix | GitHub evidence exists for SHA `87299c14c813753d170911239e251064cbbfee6f`: GCC C++20/C++23, Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release passed 163/163. MSVC C++23, C++26 gates, and Windows package-release remain unclaimed. | Rerun on HEAD f9cbe26; record compiler IDs, preset, configure/build/test/package logs. |
 
 ## Current support summary
 
@@ -173,29 +219,39 @@ The current repository can safely claim:
 - linear typed pipeline validation
 - explicit stage metadata and compile-time introspection helpers
 - sequential runtime execution for validated linear pipelines
-- sequential branch execution with optional join stages, heterogeneous outputs through `std::variant`, explicit sequential fan-in with skipped/completed/failed slots, borrowed move-only fan-in, move-only selected-branch input consumption, and the standard-library `thread_pool_backend` fan-in scheduling slice
+- sequential branch execution with optional join stages, heterogeneous outputs through `std::variant`, explicit sequential fan-in with skipped/completed/failed slots, borrowed move-only fan-in, move-only selected-branch input consumption, and the standard-library `thread_pool_backend` fan-in scheduling slice with cooperative cancellation (`pb.cancel.v1`)
 - `pb::shared_view<T>` copy-cheap shared-ptr-backed wrapper for non-copyable fan-in inputs, with `pb::fan_in_uses_copy_v` / `pb::fan_in_uses_borrow_v` introspection
+- `pb::unique_clone<T, Clone>` owned per-case deep-copy fan-in policy
 - `pb::projected<From, Projection, Stage>` projection adapter wrapping an existing stage with a user-supplied projection callable
-- error-policy DSL: five factory-built engine wrappers — `pb::with_throw_on_error` → `throwing_engine`, `pb::with_terminate_on_error` → `terminating_engine`, `pb::with_ignore_errors` → `ignoring_engine`, `pb::with_propagate_exceptions` → `propagating_engine`, `pb::with_verbose_diagnostics` → `verbose_engine` (owns `pb::verbose_observer`); cross-wrapper `run()` / `try_run()` parity proven over linear, branch, and fan-in topologies; composability shipped (`verbose` wraps any of the other four because all five expose `set_observer` / `get_observer` / `describe` / `descriptor` directly); `std::expected`-shape stages flow through every wrapper with `error_category::expected_error` normalization
+- `pb::fan_in_error_envelope` + `pb::collect_fan_in_errors` — structured multi-error aggregation with stable `"pb.fan_in.errors.v1"` text schema
+- four additive fan-in observer lifecycle events (`on_fan_in_started`, `on_fan_in_case_scheduled`, `on_fan_in_case_completed`, `on_fan_in_completed`) — v1-ABI-safe no-op virtual defaults
+- cooperative cancellation (`pb::cancellation_source` / `pb::cancellation_token`, schema `"pb.cancel.v1"`); preemptive interruption is documented as out of scope
+- error-policy DSL: five factory-built engine wrappers — `pb::with_throw_on_error`, `pb::with_terminate_on_error`, `pb::with_ignore_errors`, `pb::with_propagate_exceptions`, `pb::with_verbose_diagnostics`; runtime-enforced via `::with<pb::policy::errors::...>` on the sequential engine; `pb::has_error_policy_v<P>` is queryable
+- `::with<pb::policy::diagnostics::verbose/quiet>` — diagnostics axis runtime-enforced; `pb::has_diagnostics_policy_v<P>` is queryable
+- `::with<pb::policy::copying::value/move_only/shared/clone>` — copying axis carried + queryable; `pb::has_copying_policy_v<P>` is queryable; runtime enforcement is forward-looking
+- runtime-bound stateful callable adapter: `pb::runtime_callable<In,Out>` / `pb::bind_callable` / `pb::c_function_stage<In,Out,Fn>` (header: `include/pb/adapt/runtime_callable.hpp`)
+- synchronous coroutine stage adapter: `pb::coro::sync_task<T>` / `pb::coroutine_stage<Stage>` / `pb::adapt_coroutine` (header: `include/pb/adapt/coroutine.hpp`)
+- `pb::tooling::pipeline_registry` name-keyed insertion-ordered registry + pb_cli refactored to use it; 5 built-in pipelines: `order-linear`, `order-branch`, `order-fan-in`, `order-enrich`, `order-variant`
+- optional backend integration seams (dormant compile-guarded scaffolds): `include/pb/backends/{tbb,taskflow,stdexec}.hpp`; `*_backend_available_v == false` on default build
+- C++20 named module build: `PB_BUILD_MODULE` option + `modules-ninja` preset + `tests/module/use_module.cpp` (`import pb.pipeline;`) passing on clang 22
 - `pb.core.graph.v1` typed schema-version contract enforced by compile-time regression tests; `pb::export_text` text-format export helper
-- typed C++26 / C++23 feature gate constants (`pb::features::has_cpp26`, `has_reflection`, `has_contracts`, `has_pack_indexing`, `has_std_expected`, `has_deducing_this`) alongside their `PB_HAS_*` macro counterparts and implication invariants
+- typed C++26 / C++23 feature gate constants (`pb::features::has_cpp26`, `has_reflection`, `has_contracts`, `has_pack_indexing`, `has_std_expected`, `has_deducing_this`)
 - reflection adapter scaffold in `include/pb/adapt/reflect.hpp` gated on `PB_HAS_REFLECTION` with a graceful C++20 fallback
-- substantially expanded `pb_cli` with `tests/run_pb_cli_describe.cmake` test driver
-- compile-pass, compile-fail, runtime, example, package-consumer, and benchmark smoke scaffolding
-- current working tree at **200/200 local ctest** (includes the error-policy DSL parity-hardening batch + the release-readiness pack: schema v1 stability promise + cross-version regression, observer ABI `pb.observer.v1` + verbose line-schema `pb.observer.verbose.v1`, `pb.error.v1` JSON serialization, `pb.trace.ndjson.v1` streaming `pb::tracing_sink`, expanded compile-fail diagnostic goldens, recorded compile-time benchmark baselines); cross-compiler validation on the new SHA pending
+- stateful storage DSL (`pb.state.v1`) including thread-local storage policy (`pb::with_thread_local_state<State>`)
+- current working tree at **220/220 local ctest** on `clang-dev-ninja`; `modules-ninja` preset builds the module and `pb_use_module` passes; cross-compiler validation on the new SHA pending
 - release-readiness documentation plus GitHub GCC/Clang/MSVC/package validation evidence and local package evidence for code SHA `87299c14c813753d170911239e251064cbbfee6f`
 
 The current repository should **not** claim:
 
 - production-complete topology or execution coverage
-- dependency-backend fan-in join execution beyond the thread-pool slice, a frozen external descriptor/export schema, fully stabilized observer contracts, or a stable runtime descriptor
-- a runtime-enforced `::with<pb::policy::...>` DSL over every policy axis (the wrapper-layer error-policy DSL is shipped and parity-proven; the broader `::with<pb::policy::...>` runtime semantics beyond marker bundles remain roadmap-only)
+- working oneTBB, Taskflow, or stdexec backends — the scaffold seams are dormant
+- preemptive (non-cooperative) cancellation
+- runtime enforcement of the copying policy axis beyond `pb::shared_view` / `pb::unique_clone`
+- async/sender coroutine backends (synchronous `pb::coro::sync_task<T>` is shipped; async backends are future work)
+- a frozen external descriptor/export schema or CLI/file export for arbitrary user pipelines
 - benchmark thresholds or CI-enforced performance budgets
 - MSVC C++23, C++26 feature implementation, Windows package-release, or package-manager ecosystem validation
-- Taskflow, oneTBB, or stdexec backend support
-- C++26 reflection as supported — the adapter scaffold is gated and falls back on C++20 baselines
-- preemptive cancellation or broad backend branch execution
-- fully frozen diagnostics across all future slices
+- C++26 reflection as supported — the adapter scaffold is gated and falls back on C++20
 - a published release or tagged version
 
 ## How to use this map in the docs lane
@@ -214,7 +270,7 @@ That keeps the documentation truthful while the repo continues moving from MVP s
 Use these as the first finite batches when the next 3-agent team resumes:
 
 1. **Core API / diagnostics:** improve one small compile-time diagnostics or metadata ergonomics gap, then add compile-pass/compile-fail evidence.
-2. **Runtime / adapters:** harden one small result/error/observer/adapter edge case, then add targeted runtime coverage.
-3. **Updater / docs:** keep docs, examples, release notes, and this map aligned with the coding batches without promoting roadmap-only features.
+2. **Runtime / adapters:** activate and test a working optional backend (TBB recommended first — the `PB_ENABLE_TBB` CMake hook is already wired) with isolation tests and a matrix evidence run.
+3. **Updater / docs:** rerun cross-compiler validation on HEAD f9cbe26 and update `docs/cross-compiler-validation.md` and the evidence in `research/not done.md`.
 
-The next safe work should continue from shipped MVP surfaces. Preemptive cancellation, dependency-backend fan-in / true backend multi-input join execution beyond the thread-pool slice, broader move-only ownership policies, backend branch execution, and stable descriptor/export compatibility remain separate design/implementation phases, not opportunistic follow-ups inside a routine hardening batch.
+The next safe work should continue from shipped MVP surfaces. Preemptive cancellation, working dependency-backend execution beyond the thread-pool slice, runtime enforcement of the copying policy axis, async/sender coroutine backends, and stable descriptor/export compatibility remain separate design/implementation phases, not opportunistic follow-ups inside a routine hardening batch.
