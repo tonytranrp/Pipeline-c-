@@ -17,6 +17,7 @@
 #include "pb/core/stage_traits.hpp"
 #include "pb/core/validate.hpp"
 #include "pb/core/compile_time_bench.hpp"
+#include "pb/runtime/cancellation.hpp"
 #include "pb/runtime/clone.hpp"
 #include "pb/runtime/descriptor.hpp"
 #include "pb/runtime/backend.hpp"

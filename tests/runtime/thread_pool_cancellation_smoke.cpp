@@ -1,0 +1,226 @@
+/// @file  thread_pool_cancellation_smoke.cpp
+/// @brief Cooperative cancellation for the thread-pool fan-in backend.
+///
+/// Cancellation in this library is COOPERATIVE: a pb::cancellation_source
+/// signals an atomic flag and the fan-in scheduler checks it BEFORE a selected
+/// case stage begins executing. Cases that have not yet started are skipped
+/// (left in the default `skipped` slot state and reported via on_case_skipped)
+/// instead of being run. Truly preemptive interruption of an already-running
+/// stage is out of scope.
+///
+/// This test asserts:
+///   • with a token whose stop is requested before scheduling, every selected
+///     case is reported skipped, its stage never runs, and the run completes
+///     deterministically (no hang / no UB);
+///   • WITHOUT a token (default), the fan-in result matches the normal,
+///     uncancelled result byte-for-byte.
+/// main() returns 0 on success; assertions abort otherwise.
+
+#include <pb/pipeline.hpp>
+
+#include <atomic>
+#include <cstdlib>
+#include <string>
+#include <vector>
+
+namespace {
+
+void require(bool condition) {
+  if (!condition) std::abort();
+}
+
+struct Input {
+  int mask{};
+  int value{};
+};
+
+struct Output {
+  int value{};
+};
+
+struct Done {
+  std::string text{};
+  int ran{};
+};
+
+// Always-selected predicates so every case is a candidate for scheduling.
+struct IsA {
+  using input_type = Input;
+  using output_type = bool;
+  bool operator()(const Input& input) const { return (input.mask & 1) != 0; }
+};
+struct IsB {
+  using input_type = Input;
+  using output_type = bool;
+  bool operator()(const Input& input) const { return (input.mask & 2) != 0; }
+};
+struct IsC {
+  using input_type = Input;
+  using output_type = bool;
+  bool operator()(const Input& input) const { return (input.mask & 4) != 0; }
+};
+
+// Each stage records that it actually executed, so the test can prove a
+// cancelled case stage never ran.
+struct StageA {
+  using input_type = Input;
+  using output_type = Output;
+  static inline std::atomic<int> calls{0};
+  Output operator()(Input input) const {
+    calls.fetch_add(1, std::memory_order_relaxed);
+    return Output{input.value + 10};
+  }
+};
+struct StageB {
+  using input_type = Input;
+  using output_type = Output;
+  static inline std::atomic<int> calls{0};
+  Output operator()(Input input) const {
+    calls.fetch_add(1, std::memory_order_relaxed);
+    return Output{input.value + 100};
+  }
+};
+struct StageC {
+  using input_type = Input;
+  using output_type = Output;
+  static inline std::atomic<int> calls{0};
+  Output operator()(Input input) const {
+    calls.fetch_add(1, std::memory_order_relaxed);
+    return Output{input.value + 1000};
+  }
+};
+
+using CaseA = pb::case_<IsA>::then<StageA>;
+using CaseB = pb::case_<IsB>::then<StageB>;
+using CaseC = pb::case_<IsC>::then<StageC>;
+using FanInInput = pb::fan_in_output_t<CaseA, CaseB, CaseC>;
+
+struct Join {
+  using input_type = FanInInput;
+  using output_type = Done;
+  Done operator()(const FanInInput& input) const {
+    Done out{};
+    auto append = [&](auto& slot, const char* name, int base) {
+      out.text += name;
+      out.text += '=';
+      if (slot.completed()) {
+        out.text += std::to_string(slot.get().value);
+        ++out.ran;
+      } else if (slot.skipped()) {
+        out.text += "skip";
+      } else {
+        out.text += "fail";
+      }
+      out.text += ';';
+      (void)base;
+    };
+    append(input.template get<0>(), "A", 10);
+    append(input.template get<1>(), "B", 100);
+    append(input.template get<2>(), "C", 1000);
+    return out;
+  }
+};
+
+using Pipeline = pb::from<Input>::branch<CaseA, CaseB, CaseC>::fan_in<Join>::to<Done>;
+static_assert(pb::valid<Pipeline>);
+
+struct RecordingObserver : pb::runtime::observer {
+  std::atomic<int> selected{0};
+  std::atomic<int> skipped{0};
+  void on_case_selected(const pb::runtime::stage_id&, std::size_t, const pb::runtime::stage_id&) override {
+    selected.fetch_add(1, std::memory_order_relaxed);
+  }
+  void on_case_skipped(const pb::runtime::stage_id&, std::size_t, const pb::runtime::stage_id&) override {
+    skipped.fetch_add(1, std::memory_order_relaxed);
+  }
+};
+
+void reset_calls() {
+  StageA::calls = 0;
+  StageB::calls = 0;
+  StageC::calls = 0;
+}
+
+} // namespace
+
+int main() {
+  // 1) Baseline: no token (default). All three cases selected and run; the
+  //    result is the normal, uncancelled fan-in output.
+  reset_calls();
+  std::string normal_text;
+  int normal_ran = 0;
+  {
+    auto engine = pb::compile<Pipeline>(pb::runtime::thread_pool_backend{.worker_count = 3});
+    auto result = engine.run(Input{7, 5}); // mask 7 selects A, B, C
+    require(result.has_value());
+    require(result.value().ran == 3);
+    require(result.value().text == "A=15;B=105;C=1005;");
+    require(StageA::calls.load() == 1);
+    require(StageB::calls.load() == 1);
+    require(StageC::calls.load() == 1);
+    normal_text = result.value().text;
+    normal_ran = result.value().ran;
+  }
+
+  // 2) Token supplied but stop NOT requested: must be identical to the default
+  //    (no-token) path.
+  reset_calls();
+  {
+    pb::cancellation_source source;
+    auto engine = pb::compile<Pipeline>(
+        pb::runtime::thread_pool_backend{.worker_count = 3, .cancel = source.token()});
+    auto result = engine.run(Input{7, 5});
+    require(result.has_value());
+    require(result.value().text == normal_text);
+    require(result.value().ran == normal_ran);
+    require(StageA::calls.load() == 1);
+    require(StageB::calls.load() == 1);
+    require(StageC::calls.load() == 1);
+  }
+
+  // 3) Stop requested BEFORE scheduling: every selected case is skipped, no
+  //    case stage executes, and the run completes deterministically.
+  reset_calls();
+  {
+    pb::cancellation_source source;
+    source.request_stop(); // request before scheduling begins
+    require(source.stop_requested());
+
+    RecordingObserver observer;
+    auto engine = pb::compile<Pipeline>(
+        pb::runtime::thread_pool_backend{.worker_count = 3, .cancel = source.token()});
+    engine.set_observer(&observer);
+
+    auto result = engine.run(Input{7, 5});
+    require(result.has_value());
+    // Not-yet-started cases were skipped instead of run.
+    require(result.value().ran == 0);
+    require(result.value().text == "A=skip;B=skip;C=skip;");
+    require(StageA::calls.load() == 0);
+    require(StageB::calls.load() == 0);
+    require(StageC::calls.load() == 0);
+    // None were "selected" for execution; all three reported skipped.
+    require(observer.selected.load() == 0);
+    require(observer.skipped.load() == 3);
+  }
+
+  // 4) Re-run several times with stop requested to prove determinism / no hang.
+  reset_calls();
+  {
+    pb::cancellation_source source;
+    source.request_stop();
+    auto engine = pb::compile<Pipeline>(
+        pb::runtime::thread_pool_backend{.worker_count = 2, .cancel = source.token()});
+    for (int i = 0; i < 32; ++i) {
+      auto result = engine.run(Input{7, i});
+      require(result.has_value());
+      require(result.value().ran == 0);
+      require(result.value().text == "A=skip;B=skip;C=skip;");
+    }
+    require(StageA::calls.load() == 0);
+    require(StageB::calls.load() == 0);
+    require(StageC::calls.load() == 0);
+  }
+
+  return 0;
+}

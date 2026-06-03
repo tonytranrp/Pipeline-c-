@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "pb/runtime/cancellation.hpp"
 #include "pb/runtime/sequential.hpp"
 #include "pb/runtime/thread_pool.hpp"
 
@@ -15,6 +16,13 @@ namespace pb::runtime {
 
 struct thread_pool_backend {
   std::size_t worker_count{std::thread::hardware_concurrency()};
+  /// Optional cooperative cancellation token. A default-constructed token holds
+  /// no flag and is never stopped, so the default backend behaves byte-for-byte
+  /// identically to one without cancellation. When a stopped token is supplied,
+  /// fan-in case stages that have not yet begun executing are skipped instead of
+  /// run. See pb/runtime/cancellation.hpp; cancellation is COOPERATIVE and
+  /// preemptive interruption of an already-running stage is out of scope.
+  pb::cancellation_token cancel{};
 };
 
 namespace policy {
@@ -155,7 +163,7 @@ template <class BranchNode, std::size_t StageIndex, class Input, class Aggregate
           std::size_t CaseIndex, class Case, class... Rest>
 void schedule_fan_in_cases(thread_pool& pool, synchronized_observer& sink, const Input& input,
                            Aggregate& aggregate, std::vector<std::future<result<void>>>& futures,
-                           detail::fan_in_case_tally& tally) {
+                           detail::fan_in_case_tally& tally, const pb::cancellation_token& cancel) {
   using Predicate = typename Case::predicate_type;
   using BranchStage = typename Case::stage_type;
 
@@ -173,19 +181,29 @@ void schedule_fan_in_cases(thread_pool& pool, synchronized_observer& sink, const
     ++tally.failed;
     sink.on_case_failed(branch_id, CaseIndex, predicate_id, predicate_error);
   } else if (predicate_result.value()) {
-    ++tally.selected;
-    sink.on_case_selected(branch_id, CaseIndex, predicate_id);
-    sink.on_fan_in_case_scheduled(branch_id, CaseIndex, branch_stage_id);
-    auto branch_stage = BranchStage{};
-    futures.push_back(enqueue_fan_in_case<BranchNode, BranchStage, decltype(branch_stage), StageIndex, CaseIndex>(
-        pool, std::move(branch_stage), sink, branch_id, input, aggregate));
+    // Cooperative cancellation: when a stop has been requested *before* this
+    // selected case begins executing, skip it rather than scheduling its stage.
+    // A default-constructed token can never be stopped, so this guard keeps the
+    // no-token path byte-for-byte identical to before.
+    if (cancel.stop_requested()) {
+      // Leave the slot in its default `skipped` state and report it as skipped,
+      // reusing the existing skipped-slot mechanism.
+      sink.on_case_skipped(branch_id, CaseIndex, predicate_id);
+    } else {
+      ++tally.selected;
+      sink.on_case_selected(branch_id, CaseIndex, predicate_id);
+      sink.on_fan_in_case_scheduled(branch_id, CaseIndex, branch_stage_id);
+      auto branch_stage = BranchStage{};
+      futures.push_back(enqueue_fan_in_case<BranchNode, BranchStage, decltype(branch_stage), StageIndex, CaseIndex>(
+          pool, std::move(branch_stage), sink, branch_id, input, aggregate));
+    }
   } else {
     sink.on_case_skipped(branch_id, CaseIndex, predicate_id);
   }
 
   if constexpr (sizeof...(Rest) > 0) {
     schedule_fan_in_cases<BranchNode, StageIndex, Input, Aggregate, CaseIndex + 1, Rest...>(
-        pool, sink, input, aggregate, futures, tally);
+        pool, sink, input, aggregate, futures, tally, cancel);
   }
 }
 
@@ -203,6 +221,7 @@ void tally_fan_in_completions(const Aggregate& aggregate, detail::fan_in_case_ta
 
 template <class BranchNode, std::size_t StageIndex, class Input, class... Cases>
 [[nodiscard]] auto run_parallel_fan_in_branch(thread_pool& pool, observer* sink, const Input& input,
+                                             const pb::cancellation_token& cancel,
                                              pb::meta::type_list<Cases...>) -> result<typename BranchNode::output_type> {
   typename BranchNode::output_type aggregate{};
   synchronized_observer synchronized{sink};
@@ -215,7 +234,7 @@ template <class BranchNode, std::size_t StageIndex, class Input, class... Cases>
 
   if constexpr (sizeof...(Cases) > 0) {
     schedule_fan_in_cases<BranchNode, StageIndex, Input, typename BranchNode::output_type, 0, Cases...>(
-        pool, synchronized, input, aggregate, futures, tally);
+        pool, synchronized, input, aggregate, futures, tally, cancel);
   }
 
   auto wait_result = wait_for_fan_in_cases(futures);
@@ -238,9 +257,10 @@ template <class BranchNode, std::size_t StageIndex, class Input, class... Cases>
 }
 
 template <class Stage, std::size_t StageIndex, class Input>
-[[nodiscard]] decltype(auto) invoke_stage(thread_pool& pool, observer* sink, Input&& input) {
+[[nodiscard]] decltype(auto) invoke_stage(thread_pool& pool, observer* sink, const pb::cancellation_token& cancel,
+                                          Input&& input) {
   if constexpr (pb::core::detail::is_fan_in_branch_node<Stage>::value) {
-    return run_parallel_fan_in_branch<Stage, StageIndex>(pool, sink, input, typename Stage::cases{});
+    return run_parallel_fan_in_branch<Stage, StageIndex>(pool, sink, input, cancel, typename Stage::cases{});
   } else if constexpr (pb::core::detail::is_selected_branch_node<Stage>::value) {
     return detail::run_selected_branch<Stage, StageIndex>(sink, std::forward<Input>(input));
   } else if constexpr (detail::stage_declares_type_list_input_v<Stage>) {
@@ -252,10 +272,11 @@ template <class Stage, std::size_t StageIndex, class Input>
 }
 
 template <std::size_t StageIndex, class FinalOutput, class Input, class Stage, class... Rest>
-[[nodiscard]] auto run_stages(thread_pool& pool, observer* sink, Input&& input) -> result<FinalOutput> {
+[[nodiscard]] auto run_stages(thread_pool& pool, observer* sink, const pb::cancellation_token& cancel,
+                              Input&& input) -> result<FinalOutput> {
   try {
     detail::notify_stage_start<Stage>(sink, StageIndex);
-    auto stage_result = invoke_stage<Stage, StageIndex>(pool, sink, std::forward<Input>(input));
+    auto stage_result = invoke_stage<Stage, StageIndex>(pool, sink, cancel, std::forward<Input>(input));
     auto normalized = to_result(std::move(stage_result));
     if (!normalized.has_value()) {
       auto normalized_error = detail::normalize_stage_error<Stage>(StageIndex, std::move(normalized));
@@ -272,7 +293,7 @@ template <std::size_t StageIndex, class FinalOutput, class Input, class Stage, c
       }
     } else {
       return run_stages<StageIndex + 1, FinalOutput, decltype(std::move(normalized).value()), Rest...>(
-          pool, sink, std::move(normalized).value());
+          pool, sink, cancel, std::move(normalized).value());
     }
   } catch (const std::exception& exception) {
     auto stage_error = detail::exception_error<Stage>(StageIndex, exception);
@@ -298,12 +319,18 @@ public:
   using try_result_type = result<Output>;
   using runtime_descriptor_type = decltype(make_descriptor<pipeline_type>());
 
-  explicit thread_pool_engine(thread_pool_backend backend = {}) : pool_{backend.worker_count} {}
+  explicit thread_pool_engine(thread_pool_backend backend = {})
+      : cancel_{backend.cancel}, pool_{backend.worker_count} {}
 
   void set_observer(observer* value) noexcept { observer_ = value; }
   [[nodiscard]] observer* get_observer() const noexcept { return observer_; }
   [[nodiscard]] std::size_t worker_count() const noexcept { return pool_.worker_count(); }
   [[nodiscard]] constexpr auto descriptor() const noexcept -> runtime_descriptor_type { return make_descriptor<pipeline_type>(); }
+
+  /// Replace the cooperative cancellation token used by subsequent runs. A
+  /// default-constructed token (the default) is never stopped.
+  void set_cancellation_token(pb::cancellation_token token) noexcept { cancel_ = std::move(token); }
+  [[nodiscard]] const pb::cancellation_token& cancellation_token() const noexcept { return cancel_; }
 
   [[nodiscard]] auto run(Input input) -> result<Output> { return try_run(std::move(input)); }
 
@@ -311,12 +338,13 @@ public:
     if constexpr (sizeof...(Stages) == 0) {
       return result<Output>{std::move(input)};
     } else {
-      return run_stages<0, Output, Input, Stages...>(pool_, observer_, std::move(input));
+      return run_stages<0, Output, Input, Stages...>(pool_, observer_, cancel_, std::move(input));
     }
   }
 
 private:
   observer* observer_{nullptr};
+  pb::cancellation_token cancel_{};
   thread_pool pool_;
 };
 

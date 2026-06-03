@@ -100,6 +100,7 @@ add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers/runtime_fan_in_error.cpp
   compile_pass/public_headers/adapt_coroutine.cpp
   compile_pass/public_headers/runtime_sequential.cpp
+  compile_pass/public_headers/runtime_cancellation.cpp
   compile_pass/public_headers/runtime_observer.cpp
   compile_pass/public_headers/runtime_trace.cpp
   compile_pass/public_headers/export_dot.cpp
@@ -149,6 +150,12 @@ target_link_libraries(pb_runtime_thread_pool_fan_in_stress_smoke PRIVATE pb::pip
 pb_apply_project_options(pb_runtime_thread_pool_fan_in_stress_smoke PRIVATE)
 add_test(NAME pb_runtime_thread_pool_fan_in_stress_smoke COMMAND pb_runtime_thread_pool_fan_in_stress_smoke)
 set_tests_properties(pb_runtime_thread_pool_fan_in_stress_smoke PROPERTIES LABELS "runtime;branch;fan-in;thread-pool;stress")
+
+add_executable(pb_runtime_thread_pool_cancellation_smoke runtime/thread_pool_cancellation_smoke.cpp)
+target_link_libraries(pb_runtime_thread_pool_cancellation_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_thread_pool_cancellation_smoke PRIVATE)
+add_test(NAME pb_runtime_thread_pool_cancellation_smoke COMMAND pb_runtime_thread_pool_cancellation_smoke)
+set_tests_properties(pb_runtime_thread_pool_cancellation_smoke PROPERTIES LABELS "runtime;branch;fan-in;thread-pool;cancellation")
 
 add_executable(pb_runtime_sequential_policy_dsl_smoke runtime/sequential_policy_dsl_smoke.cpp)
 target_link_libraries(pb_runtime_sequential_policy_dsl_smoke PRIVATE pb::pipeline)
