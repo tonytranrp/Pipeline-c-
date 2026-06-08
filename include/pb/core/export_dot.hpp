@@ -1,10 +1,11 @@
 #pragma once
 
 #include <cstddef>
-#include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 
+#include "pb/core/detail/string_sink.hpp"
 #include "pb/core/pipeline_state.hpp"
 #include "pb/runtime/descriptor.hpp"
 
@@ -57,7 +58,7 @@ namespace detail {
   return output;
 }
 
-inline void append_dot_label(std::ostringstream& stream, std::string_view value) {
+inline void append_dot_label(string_sink& stream, std::string_view value) {
   stream << '"' << escape_dot_label(value) << '"';
 }
 
@@ -76,7 +77,7 @@ inline constexpr bool pipeline_has_branch_v =
 
 // ── Branch case DOT rendering ───────────────────────────────────────────────
 
-inline void append_branch_case_subgraph(std::ostringstream& stream,
+inline void append_branch_case_subgraph(string_sink& stream,
                                         const pb::runtime::descriptor_branch_case_record& branch_case) {
   const auto branch_index = branch_case.branch_stage_index;
   const auto case_index = branch_case.case_index;
@@ -107,7 +108,7 @@ inline void append_branch_case_subgraph(std::ostringstream& stream,
 }
 
 template <class Descriptor>
-void append_branch_stage_dot(std::ostringstream& stream, const Descriptor& descriptor, std::size_t stage_index) {
+void append_branch_stage_dot(string_sink& stream, const Descriptor& descriptor, std::size_t stage_index) {
   const auto& branch_stage = descriptor.stage_records()[stage_index];
   stream << "  branch_" << stage_index << " [shape=diamond, label=";
   append_dot_label(stream, branch_stage.topology == pb::runtime::descriptor_topology::fan_in ? "fan_in" : "branch");
@@ -134,7 +135,7 @@ struct dot_emitter<Pipeline, false> {
   [[nodiscard]] static auto emit(std::string_view graph_name) -> std::string {
     constexpr auto descriptor = pb::runtime::make_descriptor<Pipeline>();
 
-    std::ostringstream stream;
+    string_sink stream;
     stream << "digraph " << detail::sanitize_identifier(graph_name) << " {\n";
     stream << "  rankdir=LR;\n";
     stream << "  node [shape=box];\n\n";
@@ -164,7 +165,7 @@ struct dot_emitter<Pipeline, false> {
     }
 
     stream << "}\n";
-    return stream.str();
+    return std::move(stream).str();
   }
 };
 
@@ -176,7 +177,7 @@ struct dot_emitter<Pipeline, true> {
 
   [[nodiscard]] static auto emit(std::string_view graph_name) -> std::string {
     constexpr auto descriptor = pb::runtime::make_descriptor<Pipeline>();
-    std::ostringstream stream;
+    string_sink stream;
     stream << "digraph " << detail::sanitize_identifier(graph_name) << " {\n";
     stream << "  rankdir=LR;\n";
     stream << "  node [shape=box];\n\n";
@@ -198,7 +199,7 @@ struct dot_emitter<Pipeline, true> {
     emit_all_edges(stream, descriptor);
 
     stream << "}\n";
-    return stream.str();
+    return std::move(stream).str();
   }
 
 private:
@@ -209,13 +210,13 @@ private:
            stage.topology == pb::runtime::descriptor_topology::fan_in;
   }
 
-  static void emit_stages(std::ostringstream& stream, const descriptor_type& descriptor) {
+  static void emit_stages(string_sink& stream, const descriptor_type& descriptor) {
     for (const auto& stage : descriptor.stage_records()) {
       emit_single_stage(stream, descriptor, stage);
     }
   }
 
-  static void emit_single_stage(std::ostringstream& stream, const descriptor_type& descriptor,
+  static void emit_single_stage(string_sink& stream, const descriptor_type& descriptor,
                                 const pb::runtime::descriptor_stage_record& stage) {
     if (is_branch_stage(stage)) {
       detail::append_branch_stage_dot(stream, descriptor, stage.index);
@@ -236,7 +237,7 @@ private:
 
   // ── Edge emission ────────────────────────────────────────────
 
-  static void emit_all_edges(std::ostringstream& stream, const descriptor_type& descriptor) {
+  static void emit_all_edges(string_sink& stream, const descriptor_type& descriptor) {
     // Input -> first stage
     emit_input_to_first_edge(stream, descriptor);
 
@@ -247,7 +248,7 @@ private:
     emit_last_to_output_edge(stream, descriptor);
   }
 
-  static void emit_input_to_first_edge(std::ostringstream& stream, const descriptor_type& descriptor) {
+  static void emit_input_to_first_edge(string_sink& stream, const descriptor_type& descriptor) {
     if constexpr (stage_count > 0) {
       if (is_branch_stage(descriptor.stage_records()[0])) {
         stream << "  from_input -> branch_0;\n";
@@ -259,13 +260,13 @@ private:
     }
   }
 
-  static void emit_adjacent_edges(std::ostringstream& stream, const descriptor_type& descriptor) {
+  static void emit_adjacent_edges(string_sink& stream, const descriptor_type& descriptor) {
     for (std::size_t index = 0; index + 1 < stage_count; ++index) {
       emit_adjacent_edge(stream, descriptor, index);
     }
   }
 
-  static void emit_adjacent_edge(std::ostringstream& stream, const descriptor_type& descriptor, std::size_t index) {
+  static void emit_adjacent_edge(string_sink& stream, const descriptor_type& descriptor, std::size_t index) {
     if (index + 1 < stage_count) {
       const auto& current_stage = descriptor.stage_records()[index];
       const auto& next_stage = descriptor.stage_records()[index + 1];
@@ -283,7 +284,7 @@ private:
     }
   }
 
-  static void emit_branch_to_next_edges(std::ostringstream& stream, const descriptor_type& descriptor,
+  static void emit_branch_to_next_edges(string_sink& stream, const descriptor_type& descriptor,
                                         std::size_t branch_index, bool next_is_branch) {
     for (const auto& branch_case : descriptor.branch_case_records()) {
       if (branch_case.branch_stage_index != branch_index) {
@@ -298,7 +299,7 @@ private:
     }
   }
 
-  static void emit_last_to_output_edge(std::ostringstream& stream, const descriptor_type& descriptor) {
+  static void emit_last_to_output_edge(string_sink& stream, const descriptor_type& descriptor) {
     if constexpr (stage_count > 0) {
       if (is_branch_stage(descriptor.stage_records()[stage_count - 1])) {
         emit_branch_to_output_edges(stream, descriptor);
@@ -308,7 +309,7 @@ private:
     }
   }
 
-  static void emit_branch_to_output_edges(std::ostringstream& stream, const descriptor_type& descriptor) {
+  static void emit_branch_to_output_edges(string_sink& stream, const descriptor_type& descriptor) {
     constexpr auto branch_index = stage_count - 1;
     for (const auto& branch_case : descriptor.branch_case_records()) {
       if (branch_case.branch_stage_index == branch_index) {

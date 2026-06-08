@@ -17,6 +17,13 @@
 
 namespace pb::runtime {
 
+class thread_pool;
+
+namespace detail_thread_pool {
+template <class F>
+void post_trusted(thread_pool& pool, F&& f);
+} // namespace detail_thread_pool
+
 struct thread_pool_snapshot {
   std::size_t worker_count{};
   std::size_t pending_tasks{};
@@ -31,6 +38,9 @@ struct thread_pool_snapshot {
 
 class thread_pool {
   class active_task_guard;
+
+  template <class F>
+  friend void detail_thread_pool::post_trusted(thread_pool& pool, F&& f);
 
 public:
   explicit thread_pool(std::size_t num_threads = std::thread::hardware_concurrency()) {
@@ -154,6 +164,18 @@ public:
   [[nodiscard]] std::size_t worker_count() const noexcept { return workers_.size(); }
 
 private:
+  template <class F>
+  void post(F&& f) {
+    {
+      std::unique_lock lock(mutex_);
+      if (stop_) {
+        throw std::runtime_error("post on stopped thread_pool");
+      }
+      tasks_.emplace(std::forward<F>(f));
+    }
+    cv_.notify_one();
+  }
+
   class active_task_guard {
   public:
     explicit active_task_guard(thread_pool& owner) noexcept : owner_{owner}, previous_pool_{current_pool_} {
@@ -202,6 +224,15 @@ private:
   bool stop_{false};
   static inline thread_local const thread_pool* current_pool_{nullptr};
 };
+
+namespace detail_thread_pool {
+
+template <class F>
+void post_trusted(thread_pool& pool, F&& f) {
+  pool.post(std::forward<F>(f));
+}
+
+} // namespace detail_thread_pool
 
 } // namespace pb::runtime
 

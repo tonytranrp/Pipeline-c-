@@ -1,10 +1,11 @@
 #pragma once
 
 #include <cstddef>
-#include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 
+#include "pb/core/detail/string_sink.hpp"
 #include "pb/core/describe.hpp"
 
 namespace pb::runtime {
@@ -34,7 +35,7 @@ template <core::ValidPipeline Pipeline>
 [[nodiscard]] auto to_dot(std::string_view graph_name = "pipeline") -> std::string {
   constexpr auto descriptor = core::describe<Pipeline>();
 
-  std::ostringstream stream;
+  pb::core::detail::string_sink stream;
   stream << "digraph " << detail::sanitize_identifier(graph_name) << " {\n";
   stream << "  rankdir=LR;\n";
   stream << "  node [shape=box];\n\n";
@@ -57,7 +58,7 @@ template <core::ValidPipeline Pipeline>
   }
 
   stream << "}\n";
-  return stream.str();
+  return std::move(stream).str();
 }
 
 } // namespace pb::runtime

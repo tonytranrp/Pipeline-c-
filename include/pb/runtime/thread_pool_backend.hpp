@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <condition_variable>
 #include <cstddef>
 #include <exception>
 #include <memory>
@@ -124,62 +125,121 @@ private:
   std::mutex mutex_{};
 };
 
-template <class BranchNode, class BranchStage, class BranchStageObject, std::size_t StageIndex,
-          std::size_t CaseIndex, class Input, class Aggregate>
-[[nodiscard]] auto enqueue_fan_in_case(thread_pool& pool, BranchStageObject&& branch_stage, synchronized_observer& sink,
-                                       const stage_id& branch_id, const Input& input, Aggregate& aggregate) {
-  auto branch_stage_id = detail::branch_child_stage_id<BranchNode, BranchStage>(StageIndex, CaseIndex, "stage");
-  if constexpr (std::copy_constructible<Input>) {
-    return pool.enqueue([stage = std::forward<BranchStageObject>(branch_stage), &sink, branch_id, branch_stage_id,
-                         &aggregate, input_copy = Input{input}]() mutable {
-      auto stage_result = detail::run_fan_in_case_stage<BranchNode, BranchStage, decltype(stage), StageIndex, CaseIndex>(
-          stage, &sink, branch_id, input_copy, aggregate);
-      const bool case_succeeded = !aggregate.template get<CaseIndex>().failed();
-      sink.on_fan_in_case_completed(branch_id, CaseIndex, branch_stage_id, case_succeeded);
-      return stage_result;
-    });
-  } else {
-    return pool.enqueue([stage = std::forward<BranchStageObject>(branch_stage), &sink, branch_id, branch_stage_id,
-                         &aggregate, input_ptr = &input]() mutable {
-      auto stage_result = detail::run_fan_in_case_stage<BranchNode, BranchStage, decltype(stage), StageIndex, CaseIndex>(
-          stage, &sink, branch_id, *input_ptr, aggregate);
-      const bool case_succeeded = !aggregate.template get<CaseIndex>().failed();
-      sink.on_fan_in_case_completed(branch_id, CaseIndex, branch_stage_id, case_succeeded);
-      return stage_result;
-    });
+class fan_in_task_group_state {
+public:
+  void add() {
+    const std::scoped_lock lock{mutex_};
+    ++pending_;
   }
-}
 
-template <class Futures>
-[[nodiscard]] auto wait_for_fan_in_cases(Futures& futures) -> result<void> {
-  std::optional<error> first_error;
-  for (auto& future : futures) {
-    try {
-      auto case_result = future.get();
-      if (!case_result.has_value() && !first_error.has_value()) {
-        first_error = std::move(case_result).error();
+  void finish(result<void> outcome) {
+    {
+      const std::scoped_lock lock{mutex_};
+      if (!outcome.has_value() && !first_error_.has_value()) {
+        first_error_ = std::move(outcome).error();
       }
-    } catch (const std::exception& exception) {
-      if (!first_error.has_value()) {
-        first_error = error{.category = error_category::exception, .message = exception.what()};
-      }
-    } catch (...) {
-      if (!first_error.has_value()) {
-        first_error = error{.category = error_category::exception,
-                            .message = "unknown thread-pool fan-in task failure"};
+      if (pending_ > 0) {
+        --pending_;
       }
     }
+    cv_.notify_one();
   }
-  if (first_error.has_value()) {
-    return result<void>{std::move(*first_error)};
+
+  [[nodiscard]] auto wait() -> result<void> {
+    std::unique_lock lock{mutex_};
+    cv_.wait(lock, [this] { return pending_ == 0; });
+    if (first_error_.has_value()) {
+      return result<void>{std::move(*first_error_)};
+    }
+    return {};
   }
-  return {};
+
+private:
+  std::mutex mutex_{};
+  std::condition_variable cv_{};
+  std::size_t pending_{0};
+  std::optional<error> first_error_{};
+};
+
+class fan_in_task_group {
+public:
+  [[nodiscard]] auto state() const noexcept -> std::shared_ptr<fan_in_task_group_state> {
+    return state_;
+  }
+
+  [[nodiscard]] auto wait() -> result<void> {
+    return state_->wait();
+  }
+
+private:
+  std::shared_ptr<fan_in_task_group_state> state_{std::make_shared<fan_in_task_group_state>()};
+};
+
+template <class BranchNode, class BranchStage, class BranchStageObject, std::size_t StageIndex,
+          std::size_t CaseIndex, class Input, class Aggregate>
+void post_fan_in_case(thread_pool& pool, BranchStageObject&& branch_stage, synchronized_observer& sink,
+                      fan_in_task_group& group, const stage_id& branch_id, const Input& input, Aggregate& aggregate) {
+  auto branch_stage_id = detail::branch_child_stage_id<BranchNode, BranchStage>(StageIndex, CaseIndex, "stage");
+  auto group_state = group.state();
+  group_state->add();
+  auto finish_with_exception = [group_state](std::string_view fallback) {
+    try {
+      throw;
+    } catch (const std::exception& exception) {
+      group_state->finish(result<void>{error{.category = error_category::exception, .message = exception.what()}});
+    } catch (...) {
+      group_state->finish(result<void>{error{.category = error_category::exception, .message = std::string{fallback}}});
+    }
+  };
+  if constexpr (std::copy_constructible<Input>) {
+    try {
+      post_trusted(pool, [stage = std::forward<BranchStageObject>(branch_stage), &sink, group_state, branch_id,
+                          branch_stage_id, &aggregate, input_copy = Input{input}]() mutable {
+        try {
+          auto stage_result =
+              detail::run_fan_in_case_stage<BranchNode, BranchStage, decltype(stage), StageIndex, CaseIndex>(
+                  stage, &sink, branch_id, input_copy, aggregate);
+          const bool case_succeeded = !aggregate.template get<CaseIndex>().failed();
+          sink.on_fan_in_case_completed(branch_id, CaseIndex, branch_stage_id, case_succeeded);
+          group_state->finish(std::move(stage_result));
+        } catch (const std::exception& exception) {
+          group_state->finish(result<void>{error{.category = error_category::exception, .message = exception.what()}});
+        } catch (...) {
+          group_state->finish(result<void>{error{.category = error_category::exception,
+                                                 .message = "unknown thread-pool fan-in task failure"}});
+        }
+      });
+    } catch (...) {
+      finish_with_exception("unknown thread-pool fan-in scheduling failure");
+    }
+  } else {
+    try {
+      post_trusted(pool, [stage = std::forward<BranchStageObject>(branch_stage), &sink, group_state, branch_id,
+                          branch_stage_id, &aggregate, input_ptr = &input]() mutable {
+        try {
+          auto stage_result =
+              detail::run_fan_in_case_stage<BranchNode, BranchStage, decltype(stage), StageIndex, CaseIndex>(
+                  stage, &sink, branch_id, *input_ptr, aggregate);
+          const bool case_succeeded = !aggregate.template get<CaseIndex>().failed();
+          sink.on_fan_in_case_completed(branch_id, CaseIndex, branch_stage_id, case_succeeded);
+          group_state->finish(std::move(stage_result));
+        } catch (const std::exception& exception) {
+          group_state->finish(result<void>{error{.category = error_category::exception, .message = exception.what()}});
+        } catch (...) {
+          group_state->finish(result<void>{error{.category = error_category::exception,
+                                                 .message = "unknown thread-pool fan-in task failure"}});
+        }
+      });
+    } catch (...) {
+      finish_with_exception("unknown thread-pool fan-in scheduling failure");
+    }
+  }
 }
 
 template <class BranchNode, std::size_t StageIndex, class Input, class Aggregate,
           std::size_t CaseIndex, class Case, class... Rest>
 void schedule_fan_in_cases(thread_pool& pool, synchronized_observer& sink, const Input& input,
-                           Aggregate& aggregate, std::vector<std::future<result<void>>>& futures,
+                           Aggregate& aggregate, fan_in_task_group& group,
                            detail::fan_in_case_tally& tally, const pb::cancellation_token& cancel) {
   using Predicate = typename Case::predicate_type;
   using BranchStage = typename Case::stage_type;
@@ -211,8 +271,8 @@ void schedule_fan_in_cases(thread_pool& pool, synchronized_observer& sink, const
       sink.on_case_selected(branch_id, CaseIndex, predicate_id);
       sink.on_fan_in_case_scheduled(branch_id, CaseIndex, branch_stage_id);
       auto branch_stage = BranchStage{};
-      futures.push_back(enqueue_fan_in_case<BranchNode, BranchStage, decltype(branch_stage), StageIndex, CaseIndex>(
-          pool, std::move(branch_stage), sink, branch_id, input, aggregate));
+      post_fan_in_case<BranchNode, BranchStage, decltype(branch_stage), StageIndex, CaseIndex>(
+          pool, std::move(branch_stage), sink, group, branch_id, input, aggregate);
     }
   } else {
     sink.on_case_skipped(branch_id, CaseIndex, predicate_id);
@@ -220,7 +280,7 @@ void schedule_fan_in_cases(thread_pool& pool, synchronized_observer& sink, const
 
   if constexpr (sizeof...(Rest) > 0) {
     schedule_fan_in_cases<BranchNode, StageIndex, Input, Aggregate, CaseIndex + 1, Rest...>(
-        pool, sink, input, aggregate, futures, tally, cancel);
+        pool, sink, input, aggregate, group, tally, cancel);
   }
 }
 
@@ -242,8 +302,7 @@ template <class BranchNode, std::size_t StageIndex, class Input, class... Cases>
                                              pb::meta::type_list<Cases...>) -> result<typename BranchNode::output_type> {
   typename BranchNode::output_type aggregate{};
   synchronized_observer synchronized{sink};
-  std::vector<std::future<result<void>>> futures;
-  futures.reserve(sizeof...(Cases));
+  fan_in_task_group group{};
 
   auto branch_id = detail::stage_id_for<BranchNode>(StageIndex);
   synchronized.on_fan_in_started(branch_id, sizeof...(Cases));
@@ -251,10 +310,10 @@ template <class BranchNode, std::size_t StageIndex, class Input, class... Cases>
 
   if constexpr (sizeof...(Cases) > 0) {
     schedule_fan_in_cases<BranchNode, StageIndex, Input, typename BranchNode::output_type, 0, Cases...>(
-        pool, synchronized, input, aggregate, futures, tally, cancel);
+        pool, synchronized, input, aggregate, group, tally, cancel);
   }
 
-  auto wait_result = wait_for_fan_in_cases(futures);
+  auto wait_result = group.wait();
 
   // Each selected case marked its slot as completed or failed in its worker
   // task.  The selected count and the predicate-failure failures were tallied

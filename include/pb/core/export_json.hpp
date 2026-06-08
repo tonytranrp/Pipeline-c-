@@ -1,10 +1,8 @@
 #pragma once
 
 #include <cstddef>
-#include <sstream>
 #include <string>
 #include <string_view>
-#include <type_traits>
 
 #include "pb/core/pipeline_state.hpp"
 #include "pb/runtime/descriptor.hpp"
@@ -13,44 +11,46 @@ namespace pb::core {
 
 namespace detail {
 
-inline void append_json_string(std::ostringstream& stream, std::string_view value) {
+inline void append_json_string(std::string& output, std::string_view value) {
   constexpr auto hex_digits = std::string_view{"0123456789abcdef"};
 
-  stream << '"';
+  output.push_back('"');
   for (const auto ch : value) {
     const auto byte = static_cast<unsigned char>(ch);
     switch (ch) {
     case '"':
-      stream << "\\\"";
+      output += "\\\"";
       break;
     case '\\':
-      stream << "\\\\";
+      output += "\\\\";
       break;
     case '\b':
-      stream << "\\b";
+      output += "\\b";
       break;
     case '\f':
-      stream << "\\f";
+      output += "\\f";
       break;
     case '\n':
-      stream << "\\n";
+      output += "\\n";
       break;
     case '\r':
-      stream << "\\r";
+      output += "\\r";
       break;
     case '\t':
-      stream << "\\t";
+      output += "\\t";
       break;
     default:
       if (byte < 0x20U) {
-        stream << "\\u00" << hex_digits[(byte >> 4U) & 0x0FU] << hex_digits[byte & 0x0FU];
+        output += "\\u00";
+        output.push_back(hex_digits[(byte >> 4U) & 0x0FU]);
+        output.push_back(hex_digits[byte & 0x0FU]);
       } else {
-        stream << ch;
+        output.push_back(ch);
       }
       break;
     }
   }
-  stream << '"';
+  output.push_back('"');
 }
 
 [[nodiscard]] inline auto branch_case_label_or_index(
@@ -61,95 +61,104 @@ inline void append_json_string(std::ostringstream& stream, std::string_view valu
   return std::to_string(branch_case.case_index);
 }
 
-inline void append_branch_case_json(std::ostringstream& stream,
+inline void append_branch_case_json(std::string& output,
                                     const pb::runtime::descriptor_branch_case_record& branch_case) {
-  stream << "{\"index\":" << branch_case.case_index << ",\"case_id\":";
-  append_json_string(stream, branch_case.case_id);
-  stream << ",\"case_key\":";
-  append_json_string(stream, branch_case.case_key);
-  stream << ",\"case_label\":";
-  append_json_string(stream, branch_case_label_or_index(branch_case));
-  stream << ",\"predicate_node_id\":";
-  append_json_string(stream, branch_case.predicate_node_id);
-  stream << ",\"stage_node_id\":";
-  append_json_string(stream, branch_case.stage_node_id);
-  stream << ",\"predicate_key\":";
-  append_json_string(stream, branch_case.predicate_key);
-  stream << ",\"predicate_name\":";
-  append_json_string(stream, branch_case.predicate_name);
-  stream << ",\"stage_key\":";
-  append_json_string(stream, branch_case.stage_key);
-  stream << ",\"stage_name\":";
-  append_json_string(stream, branch_case.stage_name);
-  stream << ",\"predicate_edge\":{\"from\":\"branch\",\"to\":\"predicate\",\"style\":\"dashed\",\"label\":\"test\"}";
-  stream << ",\"stage_edge\":{\"from\":\"predicate\",\"to\":\"case_stage\"}";
-  stream << "}";
+  output += "{\"index\":";
+  output += std::to_string(branch_case.case_index);
+  output += ",\"case_id\":";
+  append_json_string(output, branch_case.case_id);
+  output += ",\"case_key\":";
+  append_json_string(output, branch_case.case_key);
+  output += ",\"case_label\":";
+  append_json_string(output, branch_case_label_or_index(branch_case));
+  output += ",\"predicate_node_id\":";
+  append_json_string(output, branch_case.predicate_node_id);
+  output += ",\"stage_node_id\":";
+  append_json_string(output, branch_case.stage_node_id);
+  output += ",\"predicate_key\":";
+  append_json_string(output, branch_case.predicate_key);
+  output += ",\"predicate_name\":";
+  append_json_string(output, branch_case.predicate_name);
+  output += ",\"stage_key\":";
+  append_json_string(output, branch_case.stage_key);
+  output += ",\"stage_name\":";
+  append_json_string(output, branch_case.stage_name);
+  output += ",\"predicate_edge\":{\"from\":\"branch\",\"to\":\"predicate\",\"style\":\"dashed\",\"label\":\"test\"}";
+  output += ",\"stage_edge\":{\"from\":\"predicate\",\"to\":\"case_stage\"}";
+  output += "}";
 }
 
 template <class Descriptor>
-void append_branch_cases_json(std::ostringstream& stream, const Descriptor& descriptor, std::size_t branch_stage_index) {
-  stream << ",\"branch_cases\":[";
+void append_branch_cases_json(std::string& output, const Descriptor& descriptor, std::size_t branch_stage_index) {
+  output += ",\"branch_cases\":[";
   bool first_case = true;
   for (const auto& branch_case : descriptor.branch_case_records()) {
     if (branch_case.branch_stage_index != branch_stage_index) {
       continue;
     }
     if (!first_case) {
-      stream << ",";
+      output.push_back(',');
     }
     first_case = false;
-    append_branch_case_json(stream, branch_case);
+    append_branch_case_json(output, branch_case);
   }
-  stream << "]";
+  output.push_back(']');
 }
 
 template <class Descriptor>
-void append_stage_kind_json(std::ostringstream& stream, const Descriptor& descriptor,
+void append_stage_kind_json(std::string& output, const Descriptor& descriptor,
                             const pb::runtime::descriptor_stage_record& stage) {
   if (stage.topology == pb::runtime::descriptor_topology::branch ||
       stage.topology == pb::runtime::descriptor_topology::fan_in) {
-    stream << ",\"kind\":";
-    append_json_string(stream, stage.topology == pb::runtime::descriptor_topology::fan_in ? "fan_in" : "branch");
-    append_branch_cases_json(stream, descriptor, stage.index);
+    output += ",\"kind\":";
+    append_json_string(output, stage.topology == pb::runtime::descriptor_topology::fan_in ? "fan_in" : "branch");
+    append_branch_cases_json(output, descriptor, stage.index);
   } else {
-    stream << ",\"kind\":\"stage\"";
+    output += ",\"kind\":\"stage\"";
   }
 }
 
 template <class Descriptor>
-void append_graph_stage_json(std::ostringstream& stream, const Descriptor& descriptor,
+void append_graph_stage_json(std::string& output, const Descriptor& descriptor,
                              const pb::runtime::descriptor_stage_record& stage) {
-  stream << "{\"index\":" << stage.index << ",\"key\":";
-  append_json_string(stream, stage.key);
-  stream << ",\"name\":";
-  append_json_string(stream, stage.name);
-  append_stage_kind_json(stream, descriptor, stage);
-  stream << "}";
+  output += "{\"index\":";
+  output += std::to_string(stage.index);
+  output += ",\"key\":";
+  append_json_string(output, stage.key);
+  output += ",\"name\":";
+  append_json_string(output, stage.name);
+  append_stage_kind_json(output, descriptor, stage);
+  output += "}";
 }
 
 template <class Descriptor>
-void append_graph_stages_json(std::ostringstream& stream, const Descriptor& descriptor) {
+void append_graph_stages_json(std::string& output, const Descriptor& descriptor) {
   bool first_stage = true;
   for (const auto& stage : descriptor.stage_records()) {
     if (!first_stage) {
-      stream << ",";
+      output.push_back(',');
     }
     first_stage = false;
-    append_graph_stage_json(stream, descriptor, stage);
+    append_graph_stage_json(output, descriptor, stage);
   }
 }
 
-inline void append_graph_edge_json(std::ostringstream& stream, const pb::runtime::descriptor_edge_record& edge) {
-  stream << "{\"index\":" << edge.index << ",\"from_stage_index\":" << edge.from_stage_index
-         << ",\"to_stage_index\":" << edge.to_stage_index << ",\"from_key\":";
-  append_json_string(stream, edge.from_key);
-  stream << ",\"from_name\":";
-  append_json_string(stream, edge.from_name);
-  stream << ",\"to_key\":";
-  append_json_string(stream, edge.to_key);
-  stream << ",\"to_name\":";
-  append_json_string(stream, edge.to_name);
-  stream << "}";
+inline void append_graph_edge_json(std::string& output, const pb::runtime::descriptor_edge_record& edge) {
+  output += "{\"index\":";
+  output += std::to_string(edge.index);
+  output += ",\"from_stage_index\":";
+  output += std::to_string(edge.from_stage_index);
+  output += ",\"to_stage_index\":";
+  output += std::to_string(edge.to_stage_index);
+  output += ",\"from_key\":";
+  append_json_string(output, edge.from_key);
+  output += ",\"from_name\":";
+  append_json_string(output, edge.from_name);
+  output += ",\"to_key\":";
+  append_json_string(output, edge.to_key);
+  output += ",\"to_name\":";
+  append_json_string(output, edge.to_name);
+  output += "}";
 }
 
 } // namespace detail
@@ -163,25 +172,29 @@ template <ValidPipeline Pipeline>
                                        ? std::string_view{"branch"}
                                        : std::string_view{"linear"});
 
-  std::ostringstream stream;
-  stream << "{\"schema_version\":\"pb.core.graph.v1\",\"topology\":";
-  detail::append_json_string(stream, topology);
-  stream << ",\"stage_count\":"
-         << descriptor.stage_count << ",\"edge_count\":" << descriptor.edge_count << ",\"stages\":[";
-  detail::append_graph_stages_json(stream, descriptor);
-  stream << "],\"edges\":[";
+  std::string output;
+  output.reserve(128U + (descriptor.stage_count * 96U) + (descriptor.edge_count * 96U));
+  output += "{\"schema_version\":\"pb.core.graph.v1\",\"topology\":";
+  detail::append_json_string(output, topology);
+  output += ",\"stage_count\":";
+  output += std::to_string(descriptor.stage_count);
+  output += ",\"edge_count\":";
+  output += std::to_string(descriptor.edge_count);
+  output += ",\"stages\":[";
+  detail::append_graph_stages_json(output, descriptor);
+  output += "],\"edges\":[";
 
   bool first_edge = true;
   for (const auto& edge : descriptor.edge_records()) {
     if (!first_edge) {
-      stream << ",";
+      output.push_back(',');
     }
     first_edge = false;
-    detail::append_graph_edge_json(stream, edge);
+    detail::append_graph_edge_json(output, edge);
   }
 
-  stream << "]}";
-  return stream.str();
+  output += "]}";
+  return output;
 }
 
 } // namespace pb::core

@@ -1089,6 +1089,12 @@ public:
   template <class Iterator, class Sentinel>
   [[nodiscard]] auto try_run_range(Iterator first, Sentinel last) const -> std::vector<result<Output>> {
     std::vector<result<Output>> results;
+    if constexpr (std::sized_sentinel_for<Sentinel, Iterator>) {
+      const auto count = last - first;
+      if (count > 0) {
+        results.reserve(static_cast<std::size_t>(count));
+      }
+    }
     for (; first != last; ++first) {
       results.push_back(try_run(Input{*first}));
     }

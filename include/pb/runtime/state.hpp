@@ -404,6 +404,12 @@ public:
     requires (!std::same_as<StoragePolicy, policy::state::borrowed>)
   {
     std::vector<try_result_type> results;
+    if constexpr (std::sized_sentinel_for<Sentinel, Iterator>) {
+      const auto count = last - first;
+      if (count > 0) {
+        results.reserve(static_cast<std::size_t>(count));
+      }
+    }
     for (; first != last; ++first) {
       results.push_back(try_run(input_type{*first}));
     }
@@ -454,6 +460,12 @@ public:
   [[nodiscard]] auto try_run_range_with_state(Iterator first, Sentinel last, State& state)
       -> std::vector<try_result_type> {
     std::vector<try_result_type> results;
+    if constexpr (std::sized_sentinel_for<Sentinel, Iterator>) {
+      const auto count = last - first;
+      if (count > 0) {
+        results.reserve(static_cast<std::size_t>(count));
+      }
+    }
     for (; first != last; ++first) {
       results.push_back(try_run_with_state(input_type{*first}, state));
     }

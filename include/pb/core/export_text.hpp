@@ -1,10 +1,11 @@
 #pragma once
 
 #include <cstddef>
-#include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 
+#include "pb/core/detail/string_sink.hpp"
 #include "pb/core/pipeline_state.hpp"
 #include "pb/core/validate.hpp"
 #include "pb/runtime/descriptor.hpp"
@@ -45,7 +46,7 @@ namespace detail {
   }
 }
 
-inline void append_stage_text(std::ostringstream& stream,
+inline void append_stage_text(string_sink& stream,
                               const pb::runtime::descriptor_stage_record& stage) {
   stream << "[" << stage.index << "] " << stage.key;
   if (!stage.name.empty() && stage.name != stage.key) {
@@ -54,7 +55,7 @@ inline void append_stage_text(std::ostringstream& stream,
   stream << "\n";
 }
 
-inline void append_branch_cases_text(std::ostringstream& stream, std::size_t stage_index,
+inline void append_branch_cases_text(string_sink& stream, std::size_t stage_index,
                                      const auto& branch_case_records) {
   for (const auto& record : branch_case_records) {
     if (record.branch_stage_index != stage_index) continue;
@@ -67,7 +68,7 @@ inline void append_branch_cases_text(std::ostringstream& stream, std::size_t sta
   }
 }
 
-inline void append_edge_text(std::ostringstream& stream,
+inline void append_edge_text(string_sink& stream,
                              const pb::runtime::descriptor_edge_record& edge) {
   stream << "  " << edge.from_stage_index << " -> " << edge.to_stage_index << "  "
          << edge.from_key << " -> " << edge.to_key << "\n";
@@ -80,7 +81,7 @@ template <ValidPipeline Pipeline>
   constexpr auto descriptor = pb::runtime::make_descriptor<Pipeline>();
   constexpr auto topology = decltype(descriptor)::topology;
 
-  std::ostringstream stream;
+  detail::string_sink stream;
   stream << "# pb.core.graph.v1  topology=" << detail::topology_label(topology)
          << "  stages=" << descriptor.stage_count << "  edges=" << descriptor.edge_count << "\n";
 
@@ -102,7 +103,7 @@ template <ValidPipeline Pipeline>
     }
   }
 
-  return stream.str();
+  return std::move(stream).str();
 }
 
 } // namespace pb::core
