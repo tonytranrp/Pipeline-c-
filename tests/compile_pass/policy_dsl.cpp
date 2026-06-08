@@ -126,6 +126,19 @@ struct Finish {
 
 // Baseline pipeline (no policies)
 using Baseline = pb::from<Raw>::then<Parse>::then<Finish>::to<Done>;
+using PackPipeline = pb::from<Raw>::then_all<Parse, Finish>::done;
+using PipeAliasPipeline = pb::from<Raw>::pipe<Parse>::through<Finish>::returns<Done>;
+using AsAliasPipeline = pb::from<Raw>::then_all<Parse>::then<Finish>::as<Done>;
+
+static_assert(std::same_as<Baseline, PackPipeline>);
+static_assert(std::same_as<Baseline, PipeAliasPipeline>);
+static_assert(std::same_as<Baseline, AsAliasPipeline>);
+static_assert(pb::from<Raw>::stage_count == 0);
+static_assert(pb::from<Raw>::empty);
+static_assert(pb::from<Raw>::then<Parse>::stage_count == 1);
+static_assert(!pb::from<Raw>::then<Parse>::empty);
+static_assert(std::same_as<pb::from<Raw>::then_all<>::then<Parse>::then<Finish>::done, Baseline>);
+static_assert(std::same_as<typename pb::from<Raw>::then_all<Parse, Finish>::pipeline_type, Baseline>);
 
 // Pipeline with a single policy — the policy marker is now carried in the
 // finalized pipeline's 4th template parameter, so the pipeline *type* differs

@@ -47,6 +47,7 @@ using type_list_join_node = pb::core::join_node<type_list_join>;
 using type_list_join_validation = pb::core::join_validation<branch_outputs, type_list_join_node>;
 using type_list_join_builder_validation =
     pb::core::join_builder_validation<branch_outputs, type_list_join>;
+using alias_pipeline = pb::core::from<raw>::then_all<parse>::done;
 } // namespace
 
 static_assert(std::is_same_v<branch_case::predicate_type, predicate>);
@@ -115,5 +116,9 @@ static_assert(type_list_join_validation::accepts_raw_type_list);
 static_assert(std::is_same_v<type_list_join_builder_validation::input_type,
                              pb::core::meta::type_list<parsed, reviewed>>);
 static_assert(type_list_join_builder_validation::accepts_raw_type_list);
+static_assert(pb::core::from<raw>::empty);
+static_assert(pb::core::from<raw>::stage_count == 0);
+static_assert(pb::core::from<raw>::then<parse>::stage_count == 1);
+static_assert(std::is_same_v<alias_pipeline, pb::core::from<raw>::then<parse>::to<parsed>>);
 
 int pb_public_header_core_pipeline_state() { return 0; }

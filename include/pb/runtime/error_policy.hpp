@@ -125,6 +125,26 @@ public:
     return engine_.try_run(std::move(input));
   }
 
+  template <class Iterator, class Sentinel>
+  [[nodiscard]] auto try_run_range(Iterator first, Sentinel last)
+      noexcept(noexcept(engine_.try_run_range(first, last)))
+    requires requires(Engine& engine, Iterator begin, Sentinel end) {
+      engine.try_run_range(begin, end);
+    }
+  {
+    return engine_.try_run_range(first, last);
+  }
+
+  template <class Range>
+  [[nodiscard]] auto try_run_each(Range&& inputs)
+      noexcept(noexcept(engine_.try_run_each(std::forward<Range>(inputs))))
+    requires requires(Engine& engine, Range&& range) {
+      engine.try_run_each(std::forward<Range>(range));
+    }
+  {
+    return engine_.try_run_each(std::forward<Range>(inputs));
+  }
+
   /// Observer and descriptor forwarding.  Lets the wrapper compose with
   /// other policy wrappers (e.g. `verbose_engine<throwing_engine<...>>`)
   /// and matches the underlying engine's public observer/introspection
@@ -249,6 +269,26 @@ public:
     return engine_.try_run(std::move(input));
   }
 
+  template <class Iterator, class Sentinel>
+  [[nodiscard]] auto try_run_range(Iterator first, Sentinel last)
+      noexcept(noexcept(engine_.try_run_range(first, last)))
+    requires requires(Engine& engine, Iterator begin, Sentinel end) {
+      engine.try_run_range(begin, end);
+    }
+  {
+    return engine_.try_run_range(first, last);
+  }
+
+  template <class Range>
+  [[nodiscard]] auto try_run_each(Range&& inputs)
+      noexcept(noexcept(engine_.try_run_each(std::forward<Range>(inputs))))
+    requires requires(Engine& engine, Range&& range) {
+      engine.try_run_each(std::forward<Range>(range));
+    }
+  {
+    return engine_.try_run_each(std::forward<Range>(inputs));
+  }
+
   void set_observer(runtime::observer* value) noexcept { engine_.set_observer(value); }
   [[nodiscard]] auto get_observer() const noexcept -> runtime::observer* { return engine_.get_observer(); }
   [[nodiscard]] auto describe() const { return engine_.describe(); }
@@ -365,6 +405,26 @@ public:
 
   auto try_run(input_type input) -> try_result_type {
     return engine_.try_run(std::move(input));
+  }
+
+  template <class Iterator, class Sentinel>
+  [[nodiscard]] auto try_run_range(Iterator first, Sentinel last)
+      noexcept(noexcept(engine_.try_run_range(first, last)))
+    requires requires(Engine& engine, Iterator begin, Sentinel end) {
+      engine.try_run_range(begin, end);
+    }
+  {
+    return engine_.try_run_range(first, last);
+  }
+
+  template <class Range>
+  [[nodiscard]] auto try_run_each(Range&& inputs)
+      noexcept(noexcept(engine_.try_run_each(std::forward<Range>(inputs))))
+    requires requires(Engine& engine, Range&& range) {
+      engine.try_run_each(std::forward<Range>(range));
+    }
+  {
+    return engine_.try_run_each(std::forward<Range>(inputs));
   }
 
   /// Replace the fallback value at runtime.  Useful when the fallback
@@ -487,6 +547,26 @@ public:
 
   auto try_run(input_type input) -> try_result_type {
     return engine_.try_run(std::move(input));
+  }
+
+  template <class Iterator, class Sentinel>
+  [[nodiscard]] auto try_run_range(Iterator first, Sentinel last)
+      noexcept(noexcept(engine_.try_run_range(first, last)))
+    requires requires(Engine& engine, Iterator begin, Sentinel end) {
+      engine.try_run_range(begin, end);
+    }
+  {
+    return engine_.try_run_range(first, last);
+  }
+
+  template <class Range>
+  [[nodiscard]] auto try_run_each(Range&& inputs)
+      noexcept(noexcept(engine_.try_run_each(std::forward<Range>(inputs))))
+    requires requires(Engine& engine, Range&& range) {
+      engine.try_run_each(std::forward<Range>(range));
+    }
+  {
+    return engine_.try_run_each(std::forward<Range>(inputs));
   }
 
   void set_observer(runtime::observer* value) noexcept { engine_.set_observer(value); }
@@ -680,6 +760,26 @@ public:
 
   auto try_run(input_type input) -> try_result_type {
     return engine_.try_run(std::move(input));
+  }
+
+  template <class Iterator, class Sentinel>
+  [[nodiscard]] auto try_run_range(Iterator first, Sentinel last)
+      noexcept(noexcept(engine_.try_run_range(first, last)))
+    requires requires(Engine& engine, Iterator begin, Sentinel end) {
+      engine.try_run_range(begin, end);
+    }
+  {
+    return engine_.try_run_range(first, last);
+  }
+
+  template <class Range>
+  [[nodiscard]] auto try_run_each(Range&& inputs)
+      noexcept(noexcept(engine_.try_run_each(std::forward<Range>(inputs))))
+    requires requires(Engine& engine, Range&& range) {
+      engine.try_run_each(std::forward<Range>(range));
+    }
+  {
+    return engine_.try_run_each(std::forward<Range>(inputs));
   }
 
   /// Re-target the log sink at runtime.

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <concepts>
+#include <cstddef>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -682,6 +683,20 @@ struct append_stage<pipeline_state<Policies, Input, Current, Stages...>, StageTy
   using type = pipeline_state<Policies, Input, stage_output_t<StageType>, Stages..., StageType>;
 };
 
+template <class State, class... StageTypes>
+struct append_stages;
+
+template <class State>
+struct append_stages<State> {
+  using type = State;
+};
+
+template <class State, class StageType, class... Rest>
+struct append_stages<State, StageType, Rest...> {
+  using next = typename append_stage<State, StageType>::type;
+  using type = typename append_stages<next, Rest...>::type;
+};
+
 template <class State, class JoinStage>
 struct append_join;
 
@@ -774,6 +789,10 @@ struct pipeline_state {
   using input_type = Input;
   using current_type = Current;
   using stages = meta::type_list<Stages...>;
+  using stage_list = stages;
+
+  static constexpr std::size_t stage_count = sizeof...(Stages);
+  static constexpr bool empty = stage_count == 0;
 
   /// Accumulated policy markers carried by ::with<...>.  Threaded into the
   /// finalized pipeline's 4th template parameter at ::to<Output>.
@@ -781,6 +800,15 @@ struct pipeline_state {
 
   template <class StageType>
   using then = typename detail::append_stage<pipeline_state, StageType>::type;
+
+  template <class... StageTypes>
+  using then_all = typename detail::append_stages<pipeline_state, StageTypes...>::type;
+
+  template <class... StageTypes>
+  using pipe = then_all<StageTypes...>;
+
+  template <class... StageTypes>
+  using through = then_all<StageTypes...>;
 
   template <class StageType>
   using join = typename detail::append_join<pipeline_state, StageType>::type;
@@ -793,6 +821,15 @@ struct pipeline_state {
 
   template <class Output>
   using to = typename detail::finalize_pipeline<pipeline_state, Output>::type;
+
+  template <class Output>
+  using as = to<Output>;
+
+  template <class Output>
+  using returns = to<Output>;
+
+  using done = typename detail::finalize_pipeline<pipeline_state, Current>::type;
+  using pipeline_type = done;
 
   template <class... Cases>
   using branch = typename detail::append_branch<pipeline_state, Cases...>::type;

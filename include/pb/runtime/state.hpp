@@ -1,6 +1,8 @@
 #pragma once
 
 #include <chrono>
+#include <cstddef>
+#include <iterator>
 #include <memory>
 #include <mutex>
 #include <ostream>
@@ -397,6 +399,42 @@ public:
     return engine_.try_run(std::move(input));
   }
 
+  template <class Iterator, class Sentinel>
+  [[nodiscard]] auto try_run_range(Iterator first, Sentinel last) -> std::vector<try_result_type>
+    requires (!std::same_as<StoragePolicy, policy::state::borrowed>)
+  {
+    std::vector<try_result_type> results;
+    for (; first != last; ++first) {
+      results.push_back(try_run(input_type{*first}));
+    }
+    return results;
+  }
+
+  template <class Range>
+  [[nodiscard]] auto try_run_each(Range&& inputs) -> std::vector<try_result_type>
+    requires (!std::same_as<StoragePolicy, policy::state::borrowed>) &&
+             requires(Range&& range) {
+               std::begin(range);
+               std::end(range);
+             }
+  {
+    std::vector<try_result_type> results;
+    if constexpr (requires { std::size(inputs); }) {
+      results.reserve(static_cast<std::size_t>(std::size(inputs)));
+    }
+    auto first = std::begin(inputs);
+    auto last = std::end(inputs);
+    for (; first != last; ++first) {
+      if constexpr (!std::is_lvalue_reference_v<Range&&> &&
+                    !std::is_const_v<std::remove_reference_t<decltype(*first)>>) {
+        results.push_back(try_run(input_type{std::move(*first)}));
+      } else {
+        results.push_back(try_run(input_type{*first}));
+      }
+    }
+    return results;
+  }
+
   /// Borrowed-state run — caller supplies the active state for this
   /// call.  Available for every storage policy: even owned pipelines
   /// can opt to use a caller-supplied state on a per-call basis,
@@ -410,6 +448,41 @@ public:
   [[nodiscard]] auto try_run_with_state(input_type input, State& state) -> try_result_type {
     state_context<State> frame{state};
     return engine_.try_run(std::move(input));
+  }
+
+  template <class Iterator, class Sentinel>
+  [[nodiscard]] auto try_run_range_with_state(Iterator first, Sentinel last, State& state)
+      -> std::vector<try_result_type> {
+    std::vector<try_result_type> results;
+    for (; first != last; ++first) {
+      results.push_back(try_run_with_state(input_type{*first}, state));
+    }
+    return results;
+  }
+
+  template <class Range>
+  [[nodiscard]] auto try_run_each_with_state(Range&& inputs, State& state)
+      -> std::vector<try_result_type>
+    requires requires(Range&& range) {
+      std::begin(range);
+      std::end(range);
+    }
+  {
+    std::vector<try_result_type> results;
+    if constexpr (requires { std::size(inputs); }) {
+      results.reserve(static_cast<std::size_t>(std::size(inputs)));
+    }
+    auto first = std::begin(inputs);
+    auto last = std::end(inputs);
+    for (; first != last; ++first) {
+      if constexpr (!std::is_lvalue_reference_v<Range&&> &&
+                    !std::is_const_v<std::remove_reference_t<decltype(*first)>>) {
+        results.push_back(try_run_with_state(input_type{std::move(*first)}, state));
+      } else {
+        results.push_back(try_run_with_state(input_type{*first}, state));
+      }
+    }
+    return results;
   }
 
   /// Read-only access to the owned state.  Not available for borrowed

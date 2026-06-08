@@ -3,12 +3,14 @@
 #include <array>
 #include <exception>
 #include <iostream>
+#include <iterator>
 #include <string>
 #include <string_view>
 #include <type_traits>
 #include <tuple>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "pb/core/meta.hpp"
 #include "pb/core/policy.hpp"
@@ -1082,6 +1084,39 @@ public:
     } else {
       return try_run_after_result<Output, stage_storage_type, Input, Stages...>(observer_, &stages_, std::move(input));
     }
+  }
+
+  template <class Iterator, class Sentinel>
+  [[nodiscard]] auto try_run_range(Iterator first, Sentinel last) const -> std::vector<result<Output>> {
+    std::vector<result<Output>> results;
+    for (; first != last; ++first) {
+      results.push_back(try_run(Input{*first}));
+    }
+    return results;
+  }
+
+  template <class Range>
+  [[nodiscard]] auto try_run_each(Range&& inputs) const -> std::vector<result<Output>>
+    requires requires(Range&& range) {
+      std::begin(range);
+      std::end(range);
+    }
+  {
+    std::vector<result<Output>> results;
+    if constexpr (requires { std::size(inputs); }) {
+      results.reserve(static_cast<std::size_t>(std::size(inputs)));
+    }
+    auto first = std::begin(inputs);
+    auto last = std::end(inputs);
+    for (; first != last; ++first) {
+      if constexpr (!std::is_lvalue_reference_v<Range&&> &&
+                    !std::is_const_v<std::remove_reference_t<decltype(*first)>>) {
+        results.push_back(try_run(Input{std::move(*first)}));
+      } else {
+        results.push_back(try_run(Input{*first}));
+      }
+    }
+    return results;
   }
 
 private:

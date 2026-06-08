@@ -12,6 +12,7 @@
 
 #include <pb/pipeline.hpp>
 
+#include <array>
 #include <cstdlib>
 #include <memory>
 #include <stdexcept>
@@ -322,6 +323,44 @@ void test_composability_with_throw_on_error() {
 // 13) state_context push/pop balanced even when stage throws
 // ────────────────────────────────────────────────────────────────────────────
 
+void test_stateful_batch_runs_keep_state_context() {
+  const std::array inputs{1, 2, -1};
+
+  auto stateful = pb::with_state<counter_state>(
+      pb::with_throw_on_error(fresh_engine<IncrementPipeline>()));
+  auto results = stateful.try_run_each(inputs);
+  pb_test_require(results.size() == inputs.size());
+  pb_test_require(results[0].has_value());
+  pb_test_require(results[1].has_value());
+  pb_test_require(results[2].has_value());
+  pb_test_require(stateful.state().hits == 2);
+  pb_test_require(stateful.state().misses == 1);
+
+  auto range_results = stateful.try_run_range(inputs.begin() + 1, inputs.end());
+  pb_test_require(range_results.size() == 2);
+  pb_test_require(range_results[0].has_value());
+  pb_test_require(range_results[1].has_value());
+  pb_test_require(stateful.state().hits == 3);
+  pb_test_require(stateful.state().misses == 2);
+
+  auto throwing_stateful = pb::with_throw_on_error(
+      pb::with_state<counter_state>(fresh_engine<IncrementPipeline>()));
+  auto forwarded_results = throwing_stateful.try_run_each(inputs);
+  pb_test_require(forwarded_results.size() == inputs.size());
+  pb_test_require(forwarded_results[0].has_value());
+  pb_test_require(forwarded_results[1].has_value());
+  pb_test_require(forwarded_results[2].has_value());
+  pb_test_require(throwing_stateful.underlying().state().hits == 2);
+  pb_test_require(throwing_stateful.underlying().state().misses == 1);
+
+  auto borrowed = pb::with_borrowed_state<counter_state>(fresh_engine<IncrementPipeline>());
+  counter_state per_request{};
+  auto borrowed_results = borrowed.try_run_each_with_state(inputs, per_request);
+  pb_test_require(borrowed_results.size() == inputs.size());
+  pb_test_require(per_request.hits == 2);
+  pb_test_require(per_request.misses == 1);
+}
+
 struct throwing_stateful_stage {
   using input_type  = int;
   using output_type = int;
@@ -398,6 +437,7 @@ void test_state_dsl_smoke() {
   test_current_state_outside_scope_throws();
   test_try_current_state_outside_scope();
   test_composability_with_throw_on_error();
+  test_stateful_batch_runs_keep_state_context();
   test_state_context_balanced_on_exception();
   test_owned_with_run_with_state_shadows();
   test_forwarding_surface();

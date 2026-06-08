@@ -51,7 +51,13 @@ struct DoubleValue {
 
 // The DSL chain resolves entirely through the module export surface.
 using Pipeline = pb::from<Input>::then<AddOne>::then<DoubleValue>::to<Output>;
+using PackAliasPipeline = pb::from<Input>::then_all<AddOne, DoubleValue>::done;
+using PipeAliasPipeline = pb::from<Input>::pipe<AddOne>::through<DoubleValue>::returns<Output>;
+using AsAliasPipeline = pb::from<Input>::then_all<AddOne>::then<DoubleValue>::as<Output>;
 static_assert(pb::valid<Pipeline>);
+static_assert(std::is_same_v<Pipeline, PackAliasPipeline>);
+static_assert(std::is_same_v<Pipeline, PipeAliasPipeline>);
+static_assert(std::is_same_v<Pipeline, AsAliasPipeline>);
 
 // Move-only stages must compile through the module surface too.
 struct MoveInput {
