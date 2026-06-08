@@ -129,6 +129,9 @@ struct runtime_callable {
     if (auto* bound = active_binding(); bound != nullptr) {
       return (*bound)(std::move(input));
     }
+    if (!callable_ || !*callable_) {
+      throw std::bad_function_call{};
+    }
     return (*callable_)(std::move(input));
   }
 

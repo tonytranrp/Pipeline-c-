@@ -21,6 +21,7 @@ module;
 // interface depends on.  These are NOT re‑exported; consumers
 // must import or include them separately.
 #include <concepts>
+#include <chrono>
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -141,7 +142,11 @@ using runtime::backend_feature_matrix;
 using runtime::backend_features;
 using runtime::backend_support;
 using runtime::backend_support_name;
+using runtime::backend_available;
 using runtime::backend_supported;
+using runtime::thread_pool;
+using runtime::thread_pool_backend;
+using runtime::thread_pool_snapshot;
 
 // ── runtime: descriptor / routing ────────────────────────────
 using runtime::make_descriptor;

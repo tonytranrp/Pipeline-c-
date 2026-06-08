@@ -12,7 +12,7 @@ run=https://github.com/tonytranrp/Pipeline-c-/actions/runs/26145779030
 result=PASS
 ```
 
-This is the current code validation run after the backend fan-in/export/policy hardening commit that added the standard-library `thread_pool_backend` fan-in slice, fan-in descriptor/export helper topology, and policy metadata for scheduling/cancellation/clone/lifetime boundaries. The workflow configures, builds, and runs CTest for Linux GCC/Clang C++20 and C++23, validates MSVC C++20 on Windows, and runs the package-release preset in a clean Ubuntu job.
+This is the latest completed GitHub matrix for the exact SHA above, after the backend fan-in/export/policy hardening commit that added the standard-library `thread_pool_backend` fan-in slice, fan-in descriptor/export helper topology, and policy metadata for scheduling/cancellation/clone/lifetime boundaries. The current branch has advanced past this run, so treat it as historical exact-SHA evidence until the workflow is rerun on the final candidate SHA. The workflow configures, builds, and runs CTest for Linux GCC/Clang C++20 and C++23, validates MSVC C++20 on Windows, and runs the package-release preset in a clean Ubuntu job.
 
 ## Matrix results
 
@@ -64,7 +64,7 @@ It does **not** mean these roadmap items are implemented:
 - stable descriptor/export compatibility beyond descriptor-record-backed helper DOT/JSON output
 - CLI/file export of user pipeline definitions
 - oneTBB / Taskflow / stdexec pipeline backends
-- C++ modules
+- broader C++20 named-module compatibility/install guarantees; module build evidence was added after this run
 - C++26 reflection/contracts integrations
 - benchmark thresholds or CI-enforced performance budgets
 - stable/frozen diagnostic wording across all future features

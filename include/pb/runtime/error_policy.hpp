@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <cstdlib>
 #include <exception>
 #include <functional>
@@ -132,6 +133,59 @@ public:
   [[nodiscard]] auto get_observer() const noexcept -> runtime::observer* { return engine_.get_observer(); }
   [[nodiscard]] auto describe() const { return engine_.describe(); }
   [[nodiscard]] auto descriptor() const noexcept { return engine_.descriptor(); }
+  [[nodiscard]] auto worker_count() const noexcept(noexcept(engine_.worker_count()))
+    requires requires(const Engine& engine) { engine.worker_count(); }
+  {
+    return engine_.worker_count();
+  }
+  [[nodiscard]] auto pending_tasks() const noexcept(noexcept(engine_.pending_tasks()))
+    requires requires(const Engine& engine) { engine.pending_tasks(); }
+  {
+    return engine_.pending_tasks();
+  }
+  [[nodiscard]] auto queued_tasks() const noexcept(noexcept(engine_.queued_tasks()))
+    requires requires(const Engine& engine) { engine.queued_tasks(); }
+  {
+    return engine_.queued_tasks();
+  }
+  [[nodiscard]] auto active_tasks() const noexcept(noexcept(engine_.active_tasks()))
+    requires requires(const Engine& engine) { engine.active_tasks(); }
+  {
+    return engine_.active_tasks();
+  }
+  [[nodiscard]] auto snapshot() const noexcept(noexcept(engine_.snapshot()))
+    requires requires(const Engine& engine) { engine.snapshot(); }
+  {
+    return engine_.snapshot();
+  }
+  [[nodiscard]] auto shared_pool() const noexcept(noexcept(engine_.shared_pool()))
+    requires requires(const Engine& engine) { engine.shared_pool(); }
+  {
+    return engine_.shared_pool();
+  }
+  void wait_idle() noexcept(noexcept(engine_.wait_idle()))
+    requires requires(Engine& engine) { engine.wait_idle(); }
+  {
+    engine_.wait_idle();
+  }
+  template <class Rep, class Period>
+  [[nodiscard]] auto wait_idle_for(const std::chrono::duration<Rep, Period>& timeout)
+      noexcept(noexcept(engine_.wait_idle_for(timeout)))
+    requires requires(Engine& engine, const std::chrono::duration<Rep, Period>& value) {
+      engine.wait_idle_for(value);
+    }
+  {
+    return engine_.wait_idle_for(timeout);
+  }
+  template <class Clock, class Duration>
+  [[nodiscard]] auto wait_idle_until(const std::chrono::time_point<Clock, Duration>& deadline)
+      noexcept(noexcept(engine_.wait_idle_until(deadline)))
+    requires requires(Engine& engine, const std::chrono::time_point<Clock, Duration>& value) {
+      engine.wait_idle_until(value);
+    }
+  {
+    return engine_.wait_idle_until(deadline);
+  }
 
   /// Mutable access to the wrapped engine for callers that need
   /// backend-specific state not covered by the forwarding surface above.
@@ -199,6 +253,59 @@ public:
   [[nodiscard]] auto get_observer() const noexcept -> runtime::observer* { return engine_.get_observer(); }
   [[nodiscard]] auto describe() const { return engine_.describe(); }
   [[nodiscard]] auto descriptor() const noexcept { return engine_.descriptor(); }
+  [[nodiscard]] auto worker_count() const noexcept(noexcept(engine_.worker_count()))
+    requires requires(const Engine& engine) { engine.worker_count(); }
+  {
+    return engine_.worker_count();
+  }
+  [[nodiscard]] auto pending_tasks() const noexcept(noexcept(engine_.pending_tasks()))
+    requires requires(const Engine& engine) { engine.pending_tasks(); }
+  {
+    return engine_.pending_tasks();
+  }
+  [[nodiscard]] auto queued_tasks() const noexcept(noexcept(engine_.queued_tasks()))
+    requires requires(const Engine& engine) { engine.queued_tasks(); }
+  {
+    return engine_.queued_tasks();
+  }
+  [[nodiscard]] auto active_tasks() const noexcept(noexcept(engine_.active_tasks()))
+    requires requires(const Engine& engine) { engine.active_tasks(); }
+  {
+    return engine_.active_tasks();
+  }
+  [[nodiscard]] auto snapshot() const noexcept(noexcept(engine_.snapshot()))
+    requires requires(const Engine& engine) { engine.snapshot(); }
+  {
+    return engine_.snapshot();
+  }
+  [[nodiscard]] auto shared_pool() const noexcept(noexcept(engine_.shared_pool()))
+    requires requires(const Engine& engine) { engine.shared_pool(); }
+  {
+    return engine_.shared_pool();
+  }
+  void wait_idle() noexcept(noexcept(engine_.wait_idle()))
+    requires requires(Engine& engine) { engine.wait_idle(); }
+  {
+    engine_.wait_idle();
+  }
+  template <class Rep, class Period>
+  [[nodiscard]] auto wait_idle_for(const std::chrono::duration<Rep, Period>& timeout)
+      noexcept(noexcept(engine_.wait_idle_for(timeout)))
+    requires requires(Engine& engine, const std::chrono::duration<Rep, Period>& value) {
+      engine.wait_idle_for(value);
+    }
+  {
+    return engine_.wait_idle_for(timeout);
+  }
+  template <class Clock, class Duration>
+  [[nodiscard]] auto wait_idle_until(const std::chrono::time_point<Clock, Duration>& deadline)
+      noexcept(noexcept(engine_.wait_idle_until(deadline)))
+    requires requires(Engine& engine, const std::chrono::time_point<Clock, Duration>& value) {
+      engine.wait_idle_until(value);
+    }
+  {
+    return engine_.wait_idle_until(deadline);
+  }
 
   [[nodiscard]] auto underlying() & noexcept -> Engine& { return engine_; }
   [[nodiscard]] auto underlying() const& noexcept -> const Engine& { return engine_; }
@@ -273,6 +380,59 @@ public:
   [[nodiscard]] auto get_observer() const noexcept -> runtime::observer* { return engine_.get_observer(); }
   [[nodiscard]] auto describe() const { return engine_.describe(); }
   [[nodiscard]] auto descriptor() const noexcept { return engine_.descriptor(); }
+  [[nodiscard]] auto worker_count() const noexcept(noexcept(engine_.worker_count()))
+    requires requires(const Engine& engine) { engine.worker_count(); }
+  {
+    return engine_.worker_count();
+  }
+  [[nodiscard]] auto pending_tasks() const noexcept(noexcept(engine_.pending_tasks()))
+    requires requires(const Engine& engine) { engine.pending_tasks(); }
+  {
+    return engine_.pending_tasks();
+  }
+  [[nodiscard]] auto queued_tasks() const noexcept(noexcept(engine_.queued_tasks()))
+    requires requires(const Engine& engine) { engine.queued_tasks(); }
+  {
+    return engine_.queued_tasks();
+  }
+  [[nodiscard]] auto active_tasks() const noexcept(noexcept(engine_.active_tasks()))
+    requires requires(const Engine& engine) { engine.active_tasks(); }
+  {
+    return engine_.active_tasks();
+  }
+  [[nodiscard]] auto snapshot() const noexcept(noexcept(engine_.snapshot()))
+    requires requires(const Engine& engine) { engine.snapshot(); }
+  {
+    return engine_.snapshot();
+  }
+  [[nodiscard]] auto shared_pool() const noexcept(noexcept(engine_.shared_pool()))
+    requires requires(const Engine& engine) { engine.shared_pool(); }
+  {
+    return engine_.shared_pool();
+  }
+  void wait_idle() noexcept(noexcept(engine_.wait_idle()))
+    requires requires(Engine& engine) { engine.wait_idle(); }
+  {
+    engine_.wait_idle();
+  }
+  template <class Rep, class Period>
+  [[nodiscard]] auto wait_idle_for(const std::chrono::duration<Rep, Period>& timeout)
+      noexcept(noexcept(engine_.wait_idle_for(timeout)))
+    requires requires(Engine& engine, const std::chrono::duration<Rep, Period>& value) {
+      engine.wait_idle_for(value);
+    }
+  {
+    return engine_.wait_idle_for(timeout);
+  }
+  template <class Clock, class Duration>
+  [[nodiscard]] auto wait_idle_until(const std::chrono::time_point<Clock, Duration>& deadline)
+      noexcept(noexcept(engine_.wait_idle_until(deadline)))
+    requires requires(Engine& engine, const std::chrono::time_point<Clock, Duration>& value) {
+      engine.wait_idle_until(value);
+    }
+  {
+    return engine_.wait_idle_until(deadline);
+  }
 
   [[nodiscard]] auto underlying() & noexcept -> Engine& { return engine_; }
   [[nodiscard]] auto underlying() const& noexcept -> const Engine& { return engine_; }
@@ -333,6 +493,59 @@ public:
   [[nodiscard]] auto get_observer() const noexcept -> runtime::observer* { return engine_.get_observer(); }
   [[nodiscard]] auto describe() const { return engine_.describe(); }
   [[nodiscard]] auto descriptor() const noexcept { return engine_.descriptor(); }
+  [[nodiscard]] auto worker_count() const noexcept(noexcept(engine_.worker_count()))
+    requires requires(const Engine& engine) { engine.worker_count(); }
+  {
+    return engine_.worker_count();
+  }
+  [[nodiscard]] auto pending_tasks() const noexcept(noexcept(engine_.pending_tasks()))
+    requires requires(const Engine& engine) { engine.pending_tasks(); }
+  {
+    return engine_.pending_tasks();
+  }
+  [[nodiscard]] auto queued_tasks() const noexcept(noexcept(engine_.queued_tasks()))
+    requires requires(const Engine& engine) { engine.queued_tasks(); }
+  {
+    return engine_.queued_tasks();
+  }
+  [[nodiscard]] auto active_tasks() const noexcept(noexcept(engine_.active_tasks()))
+    requires requires(const Engine& engine) { engine.active_tasks(); }
+  {
+    return engine_.active_tasks();
+  }
+  [[nodiscard]] auto snapshot() const noexcept(noexcept(engine_.snapshot()))
+    requires requires(const Engine& engine) { engine.snapshot(); }
+  {
+    return engine_.snapshot();
+  }
+  [[nodiscard]] auto shared_pool() const noexcept(noexcept(engine_.shared_pool()))
+    requires requires(const Engine& engine) { engine.shared_pool(); }
+  {
+    return engine_.shared_pool();
+  }
+  void wait_idle() noexcept(noexcept(engine_.wait_idle()))
+    requires requires(Engine& engine) { engine.wait_idle(); }
+  {
+    engine_.wait_idle();
+  }
+  template <class Rep, class Period>
+  [[nodiscard]] auto wait_idle_for(const std::chrono::duration<Rep, Period>& timeout)
+      noexcept(noexcept(engine_.wait_idle_for(timeout)))
+    requires requires(Engine& engine, const std::chrono::duration<Rep, Period>& value) {
+      engine.wait_idle_for(value);
+    }
+  {
+    return engine_.wait_idle_for(timeout);
+  }
+  template <class Clock, class Duration>
+  [[nodiscard]] auto wait_idle_until(const std::chrono::time_point<Clock, Duration>& deadline)
+      noexcept(noexcept(engine_.wait_idle_until(deadline)))
+    requires requires(Engine& engine, const std::chrono::time_point<Clock, Duration>& value) {
+      engine.wait_idle_until(value);
+    }
+  {
+    return engine_.wait_idle_until(deadline);
+  }
 
   [[nodiscard]] auto underlying() & noexcept -> Engine& { return engine_; }
   [[nodiscard]] auto underlying() const& noexcept -> const Engine& { return engine_; }
@@ -482,6 +695,59 @@ public:
   /// instead.
   [[nodiscard]] auto describe() const { return engine_.describe(); }
   [[nodiscard]] auto descriptor() const noexcept { return engine_.descriptor(); }
+  [[nodiscard]] auto worker_count() const noexcept(noexcept(engine_.worker_count()))
+    requires requires(const Engine& engine) { engine.worker_count(); }
+  {
+    return engine_.worker_count();
+  }
+  [[nodiscard]] auto pending_tasks() const noexcept(noexcept(engine_.pending_tasks()))
+    requires requires(const Engine& engine) { engine.pending_tasks(); }
+  {
+    return engine_.pending_tasks();
+  }
+  [[nodiscard]] auto queued_tasks() const noexcept(noexcept(engine_.queued_tasks()))
+    requires requires(const Engine& engine) { engine.queued_tasks(); }
+  {
+    return engine_.queued_tasks();
+  }
+  [[nodiscard]] auto active_tasks() const noexcept(noexcept(engine_.active_tasks()))
+    requires requires(const Engine& engine) { engine.active_tasks(); }
+  {
+    return engine_.active_tasks();
+  }
+  [[nodiscard]] auto snapshot() const noexcept(noexcept(engine_.snapshot()))
+    requires requires(const Engine& engine) { engine.snapshot(); }
+  {
+    return engine_.snapshot();
+  }
+  [[nodiscard]] auto shared_pool() const noexcept(noexcept(engine_.shared_pool()))
+    requires requires(const Engine& engine) { engine.shared_pool(); }
+  {
+    return engine_.shared_pool();
+  }
+  void wait_idle() noexcept(noexcept(engine_.wait_idle()))
+    requires requires(Engine& engine) { engine.wait_idle(); }
+  {
+    engine_.wait_idle();
+  }
+  template <class Rep, class Period>
+  [[nodiscard]] auto wait_idle_for(const std::chrono::duration<Rep, Period>& timeout)
+      noexcept(noexcept(engine_.wait_idle_for(timeout)))
+    requires requires(Engine& engine, const std::chrono::duration<Rep, Period>& value) {
+      engine.wait_idle_for(value);
+    }
+  {
+    return engine_.wait_idle_for(timeout);
+  }
+  template <class Clock, class Duration>
+  [[nodiscard]] auto wait_idle_until(const std::chrono::time_point<Clock, Duration>& deadline)
+      noexcept(noexcept(engine_.wait_idle_until(deadline)))
+    requires requires(Engine& engine, const std::chrono::time_point<Clock, Duration>& value) {
+      engine.wait_idle_until(value);
+    }
+  {
+    return engine_.wait_idle_until(deadline);
+  }
 
   [[nodiscard]] auto underlying() & noexcept -> Engine& { return engine_; }
   [[nodiscard]] auto underlying() const& noexcept -> const Engine& { return engine_; }

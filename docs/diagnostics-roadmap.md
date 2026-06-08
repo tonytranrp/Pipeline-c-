@@ -82,11 +82,12 @@ The current verification evidence supports the existing linear-pipeline diagnost
 - compile-fail tests check for expected diagnostic text through `tests/run_compile_fail.cmake`
 - `pb_runtime_error_diagnostic_smoke` and custom-error observer coverage validate runtime category/stage/message formatting helpers, custom expected-like diagnostic stage annotation, and the `error_record` / `to_record(...)` diagnostic projection
 - branch-marker and branch/join compile-fail tests cover unsupported topology, branch source/predicate misuse, branch-node case-input mismatch, invalid join-stage markers, branch-output marker misuse, join validation mismatches, and branch output validation mismatches without claiming executable branch/join support
+- invalid stages appended through `pb::from<...>::then<Stage>` now diagnose the missing stage member (`input_type` or `output_type`) before falling back to the generic valid-stage constraint
 - `pb_runtime_sequential_observer_accessor_smoke` keeps the linear descriptor stage identity aligned with observer failure callbacks and the `try_run()` error envelope
 - `examples/error_diagnostic.cpp` documents the intentional compile-fail path for users
 - `docs/examples.md` explains how to run the diagnostic example and the compile-fail smoke target
 
-That evidence is enough to document the current diagnostic baseline, including branch-marker misuse diagnostics, a narrow value-level runtime error record, custom expected-like diagnostic stage identity, and linear descriptor/observer/error identity consistency. It is **not** enough to claim richer roadmap items such as graph-aware diagnostics, branch output routing/join compatibility, schema-stable exported artifacts, or fully hardened wording guarantees.
+That evidence is enough to document the current diagnostic baseline, including branch-marker misuse diagnostics, named missing-member diagnostics for invalid linear stages, a narrow value-level runtime error record, custom expected-like diagnostic stage identity, and linear descriptor/observer/error identity consistency. It is **not** enough to claim richer roadmap items such as graph-aware diagnostics, branch output routing/join compatibility, schema-stable exported artifacts, or fully hardened wording guarantees.
 
 ## Release guidance
 

@@ -83,6 +83,16 @@ int main() {
   pb_test_require(r4.value().value == 1 * (*multiplier) + 4);  // 3 + 4 = 7
   pb_test_require(*call_count == 4);
 
+  // Without a scoped binding, the engine's value-initialised
+  // runtime_callable is unbound. That must take the documented exception path,
+  // not dereference a null callable.
+  auto unbound = engine.try_run(In{2});
+  pb_test_require(!unbound.has_value());
+  pb_test_require(unbound.error().category == pb::runtime::error_category::exception);
+  pb_test_require(unbound.error().stage.key == "runtime_callable");
+  pb_test_require(unbound.error().stage.name == "runtime_callable");
+  pb_test_require(*call_count == 4);
+
   // ------------------------------------------------------------------
   // 2. std::function bound at runtime via pb::bind_callable.  Also exercise
   //    direct invocation of the owned stage (no engine, no binding scope —

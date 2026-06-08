@@ -114,6 +114,7 @@ using runtime::backend_feature_matrix;
 using runtime::backend_features;
 using runtime::backend_support;
 using runtime::backend_support_name;
+using runtime::backend_available;
 using runtime::backend_supported;
 using runtime::construct_stages_per_run;
 using runtime::describe;
@@ -157,7 +158,9 @@ using runtime::trace_recorder;
 using runtime::trace_schema_version;
 using runtime::trace_ndjson_schema_version;
 using runtime::tracing_sink;
+using runtime::thread_pool;
 using runtime::thread_pool_backend;
+using runtime::thread_pool_snapshot;
 using runtime::trace_sink;
 // state DSL surface is declared directly in namespace pb (state.hpp), so no
 // re-exports are needed here.

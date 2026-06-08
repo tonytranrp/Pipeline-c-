@@ -3,16 +3,24 @@
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
+#include <iostream>
 #include <memory>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
 
 namespace {
 
-void require(bool condition) {
-  if (!condition) std::abort();
+void require_impl(bool condition, int line) {
+  if (!condition) {
+    std::cerr << "require failed at line " << line << '\n';
+    std::abort();
+  }
 }
+
+#define require(condition) require_impl((condition), __LINE__)
 
 struct Input { int mask{}; int value{}; };
 struct Output { int value{}; };
@@ -83,6 +91,23 @@ struct FailingStage {
   }
 };
 
+struct FastBeforeObserverFailureStage {
+  using input_type = Input;
+  using output_type = Output;
+  Output operator()(Input input) const { return Output{input.value}; }
+};
+
+struct SlowAfterObserverFailureStage {
+  using input_type = Input;
+  using output_type = Output;
+  static inline std::atomic<int> completed{0};
+  Output operator()(Input input) const {
+    std::this_thread::sleep_for(std::chrono::milliseconds{50});
+    ++completed;
+    return Output{input.value + 1000};
+  }
+};
+
 using CaseA = pb::case_<IsA>::then<SlowA>;
 using CaseB = pb::case_<IsB>::then<SlowB>;
 using FailCase = pb::case_<IsFailing>::then<FailingStage>;
@@ -103,6 +128,18 @@ struct Join {
 };
 using Pipeline = pb::from<Input>::branch<CaseA, CaseB, FailCase>::fan_in<Join>::to<Done>;
 static_assert(pb::valid<Pipeline>);
+
+using FastBeforeObserverFailureCase = pb::case_<IsA>::then<FastBeforeObserverFailureStage>;
+using SlowAfterObserverFailureCase = pb::case_<IsB>::then<SlowAfterObserverFailureStage>;
+using DrainInput = pb::fan_in_output_t<FastBeforeObserverFailureCase, SlowAfterObserverFailureCase>;
+struct DrainJoin {
+  using input_type = DrainInput;
+  using output_type = Done;
+  Done operator()(const DrainInput&) const { return Done{"unexpected"}; }
+};
+using DrainPipeline =
+    pb::from<Input>::branch<FastBeforeObserverFailureCase, SlowAfterObserverFailureCase>::fan_in<DrainJoin>::to<Done>;
+static_assert(pb::valid<DrainPipeline>);
 
 struct VoidStage {
   using input_type = Input;
@@ -175,6 +212,15 @@ struct RecordingObserver : pb::runtime::observer {
   }
 };
 
+struct ThrowOnFirstCompletionObserver : pb::runtime::observer {
+  void on_fan_in_case_completed(const pb::runtime::stage_id&, std::size_t case_index, const pb::runtime::stage_id&,
+                                bool) override {
+    if (case_index == 0) {
+      throw std::runtime_error{"observer completion failed"};
+    }
+  }
+};
+
 bool contains(const std::vector<std::string>& events, std::string_view expected) {
   for (const auto& event : events) {
     if (event == expected) return true;
@@ -198,6 +244,16 @@ int main() {
   require(contains(observer.events, "selected:1"));
   require(contains(observer.events, "failed:2:thread-pool stage failure"));
 
+  SlowAfterObserverFailureStage::completed = 0;
+  auto drain_engine = pb::compile<DrainPipeline>(pb::runtime::thread_pool_backend{.worker_count = 2});
+  ThrowOnFirstCompletionObserver throwing_observer;
+  drain_engine.set_observer(&throwing_observer);
+  auto drained = drain_engine.try_run(Input{3, 5});
+  require(!drained.has_value());
+  require(drained.error().category == pb::runtime::error_category::exception);
+  require(drained.error().message == "observer completion failed");
+  require(SlowAfterObserverFailureStage::completed.load() == 1);
+
   VoidStage::calls = 0;
   auto void_engine = pb::compile<VoidPipeline>(pb::runtime::thread_pool_backend{.worker_count = 2});
   auto void_result = void_engine.try_run(Input{1, 9});
@@ -206,6 +262,61 @@ int main() {
   require(void_result.value().skipped == 1);
   require(void_result.value().failed == 0);
   require(VoidStage::calls == 1);
+
+  auto shared_pool = std::make_shared<pb::thread_pool>(3);
+  auto shared_a = pb::compile<VoidPipeline>(pb::runtime::thread_pool_backend{.worker_count = 99, .pool = shared_pool});
+  auto shared_b = pb::compile<VoidPipeline>(pb::runtime::thread_pool_backend{.pool = shared_pool});
+  require(shared_a.worker_count() == 3);
+  require(shared_b.worker_count() == 3);
+  require(shared_a.shared_pool() == shared_pool);
+  require(shared_b.shared_pool() == shared_pool);
+  auto shared_result = shared_a.try_run(Input{1, 4});
+  require(shared_result.has_value());
+  shared_a.wait_idle();
+  require(shared_a.snapshot().idle());
+  require(shared_a.wait_idle_for(std::chrono::seconds{1}));
+  require(shared_b.wait_idle_until(std::chrono::steady_clock::now() + std::chrono::seconds{1}));
+
+  auto throwing = pb::with_throw_on_error(
+      pb::compile<VoidPipeline>(pb::runtime::thread_pool_backend{.pool = shared_pool}));
+  require(throwing.worker_count() == 3);
+  require(throwing.shared_pool() == shared_pool);
+  require(throwing.snapshot().idle());
+  auto throwing_result = throwing.try_run(Input{1, 6});
+  require(throwing_result.has_value());
+  throwing.wait_idle();
+  require(throwing.wait_idle_for(std::chrono::seconds{1}));
+
+  auto terminating = pb::with_terminate_on_error(
+      pb::compile<VoidPipeline>(pb::runtime::thread_pool_backend{.pool = shared_pool}));
+  require(terminating.worker_count() == 3);
+  require(terminating.snapshot().idle());
+  require(terminating.wait_idle_until(std::chrono::steady_clock::now() + std::chrono::seconds{1}));
+
+  auto propagating = pb::with_propagate_exceptions(
+      pb::compile<VoidPipeline>(pb::runtime::thread_pool_backend{.pool = shared_pool}));
+  require(propagating.pending_tasks() == 0);
+  require(propagating.active_tasks() == 0);
+  require(propagating.wait_idle_for(std::chrono::seconds{1}));
+
+  auto ignoring = pb::with_ignore_errors(
+      pb::compile<VoidPipeline>(pb::runtime::thread_pool_backend{.pool = shared_pool}), VoidDone{});
+  require(ignoring.queued_tasks() == 0);
+  require(ignoring.wait_idle_for(std::chrono::seconds{1}));
+
+  std::ostringstream verbose_sink;
+  auto verbose = pb::with_verbose_diagnostics(
+      pb::compile<VoidPipeline>(pb::runtime::thread_pool_backend{.pool = shared_pool}), &verbose_sink);
+  require(verbose.worker_count() == 3);
+  require(verbose.snapshot().idle());
+  verbose.wait_idle();
+  require(verbose.wait_idle_for(std::chrono::seconds{1}));
+
+  auto stateful = pb::with_state<int>(
+      pb::compile<VoidPipeline>(pb::runtime::thread_pool_backend{.pool = shared_pool}));
+  require(stateful.shared_pool() == shared_pool);
+  stateful.wait_idle();
+  require(stateful.wait_idle_for(std::chrono::seconds{1}));
 
   auto borrowed = pb::compile<BorrowPipeline>(pb::runtime::thread_pool_backend{.worker_count = 2});
   auto borrowed_result = borrowed.run(MoveOnlyInput{3, 40});

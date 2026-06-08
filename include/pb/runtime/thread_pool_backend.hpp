@@ -1,8 +1,11 @@
 #pragma once
 
+#include <chrono>
 #include <cstddef>
 #include <exception>
+#include <memory>
 #include <mutex>
+#include <optional>
 #include <thread>
 #include <type_traits>
 #include <utility>
@@ -23,6 +26,11 @@ struct thread_pool_backend {
   /// run. See pb/runtime/cancellation.hpp; cancellation is COOPERATIVE and
   /// preemptive interruption of an already-running stage is out of scope.
   pb::cancellation_token cancel{};
+  /// Optional shared worker pool. Supplying one lets multiple compiled engines
+  /// reuse the same standard-library workers instead of constructing a fresh
+  /// pool per engine. When null, the engine owns a private pool sized by
+  /// `worker_count`.
+  std::shared_ptr<thread_pool> pool{};
 };
 
 namespace policy {
@@ -144,17 +152,26 @@ template <class BranchNode, class BranchStage, class BranchStageObject, std::siz
 
 template <class Futures>
 [[nodiscard]] auto wait_for_fan_in_cases(Futures& futures) -> result<void> {
+  std::optional<error> first_error;
   for (auto& future : futures) {
     try {
       auto case_result = future.get();
-      if (!case_result.has_value()) {
-        return case_result;
+      if (!case_result.has_value() && !first_error.has_value()) {
+        first_error = std::move(case_result).error();
       }
     } catch (const std::exception& exception) {
-      return result<void>{error{.category = error_category::exception, .message = exception.what()}};
+      if (!first_error.has_value()) {
+        first_error = error{.category = error_category::exception, .message = exception.what()};
+      }
     } catch (...) {
-      return result<void>{error{.category = error_category::exception, .message = "unknown thread-pool fan-in task failure"}};
+      if (!first_error.has_value()) {
+        first_error = error{.category = error_category::exception,
+                            .message = "unknown thread-pool fan-in task failure"};
+      }
     }
+  }
+  if (first_error.has_value()) {
+    return result<void>{std::move(*first_error)};
   }
   return {};
 }
@@ -320,11 +337,31 @@ public:
   using runtime_descriptor_type = decltype(make_descriptor<pipeline_type>());
 
   explicit thread_pool_engine(thread_pool_backend backend = {})
-      : cancel_{backend.cancel}, pool_{backend.worker_count} {}
+      : cancel_{backend.cancel},
+        pool_{backend.pool ? std::move(backend.pool) : std::make_shared<thread_pool>(backend.worker_count)} {}
+
+  thread_pool_engine(const thread_pool_engine&) = delete;
+  thread_pool_engine& operator=(const thread_pool_engine&) = delete;
+  thread_pool_engine(thread_pool_engine&&) noexcept = default;
+  thread_pool_engine& operator=(thread_pool_engine&&) noexcept = default;
 
   void set_observer(observer* value) noexcept { observer_ = value; }
   [[nodiscard]] observer* get_observer() const noexcept { return observer_; }
-  [[nodiscard]] std::size_t worker_count() const noexcept { return pool_.worker_count(); }
+  [[nodiscard]] std::size_t worker_count() const noexcept { return pool_->worker_count(); }
+  [[nodiscard]] std::size_t pending_tasks() const { return pool_->pending_tasks(); }
+  [[nodiscard]] std::size_t queued_tasks() const { return pool_->queued_tasks(); }
+  [[nodiscard]] std::size_t active_tasks() const { return pool_->active_tasks(); }
+  [[nodiscard]] thread_pool_snapshot snapshot() const { return pool_->snapshot(); }
+  [[nodiscard]] std::shared_ptr<thread_pool> shared_pool() const noexcept { return pool_; }
+  void wait_idle() { pool_->wait_idle(); }
+  template <class Rep, class Period>
+  [[nodiscard]] bool wait_idle_for(const std::chrono::duration<Rep, Period>& timeout) {
+    return pool_->wait_idle_for(timeout);
+  }
+  template <class Clock, class Duration>
+  [[nodiscard]] bool wait_idle_until(const std::chrono::time_point<Clock, Duration>& deadline) {
+    return pool_->wait_idle_until(deadline);
+  }
   [[nodiscard]] constexpr auto descriptor() const noexcept -> runtime_descriptor_type { return make_descriptor<pipeline_type>(); }
 
   /// Replace the cooperative cancellation token used by subsequent runs. A
@@ -338,14 +375,14 @@ public:
     if constexpr (sizeof...(Stages) == 0) {
       return result<Output>{std::move(input)};
     } else {
-      return run_stages<0, Output, Input, Stages...>(pool_, observer_, cancel_, std::move(input));
+      return run_stages<0, Output, Input, Stages...>(*pool_, observer_, cancel_, std::move(input));
     }
   }
 
 private:
   observer* observer_{nullptr};
   pb::cancellation_token cancel_{};
-  thread_pool pool_;
+  std::shared_ptr<thread_pool> pool_;
 };
 
 } // namespace detail_thread_pool

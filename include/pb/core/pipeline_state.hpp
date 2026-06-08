@@ -670,6 +670,10 @@ struct append_stage;
 
 template <class Policies, class Input, class Current, class... Stages, class StageType>
 struct append_stage<pipeline_state<Policies, Input, Current, Stages...>, StageType> {
+  static_assert(has_stage_input_type_v<StageType>,
+                "Pipeline stage is invalid: missing input_type member");
+  static_assert(has_stage_output_type_v<StageType>,
+                "Pipeline stage is invalid: missing output_type member");
   static_assert(Stage<StageType>, "Pipeline stage is invalid: define input_type and output_type");
   static_assert(Connectable<Current, StageType>,
                 "Pipeline edge mismatch: previous output_type (or pipeline input) must exactly match next "

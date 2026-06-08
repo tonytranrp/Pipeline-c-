@@ -16,6 +16,7 @@
 import pb.pipeline;
 
 #include <cassert>
+#include <chrono>
 #include <memory>
 #include <string_view>
 #include <type_traits>
@@ -72,6 +73,10 @@ using MoveOnlyPipeline = pb::from<MoveInput>::then<MoveAddOne>::to<MoveOutput>;
 static_assert(pb::valid<MoveOnlyPipeline>);
 static_assert(pb::backend_support_name(pb::backend_support::supported) == std::string_view{"supported"});
 static_assert(pb::backend_execution_model_name(pb::backend_execution_model::thread_pool) == std::string_view{"thread_pool"});
+static_assert(pb::backend_available("sequential"));
+static_assert(pb::backend_available("thread_pool"));
+static_assert(!pb::backend_available("unknown"));
+static_assert(pb::thread_pool_snapshot{.worker_count = 1}.idle());
 
 }  // namespace
 
@@ -107,6 +112,15 @@ int main() {
   auto move_engine = pb::compile<MoveOnlyPipeline>(pb::sequential{});
   auto move_output = move_engine.run(MoveInput{std::make_unique<int>(41)});
   if (*move_output.value != 42) {
+    return 1;
+  }
+
+  pb::thread_pool pool{1};
+  const auto pool_snapshot = pool.snapshot();
+  if (pool_snapshot.worker_count != 1 || !pool_snapshot.idle()) {
+    return 1;
+  }
+  if (!pool.wait_idle_for(std::chrono::seconds{1})) {
     return 1;
   }
 

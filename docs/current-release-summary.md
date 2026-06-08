@@ -5,14 +5,15 @@ Status snapshot for the current branch/export, compile-time benchmark, fan-in/th
 ## Candidate snapshot
 
 - Current branch: `main`.
-- Current validated code SHA: `87299c14c813753d170911239e251064cbbfee6f` (`Support the first thread-pool fan-in backend slice`).
+- Latest completed exact-SHA cross-compiler validation: `87299c14c813753d170911239e251064cbbfee6f` (`Support the first thread-pool fan-in backend slice`).
+- The current branch has advanced past that SHA; rerun local full CTest, package smoke, and GitHub cross-compiler validation on the final candidate SHA before release tagging.
 - Parent fan-in feature SHA: `cfaa7e96b50e54aa83e26c5fa70a858caf270880` (`Add explicit fan-in to close the branch graph gap`).
 - GitHub cross-compiler validation: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26145779030> — **passed**.
 - Normal CI workflow: <https://github.com/tonytranrp/Pipeline-c-/actions/runs/26145765932> — **passed**.
-- Local verification paired with this code: Clang developer full CTest `163/163`, targeted backend/policy/export/descriptor CTest `33/33`, package-release full CTest `163/163`, and package artifact `build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz`.
+- Local verification paired with the exact-SHA validation: Clang developer full CTest `163/163`, targeted backend/policy/export/descriptor CTest `33/33`, package-release full CTest `163/163`, and package artifact `build/package-release-clang-ninja/pipebuilder-0.1.0-Linux.tar.gz`.
 - Compiler-warning audit: cross-compiler and CI logs for the exact-SHA candidate had no compiler-style `warning:` diagnostics; GitHub still emits a hosted-runner Node 20 action annotation unrelated to project compiler warnings.
 
-## What can be claimed with current evidence
+## What the exact-SHA validation supports
 
 - Linear typed pipeline validation and sequential runtime execution remain supported.
 - Public branch/join DSL is supported for the selected-output sequential runtime slice.
@@ -33,13 +34,13 @@ Status snapshot for the current branch/export, compile-time benchmark, fan-in/th
 - Stable descriptor/export schemas and release-grade compatibility fixtures beyond the current descriptor-record-backed helper output.
 - CLI/file export as a stable public contract for user pipeline definitions.
 - Full runtime policy DSL for error, exception, state, reference lifetime, diagnostic verbosity, clone/projection, and executor capability behavior beyond the current policy marker/introspection helpers.
-- C++ modules and C++26 reflection/contracts feature integrations.
+- Broader C++20 module compatibility/install guarantees and C++26 reflection/contracts feature integrations.
 - Stable/frozen diagnostic wording across all future features.
 - Benchmark thresholds, dashboards, release timing baselines, or CI-enforced compile-time/runtime performance budgets.
 
 ## Validation evidence collected
 
-Current local verification for validated code SHA `87299c14c813753d170911239e251064cbbfee6f`:
+Local verification for validated code SHA `87299c14c813753d170911239e251064cbbfee6f`:
 
 ```text
 git diff --check: passed

@@ -20,6 +20,30 @@ enum class backend_execution_model {
   sender_receiver,
 };
 
+namespace detail {
+
+inline constexpr bool taskflow_backend_compile_time_available =
+#if defined(PB_HAS_TASKFLOW)
+    true;
+#else
+    false;
+#endif
+
+inline constexpr bool tbb_backend_compile_time_available =
+#if defined(PB_HAS_TBB)
+    true;
+#else
+    false;
+#endif
+
+inline constexpr bool stdexec_backend_compile_time_available =
+#if defined(PB_HAS_STDEXEC)
+    true;
+#else
+    false;
+#endif
+
+} // namespace detail
 
 [[nodiscard]] constexpr auto backend_support_name(backend_support support) noexcept -> std::string_view {
   switch (support) {
@@ -48,6 +72,8 @@ struct backend_feature {
   backend_support support;
   bool external_dependency;
   bool default_build;
+  bool compile_time_available;
+  std::string_view availability_macro;
   std::string_view note;
 };
 
@@ -57,30 +83,40 @@ inline constexpr auto backend_feature_matrix = std::array{
                     .support = backend_support::supported,
                     .external_dependency = false,
                     .default_build = true,
+                    .compile_time_available = true,
+                    .availability_macro = "",
                     .note = "standard-library deterministic linear runtime"},
     backend_feature{.name = "thread_pool",
                     .execution_model = backend_execution_model::thread_pool,
                     .support = backend_support::supported,
                     .external_dependency = false,
                     .default_build = false,
+                    .compile_time_available = true,
+                    .availability_macro = "",
                     .note = "standard-library thread-pool backend for supported fan-in pipeline execution"},
     backend_feature{.name = "taskflow",
                     .execution_model = backend_execution_model::task_graph,
                     .support = backend_support::roadmap,
                     .external_dependency = true,
                     .default_build = false,
+                    .compile_time_available = detail::taskflow_backend_compile_time_available,
+                    .availability_macro = "PB_HAS_TASKFLOW",
                     .note = "planned optional adapter target; dependency is not required by core/runtime"},
     backend_feature{.name = "oneTBB",
                     .execution_model = backend_execution_model::filter_pipeline,
                     .support = backend_support::roadmap,
                     .external_dependency = true,
                     .default_build = false,
+                    .compile_time_available = detail::tbb_backend_compile_time_available,
+                    .availability_macro = "PB_HAS_TBB",
                     .note = "planned optional adapter target; dependency is not required by core/runtime"},
     backend_feature{.name = "stdexec",
                     .execution_model = backend_execution_model::sender_receiver,
                     .support = backend_support::experimental,
                     .external_dependency = true,
                     .default_build = false,
+                    .compile_time_available = detail::stdexec_backend_compile_time_available,
+                    .availability_macro = "PB_HAS_STDEXEC",
                     .note = "future sender/receiver adapter gated on compiler and library maturity"},
 };
 
@@ -92,6 +128,15 @@ inline constexpr auto backend_feature_matrix = std::array{
   for (const auto& feature : backend_feature_matrix) {
     if (feature.name == name) {
       return feature.support == backend_support::supported;
+    }
+  }
+  return false;
+}
+
+[[nodiscard]] constexpr auto backend_available(std::string_view name) noexcept -> bool {
+  for (const auto& feature : backend_feature_matrix) {
+    if (feature.name == name) {
+      return feature.compile_time_available;
     }
   }
   return false;

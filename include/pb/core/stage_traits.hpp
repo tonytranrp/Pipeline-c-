@@ -33,6 +33,24 @@ template <class T>
 struct error_type_or<T, std::void_t<typename T::error_type>> {
   using type = typename T::error_type;
 };
+
+template <class T, class = void>
+struct has_declared_stage_input_type : std::false_type {};
+
+template <class T>
+struct has_declared_stage_input_type<T, std::void_t<typename T::input_type>> : std::true_type {};
+
+template <class T>
+inline constexpr bool has_declared_stage_input_type_v = has_declared_stage_input_type<T>::value;
+
+template <class T, class = void>
+struct has_declared_stage_output_type : std::false_type {};
+
+template <class T>
+struct has_declared_stage_output_type<T, std::void_t<typename T::output_type>> : std::true_type {};
+
+template <class T>
+inline constexpr bool has_declared_stage_output_type_v = has_declared_stage_output_type<T>::value;
 } // namespace detail
 
 template <class T, class = void>
@@ -70,6 +88,26 @@ struct stage_traits<T, std::void_t<typename T::input_type, typename T::output_ty
 };
 
 namespace detail {
+template <class T, class = void>
+struct has_trait_stage_input_type : std::false_type {};
+
+template <class T>
+struct has_trait_stage_input_type<T, std::void_t<typename stage_traits<T>::input_type>> : std::true_type {};
+
+template <class T>
+inline constexpr bool has_stage_input_type_v =
+    has_declared_stage_input_type_v<T> || has_trait_stage_input_type<T>::value;
+
+template <class T, class = void>
+struct has_trait_stage_output_type : std::false_type {};
+
+template <class T>
+struct has_trait_stage_output_type<T, std::void_t<typename stage_traits<T>::output_type>> : std::true_type {};
+
+template <class T>
+inline constexpr bool has_stage_output_type_v =
+    has_declared_stage_output_type_v<T> || has_trait_stage_output_type<T>::value;
+
 template <class T, bool IsStage = stage_traits<T>::is_valid_stage>
 struct stage_input_type_or_diagnostic {
   static_assert(IsStage,

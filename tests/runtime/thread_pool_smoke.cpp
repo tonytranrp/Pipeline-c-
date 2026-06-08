@@ -2,6 +2,7 @@
 #include <pb/pipeline.hpp>
 
 #include <cassert>
+#include <chrono>
 #include <future>
 #include <memory>
 #include <stdexcept>
@@ -75,6 +76,98 @@ int main() {
     } catch (const std::runtime_error& exception) {
       assert(std::string_view{exception.what()} == "boom");
     }
+  }
+
+  // Test 9: Pool snapshots distinguish queued work from active work
+  {
+    pb::thread_pool pool{1};
+    std::promise<void> started;
+    std::promise<void> release;
+    auto started_signal = started.get_future();
+    auto release_signal = release.get_future();
+
+    auto first = pool.enqueue([&] {
+      started.set_value();
+      release_signal.wait();
+      return 1;
+    });
+    started_signal.wait();
+
+    auto second = pool.enqueue([] { return 2; });
+    const auto busy = pool.snapshot();
+    assert(busy.worker_count == 1);
+    assert(busy.active_tasks == 1);
+    assert(busy.pending_tasks == 1);
+    assert(busy.outstanding_tasks() == 2);
+    assert(!busy.idle());
+
+    release.set_value();
+    pool.wait_idle();
+    assert(pool.snapshot().idle());
+    assert(first.get() == 1);
+    assert(second.get() == 2);
+  }
+
+  // Test 10: Workers cannot wait on their own pool becoming idle
+  {
+    pb::thread_pool pool{1};
+    auto future = pool.enqueue([&pool] {
+      try {
+        pool.wait_idle();
+      } catch (const std::logic_error& exception) {
+        return std::string_view{exception.what()} ==
+               "thread_pool idle waits cannot be called from worker tasks";
+      }
+      return false;
+    });
+    assert(future.get());
+  }
+
+  // Test 11: Timed idle waits report busy pools and completed drains
+  {
+    pb::thread_pool pool{1};
+    std::promise<void> started;
+    std::promise<void> release;
+    auto started_signal = started.get_future();
+    auto release_signal = release.get_future();
+
+    auto first = pool.enqueue([&] {
+      started.set_value();
+      release_signal.wait();
+      return 3;
+    });
+    started_signal.wait();
+
+    assert(!pool.wait_idle_for(std::chrono::milliseconds{1}));
+    assert(!pool.wait_idle_until(std::chrono::steady_clock::now() + std::chrono::milliseconds{1}));
+
+    release.set_value();
+    assert(pool.wait_idle_for(std::chrono::seconds{1}));
+    assert(pool.wait_idle_until(std::chrono::steady_clock::now() + std::chrono::seconds{1}));
+    assert(first.get() == 3);
+  }
+
+  // Test 12: Timed waits use the same worker self-wait guard
+  {
+    pb::thread_pool pool{1};
+    auto future = pool.enqueue([&pool] {
+      bool for_guarded = false;
+      bool until_guarded = false;
+      try {
+        (void)pool.wait_idle_for(std::chrono::milliseconds{1});
+      } catch (const std::logic_error& exception) {
+        for_guarded = std::string_view{exception.what()} ==
+                      "thread_pool idle waits cannot be called from worker tasks";
+      }
+      try {
+        (void)pool.wait_idle_until(std::chrono::steady_clock::now() + std::chrono::milliseconds{1});
+      } catch (const std::logic_error& exception) {
+        until_guarded = std::string_view{exception.what()} ==
+                        "thread_pool idle waits cannot be called from worker tasks";
+      }
+      return for_guarded && until_guarded;
+    });
+    assert(future.get());
   }
 
   return 0;
