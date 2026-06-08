@@ -30,6 +30,8 @@ int main() {
   pb_test_require(!sequential->external_dependency);
   pb_test_require(sequential->default_build);
   pb_test_require(pb::backend_supported("sequential"));
+  pb_test_require(pb::backend_support_name(sequential->support) == std::string_view{"supported"});
+  pb_test_require(pb::backend_execution_model_name(sequential->execution_model) == std::string_view{"sequential"});
 
   const auto thread_pool = named("thread_pool");
   pb_test_require(thread_pool != features.end());
@@ -38,6 +40,7 @@ int main() {
   pb_test_require(!thread_pool->external_dependency);
   pb_test_require(!thread_pool->default_build);
   pb_test_require(pb::backend_supported("thread_pool"));
+  pb_test_require(pb::backend_execution_model_name(thread_pool->execution_model) == std::string_view{"thread_pool"});
 
   for (const auto backend : {"taskflow", "oneTBB", "stdexec"}) {
     const auto feature = named(backend);

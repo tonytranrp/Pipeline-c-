@@ -135,10 +135,12 @@ using runtime::stateful_sequential;
 
 // ── runtime: backend introspection ───────────────────────────
 using runtime::backend_execution_model;
+using runtime::backend_execution_model_name;
 using runtime::backend_feature;
 using runtime::backend_feature_matrix;
 using runtime::backend_features;
 using runtime::backend_support;
+using runtime::backend_support_name;
 using runtime::backend_supported;
 
 // ── runtime: descriptor / routing ────────────────────────────
