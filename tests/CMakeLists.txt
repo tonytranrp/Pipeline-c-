@@ -1584,6 +1584,18 @@ if(PB_BUILD_CLI)
   add_test(NAME pb_cli_features    COMMAND pb_cli features)
   set_tests_properties(pb_cli_features PROPERTIES LABELS "cli;features")
 
+  add_test(NAME pb_cli_backends    COMMAND pb_cli backends)
+  set_tests_properties(pb_cli_backends PROPERTIES LABELS "cli;backend")
+
+  add_test(NAME pb_cli_backends_matrix
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DCOMMAND=backends
+      "-DEXPECTED_TOKENS=Pipeline-c++ runtime backend matrix;sequential | sequential | supported | no | yes;thread_pool | thread_pool | supported | no | no;taskflow | task_graph | roadmap | yes | no;oneTBB | filter_pipeline | roadmap | yes | no;stdexec | sender_receiver | experimental | yes | no;roadmap entries are not working backends"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_command.cmake
+  )
+  set_tests_properties(pb_cli_backends_matrix PROPERTIES LABELS "cli;backend;matrix")
+
   add_test(NAME pb_cli_list        COMMAND pb_cli list)
   set_tests_properties(pb_cli_list PROPERTIES LABELS "cli;smoke")
 

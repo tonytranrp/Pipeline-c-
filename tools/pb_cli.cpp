@@ -380,6 +380,7 @@ void print_banner() {
   std::cout << "Commands:\n";
   std::cout << "  version                            Print version and capability summary\n";
   std::cout << "  features                           Print C++ feature-gate matrix\n";
+  std::cout << "  backends                           Print runtime backend support matrix\n";
   std::cout << "  list                               List built-in example pipelines\n";
   std::cout << "  schema                             Print helper-export schema metadata\n";
   std::cout << "  describe <name> [options]          Emit graph for an example pipeline\n";
@@ -437,6 +438,22 @@ void print_features() {
 #else
   std::cout << "  __cpp_explicit_this_parameter = <undefined>\n";
 #endif
+}
+
+void print_backends() {
+  std::cout << "Pipeline-c++ runtime backend matrix\n";
+  std::cout << "====================================\n";
+  std::cout << "name | model | support | external | default | note\n";
+  for (const auto& backend : pb::backend_features()) {
+    std::cout << backend.name << " | "
+              << pb::backend_execution_model_name(backend.execution_model) << " | "
+              << pb::backend_support_name(backend.support) << " | "
+              << yes_no(backend.external_dependency) << " | "
+              << yes_no(backend.default_build) << " | "
+              << backend.note << "\n";
+  }
+  std::cout << "\nBoundary: external dependency backends are dormant unless their PB_ENABLE_* option\n";
+  std::cout << "is configured and the dependency is found; roadmap entries are not working backends.\n";
 }
 
 void print_export_help(std::string_view format) {
@@ -597,6 +614,11 @@ int main(int argc, char* argv[]) {
 
   if (cmd == "features") {
     print_features();
+    return 0;
+  }
+
+  if (cmd == "backends") {
+    print_backends();
     return 0;
   }
 

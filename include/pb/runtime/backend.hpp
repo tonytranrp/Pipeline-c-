@@ -20,6 +20,28 @@ enum class backend_execution_model {
   sender_receiver,
 };
 
+
+[[nodiscard]] constexpr auto backend_support_name(backend_support support) noexcept -> std::string_view {
+  switch (support) {
+    case backend_support::supported:    return "supported";
+    case backend_support::roadmap:      return "roadmap";
+    case backend_support::experimental: return "experimental";
+  }
+  return "unknown";
+}
+
+[[nodiscard]] constexpr auto backend_execution_model_name(backend_execution_model model) noexcept
+    -> std::string_view {
+  switch (model) {
+    case backend_execution_model::sequential:       return "sequential";
+    case backend_execution_model::thread_pool:      return "thread_pool";
+    case backend_execution_model::task_graph:       return "task_graph";
+    case backend_execution_model::filter_pipeline:  return "filter_pipeline";
+    case backend_execution_model::sender_receiver:  return "sender_receiver";
+  }
+  return "unknown";
+}
+
 struct backend_feature {
   std::string_view name;
   backend_execution_model execution_model;

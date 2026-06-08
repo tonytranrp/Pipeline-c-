@@ -70,6 +70,8 @@ struct MoveAddOne {
 
 using MoveOnlyPipeline = pb::from<MoveInput>::then<MoveAddOne>::to<MoveOutput>;
 static_assert(pb::valid<MoveOnlyPipeline>);
+static_assert(pb::backend_support_name(pb::backend_support::supported) == std::string_view{"supported"});
+static_assert(pb::backend_execution_model_name(pb::backend_execution_model::thread_pool) == std::string_view{"thread_pool"});
 
 }  // namespace
 
