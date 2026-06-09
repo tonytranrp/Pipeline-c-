@@ -692,6 +692,31 @@ public:
     }
     *sink_ << '\n';
   }
+  void on_fan_in_started(const runtime::stage_id& branch_id, std::size_t case_count) override {
+    if (!sink_) return;
+    *sink_ << "[pb.verbose] fan_in_started branch=" << format_stage(branch_id)
+           << " cases=" << case_count << '\n';
+  }
+  void on_fan_in_case_scheduled(const runtime::stage_id& branch_id, std::size_t case_index,
+                                const runtime::stage_id& case_stage_id) override {
+    if (!sink_) return;
+    *sink_ << "[pb.verbose] fan_in_case_scheduled branch=" << format_stage(branch_id)
+           << " case=" << case_index << " stage=" << format_stage(case_stage_id) << '\n';
+  }
+  void on_fan_in_case_completed(const runtime::stage_id& branch_id, std::size_t case_index,
+                                const runtime::stage_id& case_stage_id, bool success) override {
+    if (!sink_) return;
+    *sink_ << "[pb.verbose] fan_in_case_completed branch=" << format_stage(branch_id)
+           << " case=" << case_index << " stage=" << format_stage(case_stage_id)
+           << " success=" << (success ? "true" : "false") << '\n';
+  }
+  void on_fan_in_completed(const runtime::stage_id& branch_id, std::size_t selected_count,
+                           std::size_t completed_count, std::size_t failed_count) override {
+    if (!sink_) return;
+    *sink_ << "[pb.verbose] fan_in_completed branch=" << format_stage(branch_id)
+           << " selected=" << selected_count << " completed=" << completed_count
+           << " failed=" << failed_count << '\n';
+  }
 
 private:
   static auto format_stage(const runtime::stage_id& id) -> std::string {

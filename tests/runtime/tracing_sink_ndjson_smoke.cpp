@@ -75,6 +75,19 @@ using SuccessLinear = pb::from<Input>::then<Increment>::to<Output>;
 using FailureLinear = pb::from<Input>::then<FailingStage>::to<Output>;
 using IncrementCase = pb::case_<Always>::then<Increment>;
 using SuccessBranch = pb::from<Input>::branch<IncrementCase>::to<Output>;
+using FanInOutput = pb::fan_in_output_t<IncrementCase>;
+
+struct FanInJoin {
+  using input_type = FanInOutput;
+  using output_type = Output;
+  static constexpr auto stage_key()  noexcept { return "join"; }
+  static constexpr auto stage_name() noexcept { return "join"; }
+  Output operator()(const FanInOutput& input) const {
+    return input.template get<0>().get();
+  }
+};
+
+using SuccessFanIn = pb::from<Input>::branch<IncrementCase>::fan_in<FanInJoin>::to<Output>;
 
 } // namespace tracing_sink_smoke
 
@@ -150,7 +163,30 @@ int main() {
     pb_test_require(contains(out, "\"case_index\":0"));
   }
 
-  // ── 5. Null stream is a no-op (benchmarkable). ──
+  // ── 5. Fan-in run emits lifecycle events as tracked event kinds. ──
+  {
+    std::ostringstream stream;
+    pb::tracing_sink sink{&stream};
+    pb::trace_observer obs{sink};
+
+    auto engine = pb::compile<SuccessFanIn>(pb::runtime::sequential{});
+    engine.set_observer(&obs);
+    (void)engine.run(Input{.value = 1});
+
+    const auto out = stream.str();
+    pb_test_require(contains(out, "\"kind\":\"fan_in_started\""));
+    pb_test_require(contains(out, "\"case_count\":1"));
+    pb_test_require(contains(out, "\"kind\":\"fan_in_case_scheduled\""));
+    pb_test_require(contains(out, "\"case_index\":0"));
+    pb_test_require(contains(out, "\"kind\":\"fan_in_case_completed\""));
+    pb_test_require(contains(out, "\"success\":true"));
+    pb_test_require(contains(out, "\"kind\":\"fan_in_completed\""));
+    pb_test_require(contains(out, "\"selected_count\":1"));
+    pb_test_require(contains(out, "\"completed_count\":1"));
+    pb_test_require(contains(out, "\"failed_count\":0"));
+  }
+
+  // ── 6. Null stream is a no-op (benchmarkable). ──
   {
     pb::tracing_sink sink{nullptr};
     pb::trace_observer obs{sink};
@@ -162,7 +198,7 @@ int main() {
     pb_test_require(sink.stream() == nullptr);
   }
 
-  // ── 6. set_stream() re-targets the sink mid-lifetime. ──
+  // ── 7. set_stream() re-targets the sink mid-lifetime. ──
   {
     std::ostringstream a;
     std::ostringstream b;
@@ -183,7 +219,7 @@ int main() {
     (void)a_size_before;  // baseline captured
   }
 
-  // ── 7. Batch export_json and per-line NDJSON share the same per-event shape. ──
+  // ── 8. Batch export_json and per-line NDJSON share the same per-event shape. ──
   {
     std::ostringstream stream;
     pb::tracing_sink sink{&stream};

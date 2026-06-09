@@ -5,7 +5,7 @@
 //
 //   * observer_schema_version and verbose_observer_schema_version
 //     literals.
-//   * The seven-method vtable shape via compile-time `requires` checks
+//   * The eleven-method vtable shape via compile-time `requires` checks
 //     on a derived observer.
 //   * Every documented [pb.verbose] event line as a byte-equal
 //     substring assertion.
@@ -38,7 +38,7 @@ constexpr auto contains(std::string_view haystack, std::string_view needle) noex
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// ABI shape — derived observer with all 7 overrides must compile, and
+// ABI shape — derived observer with all 11 overrides must compile, and
 // each method must be virtual with the documented signature.
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -51,6 +51,13 @@ struct probe_observer final : pb::runtime::observer {
   void on_case_skipped   (const pb::runtime::stage_id&, std::size_t, const pb::runtime::stage_id&) override {}
   void on_case_failed    (const pb::runtime::stage_id&, std::size_t,
                           const pb::runtime::stage_id&, const pb::runtime::error&) override {}
+  void on_fan_in_started (const pb::runtime::stage_id&, std::size_t) override {}
+  void on_fan_in_case_scheduled(const pb::runtime::stage_id&, std::size_t,
+                                const pb::runtime::stage_id&) override {}
+  void on_fan_in_case_completed(const pb::runtime::stage_id&, std::size_t,
+                                const pb::runtime::stage_id&, bool) override {}
+  void on_fan_in_completed(const pb::runtime::stage_id&, std::size_t, std::size_t,
+                           std::size_t) override {}
 };
 
 static_assert(std::is_polymorphic_v<pb::runtime::observer>,
@@ -58,7 +65,7 @@ static_assert(std::is_polymorphic_v<pb::runtime::observer>,
 static_assert(std::has_virtual_destructor_v<pb::runtime::observer>,
               "pb.observer.v1 ABI requires a virtual destructor");
 
-// All seven methods MUST be reachable on the derived type — a vtable
+// All eleven methods MUST be reachable on the derived type — a vtable
 // reordering or signature change shows up as a constraint failure.
 static_assert(requires(probe_observer& o,
                        const pb::runtime::stage_id& id,
@@ -77,6 +84,16 @@ static_assert(requires(probe_observer& o,
   { o.on_case_skipped (id, idx, id) } -> std::same_as<void>;
   { o.on_case_failed  (id, idx, id, err) } -> std::same_as<void>;
 }, "pb.observer.v1: all three case hooks must remain reachable with documented signatures");
+
+static_assert(requires(probe_observer& o,
+                       const pb::runtime::stage_id& id,
+                       std::size_t idx,
+                       bool success) {
+  { o.on_fan_in_started(id, idx) } -> std::same_as<void>;
+  { o.on_fan_in_case_scheduled(id, idx, id) } -> std::same_as<void>;
+  { o.on_fan_in_case_completed(id, idx, id, success) } -> std::same_as<void>;
+  { o.on_fan_in_completed(id, idx, idx, idx) } -> std::same_as<void>;
+}, "pb.observer.v1: all four fan-in lifecycle hooks must remain reachable with documented signatures");
 
 // ────────────────────────────────────────────────────────────────────────────
 // Test pipelines for verbose-line regression
@@ -128,6 +145,19 @@ using ExceptionLinear = pb::from<Input>::then<ThrowingStage>::to<Output>;
 
 using IncrementCase = pb::case_<Always>::then<Increment>;
 using SuccessBranch = pb::from<Input>::branch<IncrementCase>::to<Output>;
+using FanInOutput = pb::fan_in_output_t<IncrementCase>;
+
+struct FanInJoin {
+  using input_type = FanInOutput;
+  using output_type = Output;
+  static constexpr auto stage_key()  noexcept { return "join"; }
+  static constexpr auto stage_name() noexcept { return "join"; }
+  Output operator()(const FanInOutput& input) const {
+    return input.template get<0>().get();
+  }
+};
+
+using SuccessFanIn = pb::from<Input>::branch<IncrementCase>::fan_in<FanInJoin>::to<Output>;
 
 template <class Pipeline>
 auto fresh_engine() {
@@ -187,6 +217,22 @@ int main() {
     const auto log = sink.str();
     pb_test_require(contains(log,
         "[pb.verbose] case_selected branch=branch case=0 predicate=always\n"));
+  }
+
+  // fan-in lifecycle lines on an always-selected single-case fan-in branch.
+  {
+    std::ostringstream sink;
+    auto engine = pb::with_verbose_diagnostics(fresh_engine<SuccessFanIn>(), &sink);
+    (void)engine.try_run(Input{.value = 1});
+    const auto log = sink.str();
+    pb_test_require(contains(log,
+        "[pb.verbose] fan_in_started branch=fan_in cases=1\n"));
+    pb_test_require(contains(log,
+        "[pb.verbose] fan_in_case_scheduled branch=fan_in case=0 stage=increment\n"));
+    pb_test_require(contains(log,
+        "[pb.verbose] fan_in_case_completed branch=fan_in case=0 stage=increment success=true\n"));
+    pb_test_require(contains(log,
+        "[pb.verbose] fan_in_completed branch=fan_in selected=1 completed=1 failed=0\n"));
   }
 
   return 0;
