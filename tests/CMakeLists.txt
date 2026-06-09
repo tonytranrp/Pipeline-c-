@@ -1015,6 +1015,29 @@ add_test(NAME pb_compile_fail_adapt_non_final_void_stage_mismatch
 )
 set_tests_properties(pb_compile_fail_adapt_non_final_void_stage_mismatch PROPERTIES LABELS "compile-fail;diagnostics;adapter;runtime")
 
+
+add_test(NAME pb_compile_fail_runtime_callable_bind_return_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/runtime_callable_bind_return_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pb::bind_callable:
+    -DEXPECTED_DIAGNOSTICS=return\ Out
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_runtime_callable_bind_return_mismatch PROPERTIES LABELS "compile-fail;diagnostics;adapter;runtime-callable")
+
+add_test(NAME pb_compile_fail_runtime_callable_bind_input_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/runtime_callable_bind_input_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pb::bind_callable:
+    -DEXPECTED_DIAGNOSTICS=invocable\ with\ In
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_runtime_callable_bind_input_mismatch PROPERTIES LABELS "compile-fail;diagnostics;adapter;runtime-callable")
+
 add_test(NAME pb_compile_fail_sync_sender_stage_missing_output_type
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/sync_sender_stage_missing_output_type.cpp
