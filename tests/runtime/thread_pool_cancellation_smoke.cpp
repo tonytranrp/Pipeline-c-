@@ -21,6 +21,7 @@
 #include <atomic>
 #include <cstdlib>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace {
@@ -127,11 +128,38 @@ static_assert(pb::valid<Pipeline>);
 struct RecordingObserver : pb::runtime::observer {
   std::atomic<int> selected{0};
   std::atomic<int> skipped{0};
+  std::atomic<int> fan_in_started{0};
+  std::atomic<int> fan_in_completed{0};
+  std::atomic<int> fan_in_scheduled{0};
+  std::atomic<int> fan_in_case_completed{0};
+  std::atomic<std::size_t> started_case_count{0};
+  std::atomic<std::size_t> reported_selected{0};
+  std::atomic<std::size_t> reported_completed{0};
+  std::atomic<std::size_t> reported_failed{0};
   void on_case_selected(const pb::runtime::stage_id&, std::size_t, const pb::runtime::stage_id&) override {
     selected.fetch_add(1, std::memory_order_relaxed);
   }
   void on_case_skipped(const pb::runtime::stage_id&, std::size_t, const pb::runtime::stage_id&) override {
     skipped.fetch_add(1, std::memory_order_relaxed);
+  }
+  void on_fan_in_started(const pb::runtime::stage_id&, std::size_t case_count) override {
+    fan_in_started.fetch_add(1, std::memory_order_relaxed);
+    started_case_count.store(case_count, std::memory_order_relaxed);
+  }
+  void on_fan_in_case_scheduled(const pb::runtime::stage_id&, std::size_t,
+                                const pb::runtime::stage_id&) override {
+    fan_in_scheduled.fetch_add(1, std::memory_order_relaxed);
+  }
+  void on_fan_in_case_completed(const pb::runtime::stage_id&, std::size_t,
+                                const pb::runtime::stage_id&, bool) override {
+    fan_in_case_completed.fetch_add(1, std::memory_order_relaxed);
+  }
+  void on_fan_in_completed(const pb::runtime::stage_id&, std::size_t selected_count,
+                           std::size_t completed_count, std::size_t failed_count) override {
+    fan_in_completed.fetch_add(1, std::memory_order_relaxed);
+    reported_selected.store(selected_count, std::memory_order_relaxed);
+    reported_completed.store(completed_count, std::memory_order_relaxed);
+    reported_failed.store(failed_count, std::memory_order_relaxed);
   }
 };
 
@@ -144,6 +172,39 @@ void reset_calls() {
 } // namespace
 
 int main() {
+  static_assert(pb::cancellation_schema_version == std::string_view{"pb.cancel.v1"});
+
+  // 0) Source and token copies share a single cooperative stop flag. A
+  //    default token stays detached and never reports a stop.
+  {
+    pb::cancellation_token default_token{};
+    require(!default_token.can_be_cancelled());
+    require(!default_token.stop_requested());
+
+    pb::cancellation_source source;
+    auto token = source.token();
+    auto token_copy = token;
+    auto source_copy = source;
+    auto copied_source_token = source_copy.token();
+
+    require(token.can_be_cancelled());
+    require(token_copy.can_be_cancelled());
+    require(copied_source_token.can_be_cancelled());
+    require(!source.stop_requested());
+    require(!source_copy.stop_requested());
+    require(!token.stop_requested());
+    require(!token_copy.stop_requested());
+    require(!copied_source_token.stop_requested());
+
+    source_copy.request_stop();
+    require(source.stop_requested());
+    require(source_copy.stop_requested());
+    require(token.stop_requested());
+    require(token_copy.stop_requested());
+    require(copied_source_token.stop_requested());
+    require(!default_token.stop_requested());
+  }
+
   // 1) Baseline: no token (default). All three cases selected and run; the
   //    result is the normal, uncancelled fan-in output.
   reset_calls();
@@ -202,6 +263,16 @@ int main() {
     // None were "selected" for execution; all three reported skipped.
     require(observer.selected.load() == 0);
     require(observer.skipped.load() == 3);
+    // Stopped-before-enqueue cases are skipped before scheduling, so fan-in
+    // lifecycle counts report an empty selected/completed/failed set.
+    require(observer.fan_in_started.load() == 1);
+    require(observer.started_case_count.load() == 3);
+    require(observer.fan_in_scheduled.load() == 0);
+    require(observer.fan_in_case_completed.load() == 0);
+    require(observer.fan_in_completed.load() == 1);
+    require(observer.reported_selected.load() == 0);
+    require(observer.reported_completed.load() == 0);
+    require(observer.reported_failed.load() == 0);
   }
 
   // 4) Re-run several times with stop requested to prove determinism / no hang.
