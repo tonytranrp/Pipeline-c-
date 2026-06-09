@@ -1,6 +1,7 @@
 #include <pb/pipeline.hpp>
 
 #include <cassert>
+#include <string>
 
 struct Input {
   int value{};
@@ -63,6 +64,11 @@ int main() {
   assert(failed.error().stage.key == "checked_double");
   assert(failed.error().stage.name == "checked_double");
   assert(failed.error().message == "zero middle");
+  const auto failed_json = pb::runtime::to_json(failed.error());
+  assert(failed_json.find("\"stage\":{\"key\":\"checked_double\",\"name\":\"checked_double\"}") !=
+         std::string::npos);
+  assert(failed_json.find("\"category\":\"stage_failure\"") != std::string::npos);
+  assert(failed_json.find("\"message\":\"zero middle\"") != std::string::npos);
 
   return 0;
 }

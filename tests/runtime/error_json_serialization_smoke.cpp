@@ -125,7 +125,30 @@ int main() {
     pb_test_require(!json.empty() && json.back() == '}');
   }
 
-  // ── 6. Schema-version constant is reachable through pb:: alias. ──
+  // ── 6. Direct error_record serialization preserves edge fields. ──
+  {
+    const pb::runtime::error_record record{
+        .stage_key = "key\\with\"quote",
+        .stage_name = std::string{"name\nline"},
+        .category = "custom_category",
+        .message = std::string{"msg\tvalue"}};
+    const auto json = pb::runtime::to_json(record);
+
+    pb_test_require(
+        contains(json, "\"stage\":{\"key\":\"key\\\\with\\\"quote\",\"name\":\"name\\nline\"}"));
+    pb_test_require(contains(json, "\"category\":\"custom_category\""));
+    pb_test_require(contains(json, "\"message\":\"msg\\tvalue\""));
+  }
+
+  // ── 7. Default error_record still emits the stable v1 object shape. ──
+  {
+    const auto json = pb::runtime::to_json(pb::runtime::error_record{});
+    pb_test_require(json ==
+                    "{\"schema_version\":\"pb.error.v1\",\"stage\":{\"key\":\"\",\"name\":\"\"},"
+                    "\"category\":\"\",\"message\":\"\"}");
+  }
+
+  // ── 8. Schema-version constant is reachable through pb:: alias. ──
   {
     static_assert(pb::error_schema_version == std::string_view{"pb.error.v1"},
                   "pb::error_schema_version MUST match the v1 contract");
