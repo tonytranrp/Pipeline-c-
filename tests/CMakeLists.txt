@@ -1769,8 +1769,28 @@ if(PB_BUILD_CLI)
   add_test(NAME pb_cli_no_args     COMMAND pb_cli)
   set_tests_properties(pb_cli_no_args PROPERTIES LABELS "cli;smoke")
 
+  add_test(NAME pb_cli_no_args_stdout_contract
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      "-DCOMMAND_ARGS="
+      "-DEXPECTED_TOKENS=Pipeline-c++ CLI v0.1.0;Usage: pb_cli <command> [options];version                            Print version and capability summary;export [--dot|--json|--text]       Print export-API documentation"
+      "-DEXPECTED_ORDERED_TOKENS=Pipeline-c++ CLI v0.1.0;Usage: pb_cli <command> [options];Commands:;version;features;backends;list;schema;describe <name>;export [--dot|--json|--text];validate <pipeline>"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_command.cmake
+  )
+  set_tests_properties(pb_cli_no_args_stdout_contract PROPERTIES LABELS "cli;smoke;usage")
+
   add_test(NAME pb_cli_version     COMMAND pb_cli version)
   set_tests_properties(pb_cli_version PROPERTIES LABELS "cli;smoke")
+
+  add_test(NAME pb_cli_version_stdout_contract
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DCOMMAND=version
+      "-DEXPECTED_TOKENS=Pipeline-c++ v0.1.0;Standard:      C++20;Distribution:  header-only core + compiled runtime;Topologies:    linear, branch/join, fan-in;Export:        DOT, JSON, compact text (schema_version pb.core.graph.v1);Runtime:       sequential (built-in), thread-pool (built-in)"
+      "-DEXPECTED_ORDERED_TOKENS=Pipeline-c++ v0.1.0;Standard:      C++20;Distribution:  header-only core + compiled runtime;Topologies:;Branch types:;Export:;Runtime:"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_command.cmake
+  )
+  set_tests_properties(pb_cli_version_stdout_contract PROPERTIES LABELS "cli;smoke;version")
 
   add_test(NAME pb_cli_features    COMMAND pb_cli features)
   set_tests_properties(pb_cli_features PROPERTIES LABELS "cli;features")
@@ -1807,6 +1827,16 @@ if(PB_BUILD_CLI)
   add_test(NAME pb_cli_export      COMMAND pb_cli export)
   set_tests_properties(pb_cli_export PROPERTIES LABELS "cli;export")
 
+  add_test(NAME pb_cli_export_stdout_contract
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DCOMMAND=export
+      "-DEXPECTED_TOKENS=DOT export (Graphviz);Library API:  pb::to_dot<Pipeline>(\"graph_name\");JSON export;Library API:  pb::to_json<Pipeline>();Schema:       pb.core.graph.v1;Compact text export;Library API:  pb::to_text<Pipeline>()"
+      "-DEXPECTED_ORDERED_TOKENS=DOT export (Graphviz);Library API:  pb::to_dot<Pipeline>(\"graph_name\");CLI:          pb_cli describe <name> --format=dot;JSON export;Schema:       pb.core.graph.v1;Compact text export;CLI:          pb_cli describe <name> --format=text"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_command.cmake
+  )
+  set_tests_properties(pb_cli_export_stdout_contract PROPERTIES LABELS "cli;export;schema")
+
   add_test(NAME pb_cli_export_dot  COMMAND pb_cli export --dot)
   set_tests_properties(pb_cli_export_dot PROPERTIES LABELS "cli;export;dot")
 
@@ -1831,6 +1861,16 @@ if(PB_BUILD_CLI)
       -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_command.cmake
   )
   set_tests_properties(pb_cli_export_unknown_option PROPERTIES LABELS "cli;export;error")
+
+  add_test(NAME pb_cli_export_too_many_options
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      "-DCOMMAND_ARGS=export;--dot;--json"
+      -DEXPECT_FAIL=ON
+      "-DEXPECTED_STDERR_TOKENS=export: expected at most one option;--dot, --json, or --text"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_command.cmake
+  )
+  set_tests_properties(pb_cli_export_too_many_options PROPERTIES LABELS "cli;export;error;args")
 
   add_test(NAME pb_cli_validate    COMMAND pb_cli validate)
   set_tests_properties(pb_cli_validate PROPERTIES LABELS "cli;reserved")
