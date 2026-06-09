@@ -58,7 +58,6 @@ using SenderStage = pb::sync_sender_stage<SenderFactory, Input>;
 static_assert(pb::Stage<SenderStage>);
 static_assert(std::is_same_v<pb::sync_value_sender<Middle>::value_type, Middle>);
 
-
 // The DSL chain resolves entirely through the module export surface.
 using Pipeline = pb::from<Input>::then<AddOne>::then<DoubleValue>::to<Output>;
 using PackAliasPipeline = pb::from<Input>::then_all<AddOne, DoubleValue>::done;
