@@ -179,6 +179,8 @@ struct quiet {};
 ///   * They are threaded into the finalized pipeline's `policies` type-list by
 ///     `::with<copying::...>` and surface through `pb::has_copying_policy_v<P>`
 ///     / `pb::pipeline_copying_policy_t<P>`.
+///   * The axis is single-valued: adding a second copying marker (duplicate or
+///     conflicting) is rejected at compile time by the pipeline-state builder.
 ///   * Tooling and user `static_assert`s can READ the pinned intent to document
 ///     a pipeline's ownership model, or to gate higher-level adapters.
 ///

@@ -13,6 +13,7 @@
 #include "pb/core/concepts.hpp"
 #include "pb/core/fixed_string.hpp"
 #include "pb/core/meta.hpp"
+#include "pb/core/policy.hpp"
 
 namespace pb::core {
 
@@ -764,6 +765,22 @@ struct finalize_pipeline<pipeline_state<Policies, Input, Current, Stages...>, Ou
 template <class State, class... Cases>
 struct append_branch;
 
+template <class ExistingPolicies, class... NewPolicies>
+struct append_policies;
+
+template <class... ExistingPolicies, class... NewPolicies>
+struct append_policies<meta::type_list<ExistingPolicies...>, NewPolicies...> {
+  static constexpr auto copying_policy_count =
+      (std::size_t{0} + ... + (pb::policy::is_copying_policy_v<ExistingPolicies> ? std::size_t{1} : std::size_t{0})) +
+      (std::size_t{0} + ... + (pb::policy::is_copying_policy_v<NewPolicies> ? std::size_t{1} : std::size_t{0}));
+
+  static_assert(copying_policy_count <= 1,
+                "pb::pipeline_state::with accepts at most one pb::policy::copying::* marker; "
+                "duplicate or conflicting copying policies are rejected");
+
+  using type = meta::type_list<ExistingPolicies..., NewPolicies...>;
+};
+
 template <class Policies, class Input, class Current, class... Stages>
 struct append_branch<pipeline_state<Policies, Input, Current, Stages...>> {
   static_assert(always_false_v<pipeline_state<Policies, Input, Current, Stages...>>,
@@ -839,8 +856,12 @@ struct pipeline_state {
   /// are pure type-level annotations (zero runtime cost) until inspected by a
   /// backend such as pb::compile<P>(pb::runtime::sequential{}), which selects
   /// an error-policy engine wrapper from any pb::policy::errors marker present.
+  /// The copying axis is intentionally single-valued: once one
+  /// pb::policy::copying::* marker is carried, adding a duplicate or conflicting
+  /// copying marker is rejected at compile time instead of silently letting the
+  /// first marker win.
   template <class... NewPolicies>
-  using with = pipeline_state<meta::concat_t<Policies, meta::type_list<NewPolicies...>>,
+  using with = pipeline_state<typename detail::append_policies<Policies, NewPolicies...>::type,
                               Input, Current, Stages...>;
 };
 
