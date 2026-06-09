@@ -22,8 +22,8 @@
 //                             "One-line human description.",
 //                             "my_graph");   // optional DOT graph id
 //
-// `add<Pipeline>` captures the pipeline's export closures (pb::to_dot /
-// pb::to_json / pb::to_text) into type-erased std::function entries, so the
+// `add<Pipeline>` captures the pipeline's export closures (pb::core::to_dot /
+// pb::core::to_json / pb::core::to_text) into type-erased std::function entries, so the
 // rest of the CLI works against `pipeline_registry` without ever naming the
 // pipeline type again.  Lookups are by registration name; iteration order is
 // insertion order so `list` output stays deterministic.
@@ -87,9 +87,9 @@ public:
     entry.topology = std::move(topology);
     entry.description = std::move(description);
     entry.graph_name = std::move(graph_name);
-    entry.to_dot = [](std::string_view graph) { return pb::to_dot<Pipeline>(graph); };
-    entry.to_json = [] { return pb::to_json<Pipeline>(); };
-    entry.to_text = [] { return pb::to_text<Pipeline>(); };
+    entry.to_dot = [](std::string_view graph) { return pb::core::to_dot<Pipeline>(graph); };
+    entry.to_json = [] { return pb::core::to_json<Pipeline>(); };
+    entry.to_text = [] { return pb::core::to_text<Pipeline>(); };
     entries_.push_back(std::move(entry));
   }
 
