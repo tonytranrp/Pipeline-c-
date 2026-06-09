@@ -225,6 +225,49 @@ void test_verbose() {
   pb_test_require(contains(log, "message=expected-shape failure"));
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// 6) verbose(propagating_engine) over std::expected — declared expected
+//    failures remain result<> diagnostics, thrown failures rethrow.
+// ────────────────────────────────────────────────────────────────────────────
+
+void test_verbose_over_propagating() {
+  // Declared std::expected failure: propagating returns result<>, verbose logs
+  // the normalized expected_error boundary without converting it to a throw.
+  {
+    std::ostringstream sink;
+    auto engine = pb::with_verbose_diagnostics(
+        pb::with_propagate_exceptions(fresh_engine<FailurePipeline>()), &sink);
+    const auto outcome = engine.run(Input{});
+    pb_test_require(!outcome.has_value());
+    pb_test_require(outcome.error().category == pb::runtime::error_category::expected_error);
+    pb_test_require(outcome.error().stage.key == "expected-fail");
+    pb_test_require(contains(outcome.error().message, "expected-shape failure"));
+    const auto log = sink.str();
+    pb_test_require(contains(log, "[pb.verbose] stage_failure stage=expected-fail"));
+    pb_test_require(contains(log, "category=expected_error"));
+    pb_test_require(contains(log, "message=expected-shape failure"));
+  }
+  // Thrown failure: propagating rethrows as pipeline_exception, while verbose
+  // still records the underlying stage_exception event before the boundary.
+  {
+    std::ostringstream sink;
+    auto engine = pb::with_verbose_diagnostics(
+        pb::with_propagate_exceptions(fresh_engine<ExceptionPipeline>()), &sink);
+    bool threw = false;
+    try {
+      (void)engine.run(Input{});
+    } catch (const pb::pipeline_exception& ex) {
+      threw = true;
+      pb_test_require(ex.diagnostic().category == pb::runtime::error_category::exception);
+      pb_test_require(ex.diagnostic().stage.key == "expected-boom");
+    }
+    pb_test_require(threw);
+    const auto log = sink.str();
+    pb_test_require(contains(log, "[pb.verbose] stage_exception stage=expected-boom"));
+    pb_test_require(contains(log, "category=exception"));
+  }
+}
+
 } // namespace policy_std_expected
 
 int main() {
@@ -233,6 +276,7 @@ int main() {
   policy_std_expected::test_ignoring();
   policy_std_expected::test_propagating();
   policy_std_expected::test_verbose();
+  policy_std_expected::test_verbose_over_propagating();
   return 0;
 }
 
