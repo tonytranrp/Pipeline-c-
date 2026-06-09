@@ -127,4 +127,14 @@ template <class Pipeline>
   return {};
 }
 
+
+template <class Pipeline>
+  requires (!ValidPipeline<Pipeline>)
+[[nodiscard]] auto to_text() -> std::string {
+  static_assert(detail::export_text_helper_false_v<Pipeline>,
+                "pb::to_text<Pipeline> requires pb::ValidPipeline; "
+                "export helpers accept only pb::from<...>::...::to<...> pipeline types");
+  return {};
+}
+
 } // namespace pb::core
