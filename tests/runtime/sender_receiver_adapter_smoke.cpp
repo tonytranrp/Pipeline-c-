@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <exception>
 #include <stdexcept>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -132,6 +133,29 @@ int main() {
   auto result = engine.try_run(In{5});
   pb_test_require(result.has_value());
   pb_test_require(result.value().value == 13);
+
+  // Direct stage invocation preserves the exact exception type before the
+  // sequential engine normalizes it into pb::runtime::error.
+  try {
+    (void)pb::sync_sender_stage<ErrorSenderFactory, In>{}(In{1});
+    pb_test_require(false);
+  } catch (const std::runtime_error& ex) {
+    pb_test_require(std::string_view{ex.what()} == "sender boom");
+  }
+
+  try {
+    (void)pb::sync_sender_stage<StoppedSenderFactory, In>{}(In{1});
+    pb_test_require(false);
+  } catch (const pb::sender_stopped& ex) {
+    pb_test_require(std::string_view{ex.what()} == "pb::sync_sender_stage: sender stopped");
+  }
+
+  try {
+    (void)pb::sync_sender_stage<EmptySenderFactory, In>{}(In{1});
+    pb_test_require(false);
+  } catch (const pb::sender_no_value& ex) {
+    pb_test_require(std::string_view{ex.what()} == "pb::sync_sender_stage: sender produced no value");
+  }
 
   // set_error becomes the sequential runtime's normal exception-category error.
   using ErrorPipeline = pb::from<In>::then<pb::sync_sender_stage<ErrorSenderFactory, In>>::to<Mid>;
