@@ -5,6 +5,17 @@ Repo: `C:\Users\Tonyt\Documents\GitHub\Pipeline-c++`
 Current branch: `main`
 Last committed HEAD: `f9cbe26` (`Add wave-3 features: runtime-callable adapter, backend scaffolds, C++20 module build`).
 
+## 2026-06-09 coordinator checkpoint — docs/frontier alignment in progress
+
+Current HEAD at team startup: `a7494d3` (`Introduce string_sink; optimize exports and fan-in`) on `origin/main`. Post-wave commits after `f9cbe26` added/confirmed:
+
+- `7bc3300` — diagnostics/thread-pool/backend API hardening, including the public `pb.diagnostics.v1` record/collector surface and diagnostics roadmap refresh.
+- `f8b8a6d` — sequential batch run helpers (`try_run_each` / `try_run_range`) and finalized-pipeline helper constants (`stage_count`, `empty`).
+- `a7494d3` — internal `pb::core::detail::string_sink` plus export/fan-in/runtime allocation/formatting optimizations; this is an implementation detail, not a new public roadmap claim.
+
+Worker-1 coordinator batch is aligning docs/checkpoints with those shipped surfaces while preserving boundaries: working oneTBB/Taskflow/stdexec backends, preemptive cancellation, async/sender coroutine backends, exported diagnostic artifacts, frozen diagnostic wording/schema migrations, and release tagging remain unclaimed. Fresh local verification for this docs batch should cite the current `clang-dev-ninja` and `warnings-as-errors-ninja` results before any commit/push.
+
+
 ## 2026-06-02 multi-agent waves 1–3 — ALL integrated and green
 
 Three long-horizon multi-agent waves closed the codeable roadmap gaps. Default preset `clang-dev-ninja`: **220/220 ctest, 0 failures**. Also verified: `warnings-as-errors-ninja` builds clean (`-Werror`); `package-release-clang-ninja` 220/220 + `pipebuilder-0.1.0-win64.tar.gz` generated; `bench-dev-ninja` builds the new benches; `modules-ninja` builds the C++20 module and `pb_use_module` (`import pb.pipeline;`) passes.

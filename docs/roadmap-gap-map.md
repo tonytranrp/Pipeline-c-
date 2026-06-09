@@ -48,7 +48,7 @@ Each theme below records four things:
 
 ### 3. Diagnostics and compile-fail guidance
 
-- **Current repository evidence:** Diagnostics are documented as partially supported for the linear MVP, with both compile-fail and runtime error-formatting coverage.
+- **Current repository evidence:** Diagnostics are documented as partially supported for the current MVP, with compile-fail coverage, runtime error-formatting coverage, and a narrow machine-readable `pb.diagnostics.v1` record/collector contract.
 - **Current support level:** **Partially shipped MVP support with broader roadmap work still open.**
 - **Proof points:**
   - `docs/diagnostics-roadmap.md`
@@ -56,7 +56,10 @@ Each theme below records four things:
   - `examples/error_diagnostic.cpp`
   - `tests/run_compile_fail.cmake`
   - `tests/runtime/error_diagnostic_smoke.cpp`
-- **Safe next slice:** add focused docs/test evidence only when it directly matches currently supported diagnostic behavior, and keep richer wording/schema guarantees labeled as future work.
+  - `tests/compile_pass/diagnostics_contract.cpp`
+  - `tests/compile_pass/public_headers/core_diagnostics.cpp`
+  - `include/pb/core/diagnostics.hpp`
+- **Safe next slice:** add focused docs/test evidence only when it directly matches currently supported diagnostic behavior, and keep graph-aware emission, exported artifacts, cross-compiler wording parity, and schema-migration guarantees labeled as future work.
 
 ### 4. Package-consumer and release-readiness gates
 
