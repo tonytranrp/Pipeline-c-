@@ -13,6 +13,9 @@ namespace pb::core {
 
 namespace detail {
 
+template <class>
+inline constexpr bool export_dot_helper_false_v = false;
+
 [[nodiscard]] inline auto sanitize_identifier(std::string_view value) -> std::string {
   std::string output(value.begin(), value.end());
   for (auto& ch : output) {
@@ -324,6 +327,15 @@ private:
 template <ValidPipeline Pipeline>
 [[nodiscard]] auto to_dot(std::string_view graph_name = "pipeline") -> std::string {
   return detail::dot_emitter<Pipeline, detail::pipeline_has_branch_v<Pipeline>>::emit(graph_name);
+}
+
+template <class Pipeline>
+  requires (!ValidPipeline<Pipeline>)
+[[nodiscard]] auto to_dot(std::string_view = "pipeline") -> std::string {
+  static_assert(detail::export_dot_helper_false_v<Pipeline>,
+                "pb::to_dot<Pipeline> requires pb::ValidPipeline; "
+                "export helpers accept only pb::from<...>::...::to<...> pipeline types");
+  return {};
 }
 
 } // namespace pb::core
