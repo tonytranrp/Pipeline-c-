@@ -524,7 +524,13 @@ void print_schema() {
   std::cout << "graph schema:    pb.core.graph.v1\n";
   std::cout << "descriptor:      " << pb::runtime::descriptor_schema_version << "\n";
   std::cout << "diagnostics:     " << pb::diagnostics::diagnostics_schema_version << "\n";
+  std::cout << "error:           " << pb::runtime::error_schema_version << "\n";
+  std::cout << "cancellation:    " << pb::cancellation_schema_version << "\n";
+  std::cout << "observer:        " << pb::runtime::observer_schema_version << "\n";
+  std::cout << "observer verbose:" << pb::runtime::verbose_observer_schema_version << "\n";
   std::cout << "trace:           " << pb::runtime::trace_schema_version << "\n";
+  std::cout << "trace ndjson:    " << pb::runtime::trace_ndjson_schema_version << "\n";
+  std::cout << "version field:   schema_version\n";
   std::cout << "formats:         dot, json, text\n";
   std::cout << "topologies:      linear, branch, fan_in\n";
   std::cout << "boundary:        helper output — see docs/graph-export-roadmap.md for the\n";

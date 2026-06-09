@@ -1824,6 +1824,16 @@ if(PB_BUILD_CLI)
   add_test(NAME pb_cli_schema      COMMAND pb_cli schema)
   set_tests_properties(pb_cli_schema PROPERTIES LABELS "cli;schema;smoke")
 
+  add_test(NAME pb_cli_schema_stdout_contract
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DCOMMAND=schema
+      "-DEXPECTED_TOKENS=Pipeline-c++ helper-export schema;graph schema:    pb.core.graph.v1;descriptor:      pb.descriptor.v1;diagnostics:     pb.diagnostics.v1;error:           pb.error.v1;cancellation:    pb.cancel.v1;observer:        pb.observer.v1;observer verbose:pb.observer.verbose.v1;trace:           pb.trace.v1;trace ndjson:    pb.trace.ndjson.v1;version field:   schema_version;boundary:        helper output"
+      "-DEXPECTED_ORDERED_TOKENS=Pipeline-c++ helper-export schema;graph schema:;descriptor:;diagnostics:;error:;cancellation:;observer:;observer verbose:;trace:;trace ndjson:;version field:;formats:;topologies:;boundary:"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_command.cmake
+  )
+  set_tests_properties(pb_cli_schema_stdout_contract PROPERTIES LABELS "cli;schema;smoke;contract")
+
   add_test(NAME pb_cli_export      COMMAND pb_cli export)
   set_tests_properties(pb_cli_export PROPERTIES LABELS "cli;export")
 
