@@ -98,7 +98,30 @@ int main() {
   static_assert(pb::trace_ndjson_schema_version == std::string_view{"pb.trace.ndjson.v1"},
                 "pb.trace.ndjson.v1 identifier MUST stay v1");
 
-  // ── 2. Linear success run produces stage_start + stage_success NDJSON lines. ──
+  // ── 2. Direct sink writes pin the default per-event NDJSON object shape. ──
+  {
+    std::ostringstream stream;
+    pb::tracing_sink sink{&stream};
+    sink.write(pb::trace_event{});
+    pb_test_require(stream.str() ==
+                    "{\"kind\":\"stage_start\",\"stage\":{\"key\":\"\",\"name\":\"\","
+                    "\"stage_index\":0}}\n");
+  }
+
+  // ── 3. Direct sink writes share batch JSON escaping for string fields. ──
+  {
+    std::ostringstream stream;
+    pb::tracing_sink sink{&stream};
+    sink.write(pb::trace_event{.kind = pb::trace_event_kind::stage_success,
+                               .stage_key = std::string{"key\\with\"quote"},
+                               .stage_name = std::string{"name\nline\tvalue"}});
+    const auto out = stream.str();
+    pb_test_require(count_lines(out) == 1);
+    pb_test_require(contains(out, "\"key\":\"key\\\\with\\\"quote\""));
+    pb_test_require(contains(out, "\"name\":\"name\\nline\\tvalue\""));
+  }
+
+  // ── 4. Linear success run produces stage_start + stage_success NDJSON lines. ──
   {
     std::ostringstream stream;
     pb::tracing_sink sink{&stream};
@@ -129,7 +152,7 @@ int main() {
     }
   }
 
-  // ── 3. Linear failure run emits stage_start + stage_failure with error block. ──
+  // ── 5. Linear failure run emits stage_start + stage_failure with error block. ──
   {
     std::ostringstream stream;
     pb::tracing_sink sink{&stream};
@@ -148,7 +171,7 @@ int main() {
     pb_test_require(contains(out, "\"message\":\"boom\""));
   }
 
-  // ── 4. Branch run emits case_selected as a tracked event kind. ──
+  // ── 6. Branch run emits case_selected as a tracked event kind. ──
   {
     std::ostringstream stream;
     pb::tracing_sink sink{&stream};
@@ -163,7 +186,7 @@ int main() {
     pb_test_require(contains(out, "\"case_index\":0"));
   }
 
-  // ── 5. Fan-in run emits lifecycle events as tracked event kinds. ──
+  // ── 7. Fan-in run emits lifecycle events as tracked event kinds. ──
   {
     std::ostringstream stream;
     pb::tracing_sink sink{&stream};
@@ -186,7 +209,7 @@ int main() {
     pb_test_require(contains(out, "\"failed_count\":0"));
   }
 
-  // ── 6. Null stream is a no-op (benchmarkable). ──
+  // ── 8. Null stream is a no-op (benchmarkable). ──
   {
     pb::tracing_sink sink{nullptr};
     pb::trace_observer obs{sink};
@@ -198,7 +221,7 @@ int main() {
     pb_test_require(sink.stream() == nullptr);
   }
 
-  // ── 7. set_stream() re-targets the sink mid-lifetime. ──
+  // ── 9. set_stream() re-targets the sink mid-lifetime. ──
   {
     std::ostringstream a;
     std::ostringstream b;
@@ -219,7 +242,7 @@ int main() {
     (void)a_size_before;  // baseline captured
   }
 
-  // ── 8. Batch export_json and per-line NDJSON share the same per-event shape. ──
+  // ── 10. Batch export_json and per-line NDJSON share the same per-event shape. ──
   {
     std::ostringstream stream;
     pb::tracing_sink sink{&stream};
