@@ -428,6 +428,27 @@ void test_state_context_balanced_on_exception() {
   pb_test_require(pb::try_current_state<counter_state>() == nullptr);
 }
 
+void test_try_run_with_state_clears_frame_on_error() {
+  auto borrowed = pb::with_borrowed_state<counter_state>(fresh_engine<ThrowingStatefulPipeline>());
+
+  counter_state per_request{};
+  auto borrowed_outcome = borrowed.try_run_with_state(5, per_request);
+  pb_test_require(!borrowed_outcome.has_value());
+  pb_test_require(per_request.hits == 1);
+  pb_test_require(pb::try_current_state<counter_state>() == nullptr);
+
+  auto owned = pb::with_state<counter_state>(
+      fresh_engine<ThrowingStatefulPipeline>(), counter_state{.hits = 40, .misses = 2});
+  counter_state shadow{};
+  auto owned_outcome = owned.try_run_with_state(7, shadow);
+  pb_test_require(!owned_outcome.has_value());
+  pb_test_require(shadow.hits == 1);
+  // A caller-supplied state shadows, but does not mutate, the owned storage.
+  pb_test_require(owned.state().hits == 40);
+  pb_test_require(owned.state().misses == 2);
+  pb_test_require(pb::try_current_state<counter_state>() == nullptr);
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // 15) borrowed: shadowing owned state via run_with_state
 // ────────────────────────────────────────────────────────────────────────────
@@ -477,6 +498,7 @@ void test_state_dsl_smoke() {
   test_composability_with_throw_on_error();
   test_stateful_batch_runs_keep_state_context();
   test_state_context_balanced_on_exception();
+  test_try_run_with_state_clears_frame_on_error();
   test_owned_with_run_with_state_shadows();
   test_forwarding_surface();
 }

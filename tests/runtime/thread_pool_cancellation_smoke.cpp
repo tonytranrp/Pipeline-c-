@@ -239,7 +239,44 @@ int main() {
     require(StageC::calls.load() == 1);
   }
 
-  // 3) Stop requested BEFORE scheduling: every selected case is skipped, no
+  // 3) Cancellation token can be swapped between runs: a stopped token affects
+  //    subsequent scheduling only until replaced by an unstopped token.
+  reset_calls();
+  {
+    pb::cancellation_source stopped_source;
+    stopped_source.request_stop();
+    pb::cancellation_source resumed_source;
+
+    auto engine = pb::compile<Pipeline>(pb::runtime::thread_pool_backend{.worker_count = 3});
+    require(!engine.cancellation_token().can_be_cancelled());
+    require(!engine.cancellation_token().stop_requested());
+
+    engine.set_cancellation_token(stopped_source.token());
+    require(engine.cancellation_token().can_be_cancelled());
+    require(engine.cancellation_token().stop_requested());
+
+    auto stopped = engine.run(Input{7, 5});
+    require(stopped.has_value());
+    require(stopped.value().ran == 0);
+    require(stopped.value().text == "A=skip;B=skip;C=skip;");
+    require(StageA::calls.load() == 0);
+    require(StageB::calls.load() == 0);
+    require(StageC::calls.load() == 0);
+
+    engine.set_cancellation_token(resumed_source.token());
+    require(engine.cancellation_token().can_be_cancelled());
+    require(!engine.cancellation_token().stop_requested());
+
+    auto resumed = engine.run(Input{7, 5});
+    require(resumed.has_value());
+    require(resumed.value().text == normal_text);
+    require(resumed.value().ran == normal_ran);
+    require(StageA::calls.load() == 1);
+    require(StageB::calls.load() == 1);
+    require(StageC::calls.load() == 1);
+  }
+
+  // 4) Stop requested BEFORE scheduling: every selected case is skipped, no
   //    case stage executes, and the run completes deterministically.
   reset_calls();
   {
@@ -275,7 +312,7 @@ int main() {
     require(observer.reported_failed.load() == 0);
   }
 
-  // 4) Re-run several times with stop requested to prove determinism / no hang.
+  // 5) Re-run several times with stop requested to prove determinism / no hang.
   reset_calls();
   {
     pb::cancellation_source source;
