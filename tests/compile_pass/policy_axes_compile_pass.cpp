@@ -86,8 +86,8 @@ static_assert(!pb::has_diagnostics_policy_v<MoveOnly>);
 static_assert(std::is_same_v<pb::pipeline_copying_policy_t<MoveOnly>,
                              pb::policy::copying::move_only>);
 
-using ValueAndDiagnostics = pb::from<Raw>::with<pb::policy::copying::value,
-                                               pb::policy::diagnostics::quiet>::then<Stage>::to<Done>;
+using ValueAndDiagnostics = pb::from<Raw>::with<
+    pb::policy::copying::value, pb::policy::diagnostics::quiet>::then<Stage>::to<Done>;
 static_assert(pb::has_copying_policy_v<ValueAndDiagnostics>);
 static_assert(pb::has_diagnostics_policy_v<ValueAndDiagnostics>);
 static_assert(std::is_same_v<pb::pipeline_copying_policy_t<ValueAndDiagnostics>,
