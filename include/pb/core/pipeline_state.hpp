@@ -771,8 +771,10 @@ struct append_policies;
 template <class... ExistingPolicies, class... NewPolicies>
 struct append_policies<meta::type_list<ExistingPolicies...>, NewPolicies...> {
   static constexpr auto copying_policy_count =
-      (std::size_t{0} + ... + (pb::policy::is_copying_policy_v<ExistingPolicies> ? std::size_t{1} : std::size_t{0})) +
-      (std::size_t{0} + ... + (pb::policy::is_copying_policy_v<NewPolicies> ? std::size_t{1} : std::size_t{0}));
+      (std::size_t{0} + ... +
+       (pb::policy::is_copying_policy_v<ExistingPolicies> ? std::size_t{1} : std::size_t{0})) +
+      (std::size_t{0} + ... +
+       (pb::policy::is_copying_policy_v<NewPolicies> ? std::size_t{1} : std::size_t{0}));
 
   static_assert(copying_policy_count <= 1,
                 "pb::pipeline_state::with accepts at most one pb::policy::copying::* marker; "
