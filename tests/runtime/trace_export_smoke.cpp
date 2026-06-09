@@ -106,6 +106,27 @@ using EvenCase = pb::case_<IsEven>::then<EvenRoute>;
 using OddCase = pb::case_<IsOdd>::then<OddRoute>;
 using BranchPipeline = pb::from<Raw>::branch<EvenCase, OddCase>::to<Routed>;
 static_assert(pb::valid<BranchPipeline>);
+using FanInOutput = pb::fan_in_output_t<EvenCase, OddCase>;
+
+struct FanInJoin {
+  using input_type = FanInOutput;
+  using output_type = Routed;
+  static constexpr auto stage_name() noexcept { return "fan_in_join"; }
+  static constexpr auto stage_key() noexcept { return "join.fan_in"; }
+  Routed operator()(const FanInOutput& input) const {
+    int total = 0;
+    if (input.template get<0>().completed()) {
+      total += input.template get<0>().get().value;
+    }
+    if (input.template get<1>().completed()) {
+      total += input.template get<1>().get().value;
+    }
+    return {total};
+  }
+};
+
+using FanInPipeline = pb::from<Raw>::branch<EvenCase, OddCase>::fan_in<FanInJoin>::to<Routed>;
+static_assert(pb::valid<FanInPipeline>);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -242,6 +263,65 @@ int main() {
   }
 
   // -----------------------------------------------------------------------
+  // Fan-in pipeline — lifecycle events and counts
+  // -----------------------------------------------------------------------
+  {
+    auto engine = pb::compile<FanInPipeline>(pb::runtime::sequential{});
+    pb::runtime::trace_recorder recorder{};
+    pb::runtime::trace_observer observer{recorder};
+    engine.set_observer(&observer);
+
+    auto even = engine.run(Raw{4});
+    pb_test_require(even.has_value());
+    pb_test_require(even.value().value == 40);
+
+    bool saw_started = false;
+    bool saw_scheduled = false;
+    bool saw_case_completed = false;
+    bool saw_completed = false;
+    for (const auto& event : recorder.events()) {
+      if (event.kind == pb::runtime::trace_event_kind::fan_in_started) {
+        saw_started = true;
+        pb_test_require(event.stage_key == "fan_in");
+        pb_test_require(event.case_count == 2);
+      }
+      if (event.kind == pb::runtime::trace_event_kind::fan_in_case_scheduled) {
+        saw_scheduled = true;
+        pb_test_require(event.stage_key == "fan_in");
+        pb_test_require(event.case_index == 0);
+      }
+      if (event.kind == pb::runtime::trace_event_kind::fan_in_case_completed) {
+        saw_case_completed = true;
+        pb_test_require(event.stage_key == "fan_in");
+        pb_test_require(event.case_index == 0);
+        pb_test_require(event.success);
+      }
+      if (event.kind == pb::runtime::trace_event_kind::fan_in_completed) {
+        saw_completed = true;
+        pb_test_require(event.stage_key == "fan_in");
+        pb_test_require(event.selected_count == 1);
+        pb_test_require(event.completed_count == 1);
+        pb_test_require(event.failed_count == 0);
+      }
+    }
+    pb_test_require(saw_started);
+    pb_test_require(saw_scheduled);
+    pb_test_require(saw_case_completed);
+    pb_test_require(saw_completed);
+
+    const auto json = pb::runtime::export_json(recorder);
+    pb_test_require(contains(json, R"("kind":"fan_in_started")"));
+    pb_test_require(contains(json, R"("case_count":2)"));
+    pb_test_require(contains(json, R"("kind":"fan_in_case_scheduled")"));
+    pb_test_require(contains(json, R"("kind":"fan_in_case_completed")"));
+    pb_test_require(contains(json, R"("success":true)"));
+    pb_test_require(contains(json, R"("kind":"fan_in_completed")"));
+    pb_test_require(contains(json, R"("selected_count":1)"));
+    pb_test_require(contains(json, R"("completed_count":1)"));
+    pb_test_require(contains(json, R"("failed_count":0)"));
+  }
+
+  // -----------------------------------------------------------------------
   // Trace recorder empty/clear round-trip
   // -----------------------------------------------------------------------
   {
@@ -273,6 +353,10 @@ int main() {
     pb_test_require(trace_event_kind_name(trace_event_kind::case_selected) == "case_selected");
     pb_test_require(trace_event_kind_name(trace_event_kind::case_skipped) == "case_skipped");
     pb_test_require(trace_event_kind_name(trace_event_kind::case_failed) == "case_failed");
+    pb_test_require(trace_event_kind_name(trace_event_kind::fan_in_started) == "fan_in_started");
+    pb_test_require(trace_event_kind_name(trace_event_kind::fan_in_case_scheduled) == "fan_in_case_scheduled");
+    pb_test_require(trace_event_kind_name(trace_event_kind::fan_in_case_completed) == "fan_in_case_completed");
+    pb_test_require(trace_event_kind_name(trace_event_kind::fan_in_completed) == "fan_in_completed");
     pb_test_require(trace_event_kind_name(trace_event_kind::pipeline_start) == "pipeline_start");
     pb_test_require(trace_event_kind_name(trace_event_kind::pipeline_complete) == "pipeline_complete");
   }
