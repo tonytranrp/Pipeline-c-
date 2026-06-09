@@ -181,6 +181,49 @@ int main() {
             "rendered schema mismatch: " + envelope.to_string());
   }
 
+  // --- skipped cases are ignored and failed empty diagnostics retain their exact shape. ---
+  {
+    using Aggregate = pb::fan_in_results<pb::fan_in_case_result<0, Parsed>,
+                                         pb::fan_in_case_result<1, Parsed>>;
+    Aggregate aggregate;
+    require(aggregate.get<0>().skipped(), "default case 0 state should be skipped");
+    require(!aggregate.get<0>().selected(), "default skipped case must not be selected");
+    require(!aggregate.get<0>().completed(), "default skipped case must not be completed");
+    require(!aggregate.get<0>().failed(), "default skipped case must not be failed");
+    require(!aggregate.get<0>().has_value(), "default skipped case must not hold a value");
+    require(aggregate.get<0>().diagnostic_message().empty(),
+            "default skipped case diagnostic must be empty");
+
+    aggregate.get<1>().mark_completed(Parsed{11});
+    require(aggregate.get<1>().has_value(), "completed case should hold a value before failure");
+    aggregate.get<1>().mark_failed("");
+    require(aggregate.get<1>().failed(), "failed case should report failed state");
+    require(!aggregate.get<1>().selected(), "failed case must not report selected/completed state");
+    require(!aggregate.get<1>().completed(), "failed case must not report completed state");
+    require(!aggregate.get<1>().has_value(), "mark_failed must clear any previous value");
+    require(aggregate.get<1>().diagnostic_message().empty(),
+            "empty failure diagnostic should remain an empty string_view");
+
+    auto envelope = pb::collect_fan_in_errors(aggregate);
+    require(envelope.has_failures(), "one failed case should produce a non-empty envelope");
+    require(envelope.size() == 1, "skipped cases must not produce envelope records");
+    require(envelope[0].case_index == 1, "only the failed case index should be captured");
+    require(envelope[0].stage.key == "fan_in.case.1", "failed case fallback stage key mismatch");
+    require(envelope[0].stage.name == "case 1", "failed case fallback stage name mismatch");
+    require(envelope[0].diagnostic.stage.key == envelope[0].stage.key,
+            "diagnostic stage key should mirror the envelope stage");
+    require(envelope[0].diagnostic.stage.name == envelope[0].stage.name,
+            "diagnostic stage name should mirror the envelope stage");
+    require(envelope[0].diagnostic.category == pb::runtime::error_category::stage_failure,
+            "failed branch diagnostics should lift to stage_failure category");
+    require(envelope[0].diagnostic.message.empty(),
+            "empty failed branch diagnostic should remain empty in the envelope");
+    require(envelope.to_string() ==
+                std::string{"pb.fan_in.errors.v1\nfailures=1\n"} +
+                    "case[1] stage=case 1 (fan_in.case.1) :: stage_failure at case 1 (fan_in.case.1)",
+            "empty failed branch envelope render mismatch: " + envelope.to_string());
+  }
+
   // --- an all-success aggregate yields an empty envelope. ---
   {
     using Aggregate = pb::fan_in_results<pb::fan_in_case_result<0, Parsed>>;
