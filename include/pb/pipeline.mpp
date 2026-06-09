@@ -163,6 +163,13 @@ using runtime::route_descriptor_schema_version;
 using runtime::route_selection;
 using runtime::select_route;
 
+// ── adapters ────────────────────────────────────────────────
+using ::pb::sender_no_value;
+using ::pb::sender_stopped;
+using ::pb::sync_just;
+using ::pb::sync_sender_stage;
+using ::pb::sync_value_sender;
+
 // ── runtime: trace ───────────────────────────────────────────
 using runtime::trace_event;
 using runtime::trace_event_kind;
