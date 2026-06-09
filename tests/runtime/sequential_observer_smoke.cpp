@@ -43,6 +43,20 @@ struct CheckedDouble {
   }
 };
 
+struct PreannotatedFailure {
+  using input_type = Middle;
+  using output_type = Output;
+
+  static constexpr auto stage_key() noexcept { return "math.preannotated"; }
+  static constexpr auto stage_name() noexcept { return "preannotated_failure"; }
+
+  pb::runtime::result<Output> operator()(Middle) const {
+    return pb::runtime::error{.stage = {.key = "upstream.key", .name = "upstream_name"},
+                              .category = pb::runtime::error_category::stage_failure,
+                              .message = "already annotated"};
+  }
+};
+
 struct ThrowingStage {
   using input_type = Middle;
   using output_type = Output;
@@ -54,10 +68,12 @@ struct ThrowingStage {
 
 using SuccessPipeline = pb::from<Input>::then<AddOne>::then<CheckedDouble>::to<Output>;
 using FailurePipeline = pb::from<Input>::then<AddOne>::then<CheckedDouble>::to<Output>;
+using PreannotatedFailurePipeline = pb::from<Input>::then<AddOne>::then<PreannotatedFailure>::to<Output>;
 using ThrowPipeline = pb::from<Input>::then<AddOne>::then<ThrowingStage>::to<Output>;
 
 struct recording_observer final : pb::runtime::observer {
   std::vector<std::string> events{};
+  std::vector<std::string> diagnostics{};
 
   void on_stage_start(const pb::runtime::stage_id& stage) override {
     events.push_back("start:" + stage.name + "/" + stage.key);
@@ -69,10 +85,12 @@ struct recording_observer final : pb::runtime::observer {
 
   void on_stage_failure(const pb::runtime::stage_id& stage, const pb::runtime::error& error) override {
     events.push_back("failure:" + stage.name + "/" + stage.key + ":" + error.message);
+    diagnostics.push_back("failure-diagnostic:" + error.stage.name + "/" + error.stage.key);
   }
 
   void on_stage_exception(const pb::runtime::stage_id& stage, const pb::runtime::error& error) override {
     events.push_back("exception:" + stage.name + "/" + stage.key + ":" + error.message);
+    diagnostics.push_back("exception-diagnostic:" + error.stage.name + "/" + error.stage.key);
   }
 };
 
@@ -106,6 +124,33 @@ int main() {
                 "success:add_one/add_one",
                 "start:checked_double/math.double",
                 "failure:checked_double/math.double:zero middle",
+            }));
+    assert((observer.diagnostics == std::vector<std::string>{
+                "failure-diagnostic:checked_double/math.double",
+            }));
+  }
+
+  {
+    auto engine = pb::compile<PreannotatedFailurePipeline>(pb::runtime::sequential{});
+    recording_observer observer{};
+    engine.set_observer(&observer);
+
+    auto failed = engine.try_run(Input{1});
+    assert(!failed.has_value());
+    assert(failed.error().category == pb::runtime::error_category::stage_failure);
+    assert(failed.error().stage.key == "upstream.key");
+    assert(failed.error().stage.name == "upstream_name");
+    assert(failed.error().message == "already annotated");
+    assert((observer.events == std::vector<std::string>{
+                "start:add_one/add_one",
+                "success:add_one/add_one",
+                "start:preannotated_failure/math.preannotated",
+                "failure:preannotated_failure/math.preannotated:already annotated",
+            }));
+    // The callback stage identifies the running stage, while the diagnostic
+    // payload preserves an error that was already explicitly annotated.
+    assert((observer.diagnostics == std::vector<std::string>{
+                "failure-diagnostic:upstream_name/upstream.key",
             }));
   }
 
