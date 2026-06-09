@@ -11,8 +11,6 @@ namespace pb::core {
 
 namespace detail {
 
-template <class>
-inline constexpr bool export_json_helper_false_v = false;
 
 inline void append_json_string(std::string& output, std::string_view value) {
   constexpr auto hex_digits = std::string_view{"0123456789abcdef"};
@@ -209,23 +207,7 @@ template <class Pipeline>
 }
 
 
-template <class Pipeline>
-  requires (!ValidPipeline<Pipeline>)
-[[nodiscard]] auto to_json() -> std::string {
-  static_assert(detail::export_json_helper_false_v<Pipeline>,
-                "pb::to_json<Pipeline> requires pb::ValidPipeline; "
-                "export helpers accept only pb::from<...>::...::to<...> pipeline types");
-  return {};
-}
 
 
-template <class Pipeline>
-  requires (!ValidPipeline<Pipeline>)
-[[nodiscard]] auto to_json() -> std::string {
-  static_assert(detail::export_json_helper_false_v<Pipeline>,
-                "pb::to_json<Pipeline> requires pb::ValidPipeline; "
-                "export helpers accept only pb::from<...>::...::to<...> pipeline types");
-  return {};
-}
 
 } // namespace pb::core
