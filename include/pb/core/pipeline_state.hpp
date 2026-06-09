@@ -827,11 +827,11 @@ inline constexpr auto policy_axis_count_v =
 template <class... ExistingPolicies, class... NewPolicies>
 struct append_policies<meta::type_list<ExistingPolicies...>, NewPolicies...> {
   static constexpr auto error_policy_count =
-      policy_axis_count_v<is_error_policy_marker, ExistingPolicies..., NewPolicies...>;
+      policy_axis_count_v<pb::policy::is_error_policy, ExistingPolicies..., NewPolicies...>;
   static constexpr auto diagnostics_policy_count =
-      policy_axis_count_v<is_diagnostics_policy_marker, ExistingPolicies..., NewPolicies...>;
+      policy_axis_count_v<pb::policy::is_diagnostics_policy, ExistingPolicies..., NewPolicies...>;
   static constexpr auto copying_policy_count =
-      policy_axis_count_v<is_copying_policy_marker, ExistingPolicies..., NewPolicies...>;
+      policy_axis_count_v<pb::policy::is_copying_policy, ExistingPolicies..., NewPolicies...>;
 
   static_assert(error_policy_count <= 1,
                 "pb::pipeline_state::with accepts at most one pb::policy::errors::* marker; "

@@ -11,7 +11,7 @@ Current local evidence for the integrated worker-1/3/4 team head (wave-1/2/3 plu
 ```text
 - cmake --preset clang-dev-ninja: passed
 - cmake --build --preset clang-dev-ninja: passed
-- ctest --preset clang-dev-ninja --output-on-failure: passed, 233/233
+- ctest --preset clang-dev-ninja --output-on-failure: passed, 235/235
 - include/pb/pipeline.mpp syntax probe after sender/receiver module export update: passed (`clang++ -std=c++20 -I include -fsyntax-only -x c++ include/pb/pipeline.mpp`)
 - modules-ninja / pb_use_module refresh: not run in this environment because `clang-scan-deps` is missing
 ```
@@ -92,7 +92,7 @@ These are the docs that should be treated as current after the wave-1/2/3 batch.
 | C++26 feature gates | Typed `pb::features::*` `constexpr bool` constants ship and resolve to `false` on C++20; reflection adapter scaffold is gated and falls back gracefully. C++26 reflection is **not** supported on current toolchains. | `docs/cpp26-feature-gates.md`, `include/pb/core/cpp26_features.hpp`, `include/pb/adapt/reflect.hpp`, this file |
 | `pb_cli` introspection | `list` / `describe` / `features` ship with 5 built-in pipelines (`order-linear`, `order-branch`, `order-fan-in`, `order-enrich`, `order-variant`); `pb::tooling::pipeline_registry` is the extension point for user forks; a broader stable CLI contract for arbitrary user pipelines remains future work. | `README.md` "CLI: `pb_cli`" section, `tools/pb_cli.cpp`, `include/pb/tooling/cli_registry.hpp`, `tests/run_pb_cli_describe.cmake` |
 | C++20 named module | `PB_BUILD_MODULE` + `modules-ninja` preset + `import pb.pipeline;` verified on clang 22; default header build unaffected. | `docs/modules.md`, `CMakePresets.json`, `include/pb/pipeline.mpp` |
-| Release evidence | Exact-SHA local, CI, cross-compiler, and package evidence exists for code SHA `87299c14c813753d170911239e251064cbbfee6f`. Working tree is **233/233 local ctest**; cross-compiler validation on the new SHA is pending. | `docs/cross-compiler-validation.md`, `docs/current-release-summary.md`, `docs/production-readiness.md`, `docs/research-verification-matrix.md` |
+| Release evidence | Exact-SHA local, CI, cross-compiler, and package evidence exists for code SHA `87299c14c813753d170911239e251064cbbfee6f`. Working tree is **235/235 local ctest**; cross-compiler validation on the new SHA is pending. | `docs/cross-compiler-validation.md`, `docs/current-release-summary.md`, `docs/production-readiness.md`, `docs/research-verification-matrix.md` |
 | Remaining production gaps | Full async/sender coroutine backends beyond the synchronous scaffold, working external TBB/Taskflow/stdexec backends, frozen external descriptor/export schema, benchmark budgets, C++26 reflection-and-contracts integration, and release publication remain incomplete. | `docs/roadmap-gap-map.md`, this file, release notes |
 
 ## Implemented but still partial / almost production-grade
@@ -223,7 +223,7 @@ Release machinery and local/package evidence exist, but a public release is not 
 Need to finish:
 
 ```text
-- decide final release candidate SHA (current integrated team head, 233/233 ctest)
+- decide final release candidate SHA (current integrated team head, 235/235 ctest)
 - rerun cross-compiler validation on that SHA
 - update release notes with exact supported/unsupported boundaries
 - tag v0.1.0
@@ -236,7 +236,7 @@ Need to finish:
 Best next steps from lowest risk / highest production-readiness value to highest complexity:
 
 ```text
-1. Rerun cross-compiler validation on the integrated team head (233/233 ctest, all wave-1/2/3 plus post-wave API/docs features).
+1. Rerun cross-compiler validation on the integrated team head (235/235 ctest, all wave-1/2/3 plus post-wave API/docs features).
 2. Broaden the pb_cli surface to accept user-defined pipelines now that pb::tooling::pipeline_registry provides the extension point.
 3. Add backend examples/benchmarks for the thread-pool fan-in backend.
 4. Add working oneTBB / Taskflow / stdexec backends once the dormant scaffold is tested.
@@ -265,7 +265,7 @@ C++26 feature gates and reflection:       5.0 / 10
 C++20 named module:                       7.0 / 10  (prior modules-ninja evidence exists; current sender/receiver module export syntax-probed, full preset refresh blocked by missing clang-scan-deps)
 Policy DSL (full three axes):             8.0 / 10  (new combined score — errors + diagnostics + copying axes shipped)
 Cooperative cancellation:                 7.5 / 10  (new — pb.cancel.v1 cooperative token + thread-pool integration)
-Release readiness before tag:             7.5 / 10  (was 8.2 — new SHA not yet cross-compiler-validated; ctest 233/233)
+Release readiness before tag:             7.5 / 10  (was 8.2 — new SHA not yet cross-compiler-validated; ctest 235/235)
 Full original research-plan completion:   8.5 / 10  (was 7.8 — wave-1/2/3 close many major gaps)
 ```
 
