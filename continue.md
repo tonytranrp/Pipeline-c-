@@ -1,20 +1,15 @@
 # Continue checkpoint — Pipeline-c++ long-horizon resume
 
-Snapshot UTC: `2026-06-02T00:00:00Z`
+Snapshot UTC: `2026-06-09T09:00:00Z`
 Repo: `C:\Users\Tonyt\Documents\GitHub\Pipeline-c++`
 Current branch: `main`
-Last committed HEAD: `f9cbe26` (`Add wave-3 features: runtime-callable adapter, backend scaffolds, C++20 module build`).
+Last committed upstream release-evidence anchor remains `87299c14c813753d170911239e251064cbbfee6f`; the current local team batch is ahead of `origin/main` and must be pushed only after fresh full verification.
 
-## 2026-06-09 coordinator checkpoint — docs/frontier alignment in progress
+## 2026-06-09 coordinator checkpoint — integrated team evidence refresh in progress
 
-Current HEAD at team startup: `a7494d3` (`Introduce string_sink; optimize exports and fan-in`) on `origin/main`. Post-wave commits after `f9cbe26` added/confirmed:
+Team batch baseline at startup: `a7494d3` (`Introduce string_sink; optimize exports and fan-in`) on `origin/main`. The integrated local team head also includes Worker 4's dependency-free synchronous sender/receiver scaffold (`pb::sync_just`, `pb::sync_sender_stage`) and Worker 3's fan-in trace/verbose observer hardening (`fan_in_started`, `fan_in_case_scheduled`, `fan_in_case_completed`, `fan_in_completed`).
 
-- `7bc3300` — diagnostics/thread-pool/backend API hardening, including the public `pb.diagnostics.v1` record/collector surface and diagnostics roadmap refresh.
-- `f8b8a6d` — sequential batch run helpers (`try_run_each` / `try_run_range`) and finalized-pipeline helper constants (`stage_count`, `empty`).
-- `a7494d3` — internal `pb::core::detail::string_sink` plus export/fan-in/runtime allocation/formatting optimizations; this is an implementation detail, not a new public roadmap claim.
-
-Worker-1 coordinator batch is aligning docs/checkpoints with those shipped surfaces while preserving boundaries: working oneTBB/Taskflow/stdexec backends, preemptive cancellation, async/sender coroutine backends, exported diagnostic artifacts, frozen diagnostic wording/schema migrations, and release tagging remain unclaimed. Fresh local verification for this docs batch should cite the current `clang-dev-ninja` and `warnings-as-errors-ninja` results before any commit/push.
-
+Worker-1 coordinator batch is aligning docs/checkpoints with those shipped surfaces while preserving boundaries: working oneTBB/Taskflow/stdexec backends, preemptive cancellation, full async/sender coroutine backends beyond the synchronous scaffold, exported diagnostic artifacts, frozen diagnostic wording/schema migrations, and release tagging remain unclaimed. Fresh local verification for this batch must cite the current `clang-dev-ninja` configure/build/CTest, `warnings-as-errors-ninja` build, and whitespace check before any commit/push. Expected local CTest count after integrating the sender/receiver tests is **226/226**.
 
 ## 2026-06-02 multi-agent waves 1–3 — ALL integrated and green
 

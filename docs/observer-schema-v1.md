@@ -105,6 +105,10 @@ by line: log-tailing tools can grep for `[pb.verbose] stage_failure` or
 | `case_selected`   | `[pb.verbose] case_selected branch=<key> case=<idx> predicate=<key>\n` |
 | `case_skipped`    | `[pb.verbose] case_skipped branch=<key> case=<idx> predicate=<key>\n` |
 | `case_failed`     | `[pb.verbose] case_failed branch=<key> case=<idx> stage=<key> category=<cat>[ message=<msg>]\n` |
+| `fan_in_started` | `[pb.verbose] fan_in_started branch=<key> cases=<n>\n` |
+| `fan_in_case_scheduled` | `[pb.verbose] fan_in_case_scheduled branch=<key> case=<idx> stage=<key>\n` |
+| `fan_in_case_completed` | `[pb.verbose] fan_in_case_completed branch=<key> case=<idx> stage=<key> success=<true|false>\n` |
+| `fan_in_completed` | `[pb.verbose] fan_in_completed branch=<key> selected=<n> completed=<n> failed=<n>\n` |
 
 Rules:
 
@@ -112,6 +116,10 @@ Rules:
   keys + empty names produce empty values (the field is still
   emitted).
 - `<idx>` is the case index as a decimal integer.
+- `<n>` is a decimal count. For fan-in completion records, `selected` is
+  the number of predicate-selected cases, `completed` is the number of
+  case stages that completed successfully, and `failed` is the number of
+  predicate or stage failures recorded for that fan-in branch.
 - `<cat>` is the `error_category` enumerator name produced by
   `pb::runtime::category_name(...)` — currently one of
   `stage_failure`, `expected_error`, `exception`, `contract_violation`.

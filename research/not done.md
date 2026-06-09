@@ -2,11 +2,11 @@
 
 This file tracks what is done, partially done, still missing, and what must be finished before Pipeline-c++ can claim the full original research-plan vision.
 
-Updated after the wave-1/2/3 batch that adds `pb::unique_clone`, thread-local state policy, fan-in observer lifecycle events, fan-in multi-error envelope (`pb.fan_in.errors.v1`), synchronous coroutine stage adapter, `pb::tooling::pipeline_registry` + pb_cli refactor, runtime-enforced `::with<pb::policy::errors::...>` DSL on the sequential engine, cooperative cancellation (`pb.cancel.v1`), diagnostics and copying policy axes, `pb::runtime_callable` / `pb::bind_callable` / `pb::c_function_stage` adapters, optional backend integration seams (TBB/Taskflow/stdexec — compile-guarded scaffolds, dormant by default), and the C++20 named module build (`PB_BUILD_MODULE` + `modules-ninja` preset + `import pb.pipeline;`).
+Updated after the wave-1/2/3 batch and team hardening that add `pb::unique_clone`, thread-local state policy, fan-in observer lifecycle events, fan-in multi-error envelope (`pb.fan_in.errors.v1`), synchronous coroutine and sender/receiver scaffolds, `pb::tooling::pipeline_registry` + pb_cli refactor, runtime-enforced `::with<pb::policy::errors::...>` DSL on the sequential engine, cooperative cancellation (`pb.cancel.v1`), diagnostics and copying policy axes, `pb::runtime_callable` / `pb::bind_callable` / `pb::c_function_stage` adapters, optional backend integration seams (TBB/Taskflow/stdexec — compile-guarded scaffolds, dormant by default), and the C++20 named module build (`PB_BUILD_MODULE` + `modules-ninja` preset + `import pb.pipeline;`).
 
 ## Latest evidence snapshot
 
-Current local evidence for the working tree (HEAD `a7494d3` — wave-1/2/3 plus post-wave diagnostics/batch-run/export optimization commits integrated):
+Current local evidence for the integrated worker-1/3/4 team head (wave-1/2/3 plus post-wave diagnostics/batch-run/export optimization, sender/receiver scaffold, and fan-in observer lifecycle hardening commits integrated):
 
 ```text
 - cmake --preset clang-dev-ninja: passed
