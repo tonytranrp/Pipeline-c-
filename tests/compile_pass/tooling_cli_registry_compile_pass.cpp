@@ -92,16 +92,22 @@ int main() {
   pb_test_require(contains(dot, "tooling.parse"));
   pb_test_require(contains(dot, "tooling.finish"));
 
+  const std::string direct_dot = found->to_dot("direct_graph_id");
+  pb_test_require(contains(direct_dot, "digraph direct_graph_id"));
+  pb_test_require(contains(direct_dot, "tooling.parse"));
+
   const std::string explicit_dot = registry.render("custom-name", "dot");
   pb_test_require(contains(explicit_dot, "digraph custom_graph_id"));
 
   const std::string json = registry.render("tooling-smoke", "json");
   pb_test_require(contains(json, "\"schema_version\":\"pb.core.graph.v1\""));
   pb_test_require(contains(json, "\"topology\":\"linear\""));
+  pb_test_require(contains(found->to_json(), "\"stage_count\":2"));
 
   const std::string text = registry.render("tooling-smoke", "text");
   pb_test_require(contains(text, "# pb.core.graph.v1"));
   pb_test_require(contains(text, "topology=linear"));
+  pb_test_require(contains(found->to_text(), "[1] tooling.finish"));
 
   pb_test_require(registry.render("missing", "dot").empty());
   pb_test_require(registry.render("tooling-smoke", "xml").empty());

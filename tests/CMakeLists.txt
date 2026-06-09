@@ -1982,6 +1982,28 @@ if(PB_BUILD_CLI)
   )
   set_tests_properties(pb_cli_describe_invalid_format PROPERTIES LABELS "cli;describe;error")
 
+  add_test(NAME pb_cli_describe_invalid_split_format
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-linear
+      "-DDESCRIBE_ARGS=--format;xml"
+      -DEXPECT_FAIL=ON
+      "-DEXPECTED_STDERR_TOKENS=--format must be 'dot', 'json', or 'text';got 'xml'"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe_args.cmake
+  )
+  set_tests_properties(pb_cli_describe_invalid_split_format PROPERTIES LABELS "cli;describe;error;args")
+
+  add_test(NAME pb_cli_describe_unknown_option
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-linear
+      "-DDESCRIBE_ARGS=--unknown"
+      -DEXPECT_FAIL=ON
+      "-DEXPECTED_STDERR_TOKENS=unknown option '--unknown'"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe_args.cmake
+  )
+  set_tests_properties(pb_cli_describe_unknown_option PROPERTIES LABELS "cli;describe;error;args")
+
   # New registry-provided built-in pipelines, described end-to-end.
   add_test(NAME pb_cli_describe_order_enrich_text
     COMMAND ${CMAKE_COMMAND}
