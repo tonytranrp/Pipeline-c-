@@ -1013,6 +1013,39 @@ add_test(NAME pb_compile_fail_adapt_direct_member_non_default_initializable
 )
 set_tests_properties(pb_compile_fail_adapt_direct_member_non_default_initializable PROPERTIES LABELS "compile-fail;diagnostics;adapter")
 
+add_test(NAME pb_compile_fail_adapt_void_non_default_initializable
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/adapt_void_non_default_initializable.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pb::void_adapter:\ Fn\ must\ be\ default-constructible
+    -DEXPECTED_DIAGNOSTICS=void_adapter
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_adapt_void_non_default_initializable PROPERTIES LABELS "compile-fail;diagnostics;adapter;void")
+
+add_test(NAME pb_compile_fail_adapt_void_non_void_callable
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/adapt_void_non_void_callable.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pb::void_adapter:\ Fn\ must\ be\ callable\ with\ Input\ and\ return\ void
+    -DEXPECTED_DIAGNOSTICS=void_adapter
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_adapt_void_non_void_callable PROPERTIES LABELS "compile-fail;diagnostics;adapter;void")
+
+add_test(NAME pb_compile_fail_adapt_void_input_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/adapt_void_input_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pb::void_adapter:\ Fn\ must\ be\ callable\ with\ Input\ and\ return\ void
+    -DEXPECTED_DIAGNOSTICS=void_adapter
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_adapt_void_input_mismatch PROPERTIES LABELS "compile-fail;diagnostics;adapter;void")
+
 add_test(NAME pb_compile_fail_adapt_non_final_void_stage_mismatch
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/adapt_non_final_void_stage_mismatch.cpp
