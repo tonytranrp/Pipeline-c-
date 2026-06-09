@@ -76,12 +76,20 @@ pb_apply_project_options(pb_result_error_type_compatible_compile_pass PRIVATE)
 add_test(NAME pb_result_error_type_compatible_compile_pass COMMAND pb_result_error_type_compatible_compile_pass)
 set_tests_properties(pb_result_error_type_compatible_compile_pass PROPERTIES LABELS "compile-pass;runtime;result")
 
+add_executable(pb_tooling_cli_registry_compile_pass compile_pass/tooling_cli_registry_compile_pass.cpp)
+target_link_libraries(pb_tooling_cli_registry_compile_pass PRIVATE pb::pipeline)
+pb_apply_project_options(pb_tooling_cli_registry_compile_pass PRIVATE)
+pb_enable_pch_if_requested(pb_tooling_cli_registry_compile_pass)
+add_test(NAME pb_tooling_cli_registry_compile_pass COMMAND pb_tooling_cli_registry_compile_pass)
+set_tests_properties(pb_tooling_cli_registry_compile_pass PROPERTIES LABELS "compile-pass;tooling;cli;registry")
+
 add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers.cpp
   compile_pass/public_headers/adapt_fn.cpp
   compile_pass/public_headers/adapt_member.cpp
   compile_pass/public_headers/adapt_void.cpp
   compile_pass/public_headers/adaptors.cpp
+  compile_pass/public_headers/tooling_cli_registry.cpp
   compile_pass/public_headers/core_concepts.cpp
   compile_pass/public_headers/core_describe.cpp
   compile_pass/public_headers/core_fixed_string.cpp
@@ -1763,6 +1771,49 @@ if(PB_BUILD_CLI)
   # ─────────────────────────────────────────────────────────────
   set(pb_cli_describe_dir "${CMAKE_CURRENT_BINARY_DIR}/pb_cli_describe")
   file(MAKE_DIRECTORY "${pb_cli_describe_dir}")
+
+  add_test(NAME pb_cli_describe_order_linear_split_format_stdout
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-linear
+      "-DDESCRIBE_ARGS=--format;text"
+      "-DEXPECTED_TOKENS=# pb.core.graph.v1;topology=linear;[0] parse_order;[2] persist_order"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe_args.cmake
+  )
+  set_tests_properties(pb_cli_describe_order_linear_split_format_stdout PROPERTIES LABELS "cli;describe;export;text;args")
+
+  add_test(NAME pb_cli_describe_order_branch_split_format_out
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-branch
+      "-DDESCRIBE_ARGS=--format;json;--out;${pb_cli_describe_dir}/order_branch_split.json"
+      -DOUT_FILE=${pb_cli_describe_dir}/order_branch_split.json
+      "-DEXPECTED_TOKENS=\"schema_version\":\"pb.core.graph.v1\";\"topology\":\"branch\";\"predicate_key\":\"is.high_risk\""
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe_args.cmake
+  )
+  set_tests_properties(pb_cli_describe_order_branch_split_format_out PROPERTIES LABELS "cli;describe;export;json;branch;args")
+
+  add_test(NAME pb_cli_describe_format_missing_value
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-linear
+      "-DDESCRIBE_ARGS=--format;--out=${pb_cli_describe_dir}/should_not_exist.dot"
+      -DEXPECT_FAIL=ON
+      "-DEXPECTED_STDERR_TOKENS=--format requires a value"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe_args.cmake
+  )
+  set_tests_properties(pb_cli_describe_format_missing_value PROPERTIES LABELS "cli;describe;error;args")
+
+  add_test(NAME pb_cli_describe_out_missing_value
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-linear
+      "-DDESCRIBE_ARGS=--format=dot;--out"
+      -DEXPECT_FAIL=ON
+      "-DEXPECTED_STDERR_TOKENS=--out requires a non-empty path"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe_args.cmake
+  )
+  set_tests_properties(pb_cli_describe_out_missing_value PROPERTIES LABELS "cli;describe;error;args")
 
   add_test(NAME pb_cli_describe_order_linear_dot
     COMMAND ${CMAKE_COMMAND}
