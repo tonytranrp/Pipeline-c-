@@ -113,6 +113,16 @@ forks: register any pipeline in one line and it becomes available to
 `pb_cli list` / `pb_cli describe`. A broader stable CLI contract for
 arbitrary user pipelines beyond the built-in examples remains future work.
 
+## Diagnostics contract
+
+The public diagnostics surface includes a narrow machine-readable contract in
+`include/pb/core/diagnostics.hpp`: `pb::diagnostics::diagnostics_schema_version`
+is `"pb.diagnostics.v1"`, `diagnostic_record` carries severity/code/message/source
+location/stage/suggestion fields, and `diagnostic_collector::add(...)` captures
+`std::source_location` by default. This is a record/collector contract for tools;
+full graph-aware diagnostic emission, exported diagnostic artifacts, and frozen
+cross-compiler wording guarantees remain roadmap work.
+
 ## Production-grade extras
 
 ### Policy DSL (`::with<>`) — three independent axes
