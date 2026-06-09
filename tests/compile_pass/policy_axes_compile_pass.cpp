@@ -101,6 +101,13 @@ static_assert(!pb::has_copying_policy_v<ThrowingOnly>);
 // ---------------------------------------------------------------------------
 // Mixed-axis pipeline: all three axes report independently and correctly.
 // ---------------------------------------------------------------------------
+using AllThreeInOneWith = pb::from<Raw>::with<
+    pb::policy::errors::throwing, pb::policy::diagnostics::verbose,
+    pb::policy::copying::move_only>::then<Stage>::to<Done>;
+static_assert(pb::has_error_policy_v<AllThreeInOneWith>);
+static_assert(pb::has_diagnostics_policy_v<AllThreeInOneWith>);
+static_assert(pb::has_copying_policy_v<AllThreeInOneWith>);
+
 using AllThree = pb::from<Raw>::with<pb::policy::errors::throwing>::with<
     pb::policy::diagnostics::verbose>::with<pb::policy::copying::move_only>::then<Stage>::to<Done>;
 

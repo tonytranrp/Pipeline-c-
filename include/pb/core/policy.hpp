@@ -36,7 +36,9 @@ struct ignore {};
 // finalized pipeline type and acted upon by pb::compile<P>(sequential{})).
 //
 // These five named markers select a concrete engine wrapper from
-// pb/runtime/error_policy.hpp at compile time:
+// pb/runtime/error_policy.hpp at compile time.  The error axis is single-valued:
+// adding a second runtime error marker is rejected by the pipeline-state builder.
+//
 //   throwing     -> pb::with_throw_on_error      (throws pipeline_exception)
 //   terminating  -> pb::with_terminate_on_error  (std::terminate on failure)
 //   ignoring     -> pb::with_ignore_errors       (fallback value on failure)
@@ -321,7 +323,8 @@ inline constexpr bool is_error_policy_v = is_error_policy<T>::value;
 
 /// True for exactly the two runtime-enforced diagnostics-policy markers in
 /// `pb::policy::diagnostics`: `verbose` (selects the verbose engine wrapper)
-/// and `quiet` (selects no wrapper).  The legacy `silent`/`normal`
+/// and `quiet` (selects no wrapper).  The diagnostics axis is single-valued;
+/// adding both markers is rejected by the pipeline-state builder.  The legacy `silent`/`normal`
 /// introspection tags are NOT diagnostics policies for this trait — they never
 /// drive `compile<>` wrapping.
 template <class T>
