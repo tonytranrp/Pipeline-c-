@@ -488,6 +488,26 @@ void print_export_help(std::string_view format) {
   }
 }
 
+int run_export(int argc, char* argv[]) {
+  if (argc > 3) {
+    std::cerr << "export: expected at most one option: --dot, --json, or --text.\n";
+    return 2;
+  }
+
+  std::string_view fmt;
+  if (argc >= 3) {
+    fmt = argv[2];
+    if (fmt != "--dot" && fmt != "--json" && fmt != "--text") {
+      std::cerr << "export: unknown option '" << fmt
+                << "'. Expected --dot, --json, or --text.\n";
+      return 2;
+    }
+  }
+
+  print_export_help(fmt);
+  return 0;
+}
+
 void print_validate_help() {
   std::cout << "validate — (reserved for future use)\n";
   std::cout << "Will accept a pipeline definition file and report\n";
@@ -664,10 +684,7 @@ int main(int argc, char* argv[]) {
   }
 
   if (cmd == "export") {
-    std::string_view fmt;
-    if (argc >= 3) fmt = argv[2];
-    print_export_help(fmt);
-    return 0;
+    return run_export(argc, argv);
   }
 
   if (cmd == "validate") {

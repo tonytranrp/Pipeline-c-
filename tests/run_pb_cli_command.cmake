@@ -4,6 +4,8 @@
 #   COMMAND          command argument passed to pb_cli (legacy single-arg form)
 #   COMMAND_ARGS     optional semicolon-separated argument list passed to pb_cli
 #   EXPECTED_TOKENS  semicolon-separated substrings expected in stdout
+#   EXPECT_FAIL       optional: if ON, expect non-zero status and check stderr tokens
+#   EXPECTED_STDERR_TOKENS optional: semicolon-separated substrings expected in stderr on failure
 
 if(NOT DEFINED CLI_PATH)
   message(FATAL_ERROR "CLI_PATH is required")
@@ -14,7 +16,10 @@ if(NOT DEFINED COMMAND_ARGS)
   endif()
   set(COMMAND_ARGS "${COMMAND}")
 endif()
-if(NOT DEFINED EXPECTED_TOKENS)
+if(NOT DEFINED EXPECT_FAIL)
+  set(EXPECT_FAIL "OFF")
+endif()
+if(NOT DEFINED EXPECTED_TOKENS AND NOT EXPECT_FAIL)
   message(FATAL_ERROR "EXPECTED_TOKENS is required")
 endif()
 
@@ -24,6 +29,29 @@ execute_process(
   OUTPUT_VARIABLE cli_stdout
   ERROR_VARIABLE cli_stderr
 )
+
+if(EXPECT_FAIL)
+  if(cli_result EQUAL 0)
+    message(FATAL_ERROR
+      "Expected pb_cli ${COMMAND_ARGS} to fail, but it succeeded.
+"
+      "stdout: ${cli_stdout}
+stderr: ${cli_stderr}")
+  endif()
+  if(DEFINED EXPECTED_STDERR_TOKENS)
+    foreach(token IN LISTS EXPECTED_STDERR_TOKENS)
+      string(FIND "${cli_stderr}" "${token}" found_at)
+      if(found_at EQUAL -1)
+        message(FATAL_ERROR
+          "pb_cli ${COMMAND_ARGS} failure is missing expected stderr token '${token}'.
+"
+          "stderr:
+${cli_stderr}")
+      endif()
+    endforeach()
+  endif()
+  return()
+endif()
 
 if(NOT cli_result EQUAL 0)
   message(FATAL_ERROR

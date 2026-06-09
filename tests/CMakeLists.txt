@@ -1811,6 +1811,16 @@ if(PB_BUILD_CLI)
   )
   set_tests_properties(pb_cli_export_text PROPERTIES LABELS "cli;export;text")
 
+  add_test(NAME pb_cli_export_unknown_option
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      "-DCOMMAND_ARGS=export;--xml"
+      -DEXPECT_FAIL=ON
+      "-DEXPECTED_STDERR_TOKENS=export: unknown option '--xml';Expected --dot, --json, or --text"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_command.cmake
+  )
+  set_tests_properties(pb_cli_export_unknown_option PROPERTIES LABELS "cli;export;error")
+
   add_test(NAME pb_cli_validate    COMMAND pb_cli validate)
   set_tests_properties(pb_cli_validate PROPERTIES LABELS "cli;reserved")
 
