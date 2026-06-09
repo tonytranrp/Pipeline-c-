@@ -336,5 +336,4 @@ template <class Pipeline>
 }
 
 
-
 } // namespace pb::core
