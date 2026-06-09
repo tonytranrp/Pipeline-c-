@@ -13,7 +13,25 @@
 #include "pb/core/concepts.hpp"
 #include "pb/core/fixed_string.hpp"
 #include "pb/core/meta.hpp"
-#include "pb/core/policy.hpp"
+namespace pb::policy::errors {
+struct throwing;
+struct terminating;
+struct ignoring;
+struct propagating;
+struct result;
+} // namespace pb::policy::errors
+
+namespace pb::policy::diagnostics {
+struct verbose;
+struct quiet;
+} // namespace pb::policy::diagnostics
+
+namespace pb::policy::copying {
+struct value;
+struct move_only;
+struct shared;
+struct clone;
+} // namespace pb::policy::copying
 
 namespace pb::core {
 
@@ -765,6 +783,40 @@ struct finalize_pipeline<pipeline_state<Policies, Input, Current, Stages...>, Ou
 template <class State, class... Cases>
 struct append_branch;
 
+template <class T>
+struct is_error_policy_marker : std::false_type {};
+
+template <>
+struct is_error_policy_marker<::pb::policy::errors::throwing> : std::true_type {};
+template <>
+struct is_error_policy_marker<::pb::policy::errors::terminating> : std::true_type {};
+template <>
+struct is_error_policy_marker<::pb::policy::errors::ignoring> : std::true_type {};
+template <>
+struct is_error_policy_marker<::pb::policy::errors::propagating> : std::true_type {};
+template <>
+struct is_error_policy_marker<::pb::policy::errors::result> : std::true_type {};
+
+template <class T>
+struct is_diagnostics_policy_marker : std::false_type {};
+
+template <>
+struct is_diagnostics_policy_marker<::pb::policy::diagnostics::verbose> : std::true_type {};
+template <>
+struct is_diagnostics_policy_marker<::pb::policy::diagnostics::quiet> : std::true_type {};
+
+template <class T>
+struct is_copying_policy_marker : std::false_type {};
+
+template <>
+struct is_copying_policy_marker<::pb::policy::copying::value> : std::true_type {};
+template <>
+struct is_copying_policy_marker<::pb::policy::copying::move_only> : std::true_type {};
+template <>
+struct is_copying_policy_marker<::pb::policy::copying::shared> : std::true_type {};
+template <>
+struct is_copying_policy_marker<::pb::policy::copying::clone> : std::true_type {};
+
 template <class ExistingPolicies, class... NewPolicies>
 struct append_policies;
 
@@ -775,11 +827,11 @@ inline constexpr auto policy_axis_count_v =
 template <class... ExistingPolicies, class... NewPolicies>
 struct append_policies<meta::type_list<ExistingPolicies...>, NewPolicies...> {
   static constexpr auto error_policy_count =
-      policy_axis_count_v<pb::policy::is_error_policy, ExistingPolicies..., NewPolicies...>;
+      policy_axis_count_v<is_error_policy_marker, ExistingPolicies..., NewPolicies...>;
   static constexpr auto diagnostics_policy_count =
-      policy_axis_count_v<pb::policy::is_diagnostics_policy, ExistingPolicies..., NewPolicies...>;
+      policy_axis_count_v<is_diagnostics_policy_marker, ExistingPolicies..., NewPolicies...>;
   static constexpr auto copying_policy_count =
-      policy_axis_count_v<pb::policy::is_copying_policy, ExistingPolicies..., NewPolicies...>;
+      policy_axis_count_v<is_copying_policy_marker, ExistingPolicies..., NewPolicies...>;
 
   static_assert(error_policy_count <= 1,
                 "pb::pipeline_state::with accepts at most one pb::policy::errors::* marker; "
