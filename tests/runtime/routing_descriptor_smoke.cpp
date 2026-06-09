@@ -2,9 +2,12 @@
 
 #include <array>
 #include <cassert>
+#include <cstddef>
 #include <string_view>
 
 int main() {
+  static_assert(pb::route_descriptor_schema_version == std::string_view{"pb.runtime.route.v1"});
+
   const auto descriptor = pb::make_route_descriptor(
       std::array{pb::route_case_record{.index = 0, .key = "parse", .name = "parse_order"},
                  pb::route_case_record{.index = 1, .key = "review", .name = "manual_review"},
@@ -32,4 +35,20 @@ int main() {
   assert(mismatch.has_error());
   assert(mismatch.error().category == pb::error_category::contract_violation);
   assert(mismatch.error().message == "branch route predicate count mismatch");
+
+  const auto empty_descriptor =
+      pb::make_route_descriptor(std::array<pb::route_case_record, std::size_t{0}>{});
+  static_assert(decltype(empty_descriptor)::case_count == 0);
+  assert(empty_descriptor.empty());
+
+  const auto empty_no_match =
+      pb::select_route(empty_descriptor, std::array<bool, std::size_t{0}>{});
+  assert(empty_no_match.has_error());
+  assert(empty_no_match.error().category == pb::error_category::contract_violation);
+  assert(empty_no_match.error().message == "no branch route matched");
+
+  const auto empty_mismatch = pb::select_route(empty_descriptor, std::array{true});
+  assert(empty_mismatch.has_error());
+  assert(empty_mismatch.error().category == pb::error_category::contract_violation);
+  assert(empty_mismatch.error().message == "branch route predicate count mismatch");
 }
