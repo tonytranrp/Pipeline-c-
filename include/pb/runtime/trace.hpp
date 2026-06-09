@@ -37,6 +37,10 @@ enum class trace_event_kind : std::uint8_t {
   case_selected,
   case_skipped,
   case_failed,
+  fan_in_started,
+  fan_in_case_scheduled,
+  fan_in_case_completed,
+  fan_in_completed,
   pipeline_start,
   pipeline_complete,
 };
@@ -47,6 +51,11 @@ struct trace_event {
   std::string stage_name{};
   std::size_t stage_index{};
   std::size_t case_index{};
+  std::size_t case_count{};
+  std::size_t selected_count{};
+  std::size_t completed_count{};
+  std::size_t failed_count{};
+  bool success{};
   std::chrono::steady_clock::time_point timestamp{std::chrono::steady_clock::now()};
   bool has_error{false};
   error diagnostic{};
@@ -135,6 +144,40 @@ public:
                      .diagnostic = diagnostic});
   }
 
+  void on_fan_in_started(const stage_id& branch_id, std::size_t case_count) override {
+    emit(trace_event{.kind = trace_event_kind::fan_in_started,
+                     .stage_key = branch_id.key,
+                     .stage_name = branch_id.name,
+                     .case_count = case_count});
+  }
+
+  void on_fan_in_case_scheduled(const stage_id& branch_id, std::size_t case_index,
+                                const stage_id& /*case_stage_id*/) override {
+    emit(trace_event{.kind = trace_event_kind::fan_in_case_scheduled,
+                     .stage_key = branch_id.key,
+                     .stage_name = branch_id.name,
+                     .case_index = case_index});
+  }
+
+  void on_fan_in_case_completed(const stage_id& branch_id, std::size_t case_index,
+                                const stage_id& /*case_stage_id*/, bool success) override {
+    emit(trace_event{.kind = trace_event_kind::fan_in_case_completed,
+                     .stage_key = branch_id.key,
+                     .stage_name = branch_id.name,
+                     .case_index = case_index,
+                     .success = success});
+  }
+
+  void on_fan_in_completed(const stage_id& branch_id, std::size_t selected_count,
+                           std::size_t completed_count, std::size_t failed_count) override {
+    emit(trace_event{.kind = trace_event_kind::fan_in_completed,
+                     .stage_key = branch_id.key,
+                     .stage_name = branch_id.name,
+                     .selected_count = selected_count,
+                     .completed_count = completed_count,
+                     .failed_count = failed_count});
+  }
+
 private:
   void emit(const trace_event& event) {
     if (sink_ != nullptr) {
@@ -161,6 +204,14 @@ private:
     return "case_skipped";
   case trace_event_kind::case_failed:
     return "case_failed";
+  case trace_event_kind::fan_in_started:
+    return "fan_in_started";
+  case trace_event_kind::fan_in_case_scheduled:
+    return "fan_in_case_scheduled";
+  case trace_event_kind::fan_in_case_completed:
+    return "fan_in_case_completed";
+  case trace_event_kind::fan_in_completed:
+    return "fan_in_completed";
   case trace_event_kind::pipeline_start:
     return "pipeline_start";
   case trace_event_kind::pipeline_complete:
@@ -213,7 +264,9 @@ inline void append_stage_json(std::ostream& stream, const trace_event& event) {
   if (event.case_index != 0 ||
       event.kind == trace_event_kind::case_selected ||
       event.kind == trace_event_kind::case_skipped ||
-      event.kind == trace_event_kind::case_failed) {
+      event.kind == trace_event_kind::case_failed ||
+      event.kind == trace_event_kind::fan_in_case_scheduled ||
+      event.kind == trace_event_kind::fan_in_case_completed) {
     stream << ",\"case_index\":" << event.case_index;
   }
   stream << '}';
@@ -236,6 +289,15 @@ inline void append_trace_event_json(std::ostream& stream, const trace_event& eve
   append_json_string(stream, trace_event_kind_name(event.kind));
   stream << ",\"stage\":";
   append_stage_json(stream, event);
+  if (event.kind == trace_event_kind::fan_in_started) {
+    stream << ",\"case_count\":" << event.case_count;
+  } else if (event.kind == trace_event_kind::fan_in_case_completed) {
+    stream << ",\"success\":" << (event.success ? "true" : "false");
+  } else if (event.kind == trace_event_kind::fan_in_completed) {
+    stream << ",\"selected_count\":" << event.selected_count
+           << ",\"completed_count\":" << event.completed_count
+           << ",\"failed_count\":" << event.failed_count;
+  }
   if (event.has_error) {
     stream << ",\"error\":";
     append_error_json(stream, event.diagnostic);
