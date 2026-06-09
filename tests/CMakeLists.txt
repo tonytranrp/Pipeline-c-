@@ -1775,6 +1775,16 @@ if(PB_BUILD_CLI)
   add_test(NAME pb_cli_features    COMMAND pb_cli features)
   set_tests_properties(pb_cli_features PROPERTIES LABELS "cli;features")
 
+  add_test(NAME pb_cli_features_matrix
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DCOMMAND=features
+      "-DEXPECTED_TOKENS=Pipeline-c++ feature-gate matrix;Compiler __cplusplus:;C++26 core language:;Static reflection  (P2996):;Contracts          (P2900):;Pack indexing      (P2662):;std::expected      (C++23):;Deducing this      (P0847):;Feature-test macros (raw):;__cpp_reflection;__cpp_lib_expected"
+      "-DEXPECTED_ORDERED_TOKENS=Pipeline-c++ feature-gate matrix;Compiler __cplusplus:;C++26 core language:;Static reflection  (P2996):;Contracts          (P2900):;Pack indexing      (P2662):;std::expected      (C++23):;Deducing this      (P0847):;Feature-test macros (raw):;__cpp_reflection;__cpp_contracts;__cpp_pack_indexing;__cpp_lib_expected;__cpp_explicit_this_parameter"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_command.cmake
+  )
+  set_tests_properties(pb_cli_features_matrix PROPERTIES LABELS "cli;features;matrix")
+
   add_test(NAME pb_cli_backends    COMMAND pb_cli backends)
   set_tests_properties(pb_cli_backends PROPERTIES LABELS "cli;backend")
 
@@ -1782,7 +1792,8 @@ if(PB_BUILD_CLI)
     COMMAND ${CMAKE_COMMAND}
       -DCLI_PATH=$<TARGET_FILE:pb_cli>
       -DCOMMAND=backends
-      "-DEXPECTED_TOKENS=Pipeline-c++ runtime backend matrix;sequential | sequential | supported | no | yes;thread_pool | thread_pool | supported | no | no;taskflow | task_graph | roadmap | yes | no;oneTBB | filter_pipeline | roadmap | yes | no;stdexec | sender_receiver | experimental | yes | no;roadmap entries are not working backends"
+      "-DEXPECTED_TOKENS=Pipeline-c++ runtime backend matrix;name | model | support | external | default | note;sequential | sequential | supported | no | yes;thread_pool | thread_pool | supported | no | no;taskflow | task_graph | roadmap | yes | no;oneTBB | filter_pipeline | roadmap | yes | no;stdexec | sender_receiver | experimental | yes | no;roadmap entries are not working backends"
+      "-DEXPECTED_ORDERED_TOKENS=Pipeline-c++ runtime backend matrix;name | model | support | external | default | note;sequential | sequential | supported | no | yes;thread_pool | thread_pool | supported | no | no;taskflow | task_graph | roadmap | yes | no;oneTBB | filter_pipeline | roadmap | yes | no;stdexec | sender_receiver | experimental | yes | no;Boundary: external dependency backends are dormant"
       -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_command.cmake
   )
   set_tests_properties(pb_cli_backends_matrix PROPERTIES LABELS "cli;backend;matrix")
