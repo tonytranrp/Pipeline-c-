@@ -204,11 +204,38 @@ using BorrowPipeline = pb::from<MoveOnlyInput>::branch<BorrowCaseA, BorrowCaseB>
 
 struct RecordingObserver : pb::runtime::observer {
   std::vector<std::string> events;
+
   void on_case_selected(const pb::runtime::stage_id&, std::size_t case_index, const pb::runtime::stage_id&) override {
     events.push_back("selected:" + std::to_string(case_index));
   }
-  void on_case_failed(const pb::runtime::stage_id&, std::size_t case_index, const pb::runtime::stage_id&, const pb::runtime::error& error) override {
+
+  void on_case_skipped(const pb::runtime::stage_id&, std::size_t case_index, const pb::runtime::stage_id&) override {
+    events.push_back("skipped:" + std::to_string(case_index));
+  }
+
+  void on_case_failed(const pb::runtime::stage_id&, std::size_t case_index, const pb::runtime::stage_id&,
+                      const pb::runtime::error& error) override {
     events.push_back("failed:" + std::to_string(case_index) + ":" + error.message);
+  }
+
+  void on_fan_in_started(const pb::runtime::stage_id&, std::size_t case_count) override {
+    events.push_back("fan_in_started:" + std::to_string(case_count));
+  }
+
+  void on_fan_in_case_scheduled(const pb::runtime::stage_id&, std::size_t case_index,
+                                const pb::runtime::stage_id&) override {
+    events.push_back("scheduled:" + std::to_string(case_index));
+  }
+
+  void on_fan_in_case_completed(const pb::runtime::stage_id&, std::size_t case_index,
+                                const pb::runtime::stage_id&, bool success) override {
+    events.push_back("case_completed:" + std::to_string(case_index) + ":" + (success ? "success" : "failure"));
+  }
+
+  void on_fan_in_completed(const pb::runtime::stage_id&, std::size_t selected_count,
+                           std::size_t completed_count, std::size_t failed_count) override {
+    events.push_back("fan_in_completed:" + std::to_string(selected_count) + ":" +
+                     std::to_string(completed_count) + ":" + std::to_string(failed_count));
   }
 };
 
@@ -228,6 +255,14 @@ bool contains(const std::vector<std::string>& events, std::string_view expected)
   return false;
 }
 
+int count_events(const std::vector<std::string>& events, std::string_view expected) {
+  int count = 0;
+  for (const auto& event : events) {
+    if (event == expected) ++count;
+  }
+  return count;
+}
+
 } // namespace
 
 int main() {
@@ -240,9 +275,32 @@ int main() {
   require(result.has_value());
   require(result.value().text == "A=15;B=105;F=thread-pool stage failure");
   require(ParallelProbe::max_active.load() >= 2);
+  require(contains(observer.events, "fan_in_started:3"));
   require(contains(observer.events, "selected:0"));
   require(contains(observer.events, "selected:1"));
+  require(contains(observer.events, "selected:2"));
+  require(contains(observer.events, "scheduled:0"));
+  require(contains(observer.events, "scheduled:1"));
+  require(contains(observer.events, "scheduled:2"));
   require(contains(observer.events, "failed:2:thread-pool stage failure"));
+  require(contains(observer.events, "case_completed:0:success"));
+  require(contains(observer.events, "case_completed:1:success"));
+  require(contains(observer.events, "case_completed:2:failure"));
+  require(contains(observer.events, "fan_in_completed:3:2:1"));
+
+  RecordingObserver mixed_observer;
+  engine.set_observer(&mixed_observer);
+  auto mixed = engine.run(Input{4, 5});
+  require(mixed.has_value());
+  require(mixed.value().text == "A=skip;B=skip;F=thread-pool stage failure");
+  require(count_events(mixed_observer.events, "fan_in_started:3") == 1);
+  require(count_events(mixed_observer.events, "skipped:0") == 1);
+  require(count_events(mixed_observer.events, "skipped:1") == 1);
+  require(count_events(mixed_observer.events, "selected:2") == 1);
+  require(count_events(mixed_observer.events, "scheduled:2") == 1);
+  require(count_events(mixed_observer.events, "failed:2:thread-pool stage failure") == 1);
+  require(count_events(mixed_observer.events, "case_completed:2:failure") == 1);
+  require(count_events(mixed_observer.events, "fan_in_completed:1:0:1") == 1);
 
   SlowAfterObserverFailureStage::completed = 0;
   auto drain_engine = pb::compile<DrainPipeline>(pb::runtime::thread_pool_backend{.worker_count = 2});
