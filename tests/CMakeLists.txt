@@ -1831,7 +1831,8 @@ if(PB_BUILD_CLI)
   add_test(NAME pb_cli_list_registry
     COMMAND ${CMAKE_COMMAND}
       -DCLI_PATH=$<TARGET_FILE:pb_cli>
-      "-DEXPECTED_TOKENS=order-linear;order-branch;order-fan-in;order-enrich;order-variant"
+      "-DEXPECTED_TOKENS=Built-in example pipelines:;order-linear;order-branch;order-fan-in;order-enrich;order-variant;Render with: pb_cli describe <name> --format=<dot|json|text>"
+      "-DEXPECTED_ORDERED_TOKENS=Built-in example pipelines:;order-linear  [linear];order-branch  [branch];order-fan-in  [fan_in];order-enrich  [linear];order-variant  [branch];Render with: pb_cli describe <name> --format=<dot|json|text>"
       -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_list.cmake
   )
   set_tests_properties(pb_cli_list_registry PROPERTIES LABELS "cli;registry")
@@ -1953,6 +1954,7 @@ if(PB_BUILD_CLI)
       -DFORMAT=text
       -DOUT_FILE=${pb_cli_describe_dir}/order_linear.txt
       "-DEXPECTED_TOKENS=# pb.core.graph.v1;topology=linear;stages=3;edges=2;[0] parse_order;[1] validate_order;[2] persist_order;edges:;0 -> 1  parse_order -> validate_order"
+      "-DEXPECTED_ORDERED_TOKENS=# pb.core.graph.v1;topology=linear;stages=3;edges=2;[0] parse_order;[1] validate_order;[2] persist_order;edges:;0 -> 1  parse_order -> validate_order;1 -> 2  validate_order -> persist_order"
       -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
   )
   set_tests_properties(pb_cli_describe_order_linear_text PROPERTIES LABELS "cli;describe;export;text")
@@ -1986,6 +1988,7 @@ if(PB_BUILD_CLI)
       -DFORMAT=dot
       -DOUT_FILE=${pb_cli_describe_dir}/should_not_exist.dot
       -DEXPECT_FAIL=ON
+      "-DEXPECTED_STDERR_TOKENS=unknown pipeline 'does-not-exist';Run `pb_cli list` for available names"
       -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
   )
   set_tests_properties(pb_cli_describe_unknown_pipeline PROPERTIES LABELS "cli;describe;error")
@@ -1997,6 +2000,7 @@ if(PB_BUILD_CLI)
       -DFORMAT=xml
       -DOUT_FILE=${pb_cli_describe_dir}/should_not_exist.xml
       -DEXPECT_FAIL=ON
+      "-DEXPECTED_STDERR_TOKENS=--format must be 'dot', 'json', or 'text';got 'xml'"
       -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe.cmake
   )
   set_tests_properties(pb_cli_describe_invalid_format PROPERTIES LABELS "cli;describe;error")

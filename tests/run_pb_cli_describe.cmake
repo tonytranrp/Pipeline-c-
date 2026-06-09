@@ -7,10 +7,14 @@
 #   PIPELINE_NAME    pipeline name argument passed to `describe`
 #   FORMAT           "dot" | "json"
 #   OUT_FILE         absolute path where the CLI writes its output
-#   EXPECTED_TOKENS  semicolon-separated list of substrings that must appear
-#                    in the generated output file
-#   EXPECT_FAIL      (optional) if "ON", expect a non-zero exit code
-#                    and skip content checks
+#   EXPECTED_TOKENS          semicolon-separated substrings that must appear
+#                            in the generated output file
+#   EXPECTED_ORDERED_TOKENS  optional semicolon-separated substrings that must
+#                            appear in generated output in exactly that order
+#   EXPECT_FAIL              (optional) if "ON", expect a non-zero exit code
+#                            and skip content checks
+#   EXPECTED_STDERR_TOKENS   optional semicolon-separated substrings expected
+#                            in stderr when EXPECT_FAIL is ON
 #
 # All inputs must be passed via -D<NAME>=<VALUE>.
 
@@ -47,6 +51,21 @@ if(EXPECT_FAIL)
       "Expected pb_cli describe '${PIPELINE_NAME}' to fail, but it succeeded.\n"
       "stdout: ${cli_stdout}\nstderr: ${cli_stderr}")
   endif()
+  if(EXISTS "${OUT_FILE}")
+    message(FATAL_ERROR
+      "pb_cli describe failure unexpectedly produced '${OUT_FILE}'.\n"
+      "stdout: ${cli_stdout}\nstderr: ${cli_stderr}")
+  endif()
+  if(DEFINED EXPECTED_STDERR_TOKENS)
+    foreach(token IN LISTS EXPECTED_STDERR_TOKENS)
+      string(FIND "${cli_stderr}" "${token}" found_at)
+      if(found_at EQUAL -1)
+        message(FATAL_ERROR
+          "pb_cli describe failure is missing expected stderr token '${token}'.\n"
+          "stderr:\n${cli_stderr}")
+      endif()
+    endforeach()
+  endif()
   return()
 endif()
 
@@ -71,3 +90,21 @@ foreach(token IN LISTS EXPECTED_TOKENS)
       "Output:\n${generated_output}")
   endif()
 endforeach()
+
+if(DEFINED EXPECTED_ORDERED_TOKENS)
+  set(remaining_output "${generated_output}")
+  foreach(token IN LISTS EXPECTED_ORDERED_TOKENS)
+    string(FIND "${remaining_output}" "${token}" found_at)
+    if(found_at EQUAL -1)
+      message(FATAL_ERROR
+        "pb_cli describe '${PIPELINE_NAME}' (--format=${FORMAT}) is missing expected ordered token '${token}' after the previous token.\n"
+        "Output file: ${OUT_FILE}\n"
+        "Output:\n${generated_output}")
+    endif()
+    string(LENGTH "${remaining_output}" remaining_length)
+    string(LENGTH "${token}" token_length)
+    math(EXPR next_at "${found_at} + ${token_length}")
+    math(EXPR next_length "${remaining_length} - ${next_at}")
+    string(SUBSTRING "${remaining_output}" ${next_at} ${next_length} remaining_output)
+  endforeach()
+endif()
