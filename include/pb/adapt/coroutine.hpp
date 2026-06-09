@@ -4,6 +4,7 @@
 #include <concepts>
 #include <exception>
 #include <optional>
+#include <stdexcept>
 #include <string_view>
 #include <type_traits>
 #include <utility>
@@ -81,12 +82,15 @@ class sync_task {
 
   explicit sync_task(std::coroutine_handle<promise_type> handle) noexcept : handle_{handle} {}
 
-  sync_task(sync_task&& other) noexcept : handle_{std::exchange(other.handle_, {})} {}
+  sync_task(sync_task&& other) noexcept
+      : handle_{std::exchange(other.handle_, {})},
+        consumed_{std::exchange(other.consumed_, false)} {}
 
   sync_task& operator=(sync_task&& other) noexcept {
     if (this != &other) {
       destroy();
       handle_ = std::exchange(other.handle_, {});
+      consumed_ = std::exchange(other.consumed_, false);
     }
     return *this;
   }
@@ -103,9 +107,20 @@ class sync_task {
   /// Synchronously extract the coroutine result.  Rethrows any exception that
   /// escaped the coroutine body.  Must only be called once.
   [[nodiscard]] T get() {
+    if (!handle_) {
+      throw std::logic_error{"pb::coro::sync_task: no coroutine state"};
+    }
+    if (consumed_) {
+      throw std::logic_error{"pb::coro::sync_task: result already consumed"};
+    }
+    consumed_ = true;
+
     promise_type& promise = handle_.promise();
     if (promise.error_) {
       std::rethrow_exception(promise.error_);
+    }
+    if (!promise.value_.has_value()) {
+      throw std::logic_error{"pb::coro::sync_task: coroutine produced no value"};
     }
     return std::move(*promise.value_);
   }
@@ -119,6 +134,7 @@ class sync_task {
   }
 
   std::coroutine_handle<promise_type> handle_{};
+  bool consumed_{false};
 };
 
 namespace detail {
