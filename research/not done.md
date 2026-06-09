@@ -12,8 +12,8 @@ Current local evidence for the integrated worker-1/3/4 team head (wave-1/2/3 plu
 - cmake --preset clang-dev-ninja: passed
 - cmake --build --preset clang-dev-ninja: passed
 - ctest --preset clang-dev-ninja --output-on-failure: passed, 231/231
-- cmake --preset modules-ninja (C++20 named module build): passed
-- pb_use_module test (import pb.pipeline;): passed
+- include/pb/pipeline.mpp syntax probe after sender/receiver module export update: passed (`clang++ -std=c++20 -I include -fsyntax-only -x c++ include/pb/pipeline.mpp`)
+- modules-ninja / pb_use_module refresh: not run in this environment because `clang-scan-deps` is missing
 ```
 
 The previous validated code SHA `87299c14c813753d170911239e251064cbbfee6f` still has fresh local + GitHub evidence:
@@ -262,7 +262,7 @@ Stable descriptor/export contract:        5.5 / 10
 Compile-time benchmark scaffolding:       7.5 / 10  (was 7.2 — branch/fan-in + thread-pool fan-in bench targets added)
 Optional pipeline backends:               5.0 / 10  (was 4.2 — dormant scaffolds for TBB/Taskflow/stdexec added)
 C++26 feature gates and reflection:       5.0 / 10
-C++20 named module:                       7.0 / 10  (new — modules-ninja preset + import pb.pipeline; verified)
+C++20 named module:                       7.0 / 10  (prior modules-ninja evidence exists; current sender/receiver module export syntax-probed, full preset refresh blocked by missing clang-scan-deps)
 Policy DSL (full three axes):             8.0 / 10  (new combined score — errors + diagnostics + copying axes shipped)
 Cooperative cancellation:                 7.5 / 10  (new — pb.cancel.v1 cooperative token + thread-pool integration)
 Release readiness before tag:             7.5 / 10  (was 8.2 — new SHA not yet cross-compiler-validated; ctest 231/231)
