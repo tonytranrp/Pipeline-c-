@@ -1881,6 +1881,17 @@ if(PB_BUILD_CLI)
   )
   set_tests_properties(pb_cli_describe_order_branch_split_format_out PROPERTIES LABELS "cli;describe;export;json;branch;args")
 
+  add_test(NAME pb_cli_describe_order_branch_inline_out_stdout_empty
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=order-branch
+      "-DDESCRIBE_ARGS=--format=json;--out=${pb_cli_describe_dir}/order_branch_inline.json"
+      -DOUT_FILE=${pb_cli_describe_dir}/order_branch_inline.json
+      "-DEXPECTED_TOKENS=\"schema_version\":\"pb.core.graph.v1\";\"topology\":\"branch\";\"predicate_key\":\"is.high_risk\""
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe_args.cmake
+  )
+  set_tests_properties(pb_cli_describe_order_branch_inline_out_stdout_empty PROPERTIES LABELS "cli;describe;export;json;branch;args;output-file")
+
   add_test(NAME pb_cli_describe_format_missing_value
     COMMAND ${CMAKE_COMMAND}
       -DCLI_PATH=$<TARGET_FILE:pb_cli>
