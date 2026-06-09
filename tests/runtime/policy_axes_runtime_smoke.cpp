@@ -39,6 +39,9 @@ bool contains(const std::string& haystack, const std::string& needle) {
   return haystack.find(needle) != std::string::npos;
 }
 
+template <class Engine>
+concept HasSetSink = requires(Engine& engine) { engine.set_sink(nullptr); };
+
 struct Input {
   int value{};
 };
@@ -184,14 +187,14 @@ int main() {
   //    an rvalue move-only payload and moves it through the stage.
   {
     auto value_engine = pb::compile<CopyingValuePipeline>(pb::runtime::sequential{});
-    static_assert(!requires(decltype(value_engine)& engine) { engine.set_sink(nullptr); },
+    static_assert(!HasSetSink<decltype(value_engine)>,
                   "copying::value must not select the diagnostics wrapper or add a runtime sink");
 
     const auto out = value_engine.run(Input{.value = 4});
     require(out.value == 5);
 
     auto move_engine = pb::compile<CopyingMoveOnlyPipeline>(pb::runtime::sequential{});
-    static_assert(!requires(decltype(move_engine)& engine) { engine.set_sink(nullptr); },
+    static_assert(!HasSetSink<decltype(move_engine)>,
                   "copying::move_only must not select the diagnostics wrapper or add a runtime sink");
 
     auto moved = move_engine.run(MoveInput{.value = std::make_unique<int>(8)});
