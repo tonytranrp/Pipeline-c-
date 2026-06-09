@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cassert>
+#include <stdexcept>
 #include <string_view>
 #include <type_traits>
 
@@ -98,6 +99,9 @@ static_assert(std::is_same_v<pb::error, pb::runtime::error>);
 static_assert(std::is_same_v<pb::result<int>, pb::runtime::result<int>>);
 static_assert(pb::is_result_v<pb::result<int>>);
 static_assert(pb::expected_like<pb::result<int>>);
+static_assert(std::is_same_v<pb::sync_value_sender<Done>::value_type, Done>);
+static_assert(std::is_base_of_v<std::runtime_error, pb::sender_stopped>);
+static_assert(std::is_base_of_v<std::runtime_error, pb::sender_no_value>);
 
 int main() {
   assert(pb::has_stage(pb::error{.stage = {.key = "parse", .name = "parse"}}));
