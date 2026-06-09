@@ -68,23 +68,31 @@ int main() {
   registry.add<SmokePipeline>("tooling-smoke", "linear", "Tooling registry smoke.");
   registry.add<ExplicitGraphPipeline>("custom-name", "linear", "Explicit graph id.",
                                       "custom_graph_id");
+  registry.add<ExplicitGraphPipeline>("tooling-smoke", "duplicate",
+                                      "Duplicate names stay insertion-ordered.",
+                                      "duplicate_graph_id");
 
-  pb_test_require(registry.size() == 2);
+  pb_test_require(registry.size() == 3);
   pb_test_require(registry.contains("tooling-smoke"));
   pb_test_require(registry.contains("custom-name"));
   pb_test_require(!registry.contains("missing"));
 
   const auto& entries = registry.entries();
-  pb_test_require(entries.size() == 2);
+  pb_test_require(entries.size() == 3);
   pb_test_require(entries[0].name == "tooling-smoke");
   pb_test_require(entries[0].topology == "linear");
   pb_test_require(entries[0].description == "Tooling registry smoke.");
   pb_test_require(entries[0].graph_name == "tooling_smoke");
   pb_test_require(entries[1].name == "custom-name");
   pb_test_require(entries[1].graph_name == "custom_graph_id");
+  pb_test_require(entries[2].name == "tooling-smoke");
+  pb_test_require(entries[2].topology == "duplicate");
+  pb_test_require(entries[2].description == "Duplicate names stay insertion-ordered.");
+  pb_test_require(entries[2].graph_name == "duplicate_graph_id");
 
   const auto* found = registry.find("tooling-smoke");
   pb_test_require(found != nullptr);
+  pb_test_require(found == &entries[0]);
   pb_test_require(found->name == "tooling-smoke");
 
   const std::string dot = registry.render("tooling-smoke", "dot");
@@ -95,6 +103,10 @@ int main() {
   const std::string direct_dot = found->to_dot("direct_graph_id");
   pb_test_require(contains(direct_dot, "digraph direct_graph_id"));
   pb_test_require(contains(direct_dot, "tooling.parse"));
+
+  const std::string duplicate_dot = entries[2].to_dot("duplicate_direct_graph");
+  pb_test_require(contains(duplicate_dot, "digraph duplicate_direct_graph"));
+  pb_test_require(contains(duplicate_dot, "tooling.only"));
 
   const std::string explicit_dot = registry.render("custom-name", "dot");
   pb_test_require(contains(explicit_dot, "digraph custom_graph_id"));
