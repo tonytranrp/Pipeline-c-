@@ -50,7 +50,10 @@ target_link_libraries(pb_descriptor_demo PRIVATE pb::pipeline)
 pb_apply_project_options(pb_descriptor_demo PRIVATE)
 pb_enable_pch_if_requested(pb_descriptor_demo)
 add_test(NAME pb_example_descriptor_demo COMMAND pb_descriptor_demo)
-set_tests_properties(pb_example_descriptor_demo PROPERTIES LABELS "examples;descriptor;branch")
+set_tests_properties(pb_example_descriptor_demo PROPERTIES
+  LABELS "examples;descriptor;branch"
+  PASS_REGULAR_EXPRESSION "All descriptor demos completed\."
+)
 
 # ---------------------------------------------------------------------------
 # Heterogeneous branch example
@@ -72,7 +75,10 @@ target_link_libraries(pb_thread_pool_fan_in_demo PRIVATE pb::pipeline)
 pb_apply_project_options(pb_thread_pool_fan_in_demo PRIVATE)
 pb_enable_pch_if_requested(pb_thread_pool_fan_in_demo)
 add_test(NAME pb_example_thread_pool_fan_in_demo COMMAND pb_thread_pool_fan_in_demo)
-set_tests_properties(pb_example_thread_pool_fan_in_demo PROPERTIES LABELS "examples;branch;fan-in;thread-pool")
+set_tests_properties(pb_example_thread_pool_fan_in_demo PROPERTIES
+  LABELS "examples;branch;fan-in;thread-pool"
+  PASS_REGULAR_EXPRESSION "All fan-in cases joined in deterministic case order\."
+)
 
 # ---------------------------------------------------------------------------
 # Policy DSL example (::with<pb::policy::...>)
@@ -83,7 +89,10 @@ target_link_libraries(pb_policy_dsl_demo PRIVATE pb::pipeline)
 pb_apply_project_options(pb_policy_dsl_demo PRIVATE)
 pb_enable_pch_if_requested(pb_policy_dsl_demo)
 add_test(NAME pb_example_policy_dsl_demo COMMAND pb_policy_dsl_demo)
-set_tests_properties(pb_example_policy_dsl_demo PROPERTIES LABELS "examples;policy;dsl")
+set_tests_properties(pb_example_policy_dsl_demo PROPERTIES
+  LABELS "examples;policy;dsl"
+  PASS_REGULAR_EXPRESSION "throwing: caught exception from stage 'reject'"
+)
 
 # ---------------------------------------------------------------------------
 # Coroutine stage adapter example
@@ -105,4 +114,7 @@ target_link_libraries(pb_sender_receiver_stage_demo PRIVATE pb::pipeline)
 pb_apply_project_options(pb_sender_receiver_stage_demo PRIVATE)
 pb_enable_pch_if_requested(pb_sender_receiver_stage_demo)
 add_test(NAME pb_example_sender_receiver_stage_demo COMMAND pb_sender_receiver_stage_demo)
-set_tests_properties(pb_example_sender_receiver_stage_demo PROPERTIES LABELS "examples;adapter;sender-receiver")
+set_tests_properties(pb_example_sender_receiver_stage_demo PROPERTIES
+  LABELS "examples;adapter;sender-receiver"
+  PASS_REGULAR_EXPRESSION "low-risk order: auto-approved"
+)
