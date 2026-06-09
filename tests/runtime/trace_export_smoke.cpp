@@ -102,11 +102,24 @@ struct OddRoute {
   Routed operator()(Raw raw) const { return {raw.value * 100}; }
 };
 
+struct FailingRoute {
+  using input_type = Raw;
+  using output_type = Routed;
+  static constexpr auto stage_name() noexcept { return "failing_route"; }
+  static constexpr auto stage_key() noexcept { return "route.fail"; }
+  pb::runtime::result<Routed> operator()(Raw) const {
+    return pb::runtime::error{.category = pb::runtime::error_category::stage_failure,
+                              .message = "fan-in case failed \"route\"\nline"};
+  }
+};
+
 using EvenCase = pb::case_<IsEven>::then<EvenRoute>;
 using OddCase = pb::case_<IsOdd>::then<OddRoute>;
+using FailingEvenCase = pb::case_<IsEven>::then<FailingRoute>;
 using BranchPipeline = pb::from<Raw>::branch<EvenCase, OddCase>::to<Routed>;
 static_assert(pb::valid<BranchPipeline>);
 using FanInOutput = pb::fan_in_output_t<EvenCase, OddCase>;
+using FailingFanInOutput = pb::fan_in_output_t<FailingEvenCase, OddCase>;
 
 struct FanInJoin {
   using input_type = FanInOutput;
@@ -127,6 +140,26 @@ struct FanInJoin {
 
 using FanInPipeline = pb::from<Raw>::branch<EvenCase, OddCase>::fan_in<FanInJoin>::to<Routed>;
 static_assert(pb::valid<FanInPipeline>);
+
+struct FailingFanInJoin {
+  using input_type = FailingFanInOutput;
+  using output_type = Routed;
+  static constexpr auto stage_name() noexcept { return "failing_fan_in_join"; }
+  static constexpr auto stage_key() noexcept { return "join.failing_fan_in"; }
+  Routed operator()(const FailingFanInOutput& input) const {
+    int total = 0;
+    if (input.template get<0>().completed()) {
+      total += input.template get<0>().get().value;
+    }
+    if (input.template get<1>().completed()) {
+      total += input.template get<1>().get().value;
+    }
+    return {total};
+  }
+};
+
+using FailingFanInPipeline = pb::from<Raw>::branch<FailingEvenCase, OddCase>::fan_in<FailingFanInJoin>::to<Routed>;
+static_assert(pb::valid<FailingFanInPipeline>);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -319,6 +352,64 @@ int main() {
     pb_test_require(contains(json, R"("selected_count":1)"));
     pb_test_require(contains(json, R"("completed_count":1)"));
     pb_test_require(contains(json, R"("failed_count":0)"));
+  }
+
+  // -----------------------------------------------------------------------
+  // Fan-in pipeline — failed case trace schema and counts
+  // -----------------------------------------------------------------------
+  {
+    auto engine = pb::compile<FailingFanInPipeline>(pb::runtime::sequential{});
+    pb::runtime::trace_recorder recorder{};
+    pb::runtime::trace_observer observer{recorder};
+    engine.set_observer(&observer);
+
+    auto even = engine.run(Raw{4});
+    pb_test_require(even.has_value());
+    pb_test_require(even.value().value == 0);
+
+    bool saw_case_failed = false;
+    bool saw_case_completed = false;
+    bool saw_completed = false;
+    for (const auto& event : recorder.events()) {
+      if (event.kind == pb::runtime::trace_event_kind::case_failed) {
+        saw_case_failed = true;
+        pb_test_require(event.stage_key == "fan_in");
+        pb_test_require(event.case_index == 0);
+        pb_test_require(event.has_error);
+        pb_test_require(event.diagnostic.category == pb::runtime::error_category::stage_failure);
+        pb_test_require(event.diagnostic.stage.key == "route.fail");
+        pb_test_require(event.diagnostic.message == "fan-in case failed \"route\"\nline");
+      }
+      if (event.kind == pb::runtime::trace_event_kind::fan_in_case_completed &&
+          event.case_index == 0) {
+        saw_case_completed = true;
+        pb_test_require(event.stage_key == "fan_in");
+        pb_test_require(!event.success);
+      }
+      if (event.kind == pb::runtime::trace_event_kind::fan_in_completed) {
+        saw_completed = true;
+        pb_test_require(event.selected_count == 1);
+        pb_test_require(event.completed_count == 0);
+        pb_test_require(event.failed_count == 1);
+      }
+    }
+    pb_test_require(saw_case_failed);
+    pb_test_require(saw_case_completed);
+    pb_test_require(saw_completed);
+
+    const auto json = pb::runtime::export_json(recorder);
+    pb_test_require(contains(json, R"("kind":"case_failed")"));
+    pb_test_require(contains(json, R"("case_index":0)"));
+    pb_test_require(contains(json, R"("error":)"));
+    pb_test_require(contains(json, R"("key":"route.fail")"));
+    pb_test_require(contains(json, R"("category":"stage_failure")"));
+    pb_test_require(contains(json, "\"message\":\"fan-in case failed \\\"route\\\"\\nline\""));
+    pb_test_require(contains(json, R"("kind":"fan_in_case_completed")"));
+    pb_test_require(contains(json, R"("success":false)"));
+    pb_test_require(contains(json, R"("kind":"fan_in_completed")"));
+    pb_test_require(contains(json, R"("selected_count":1)"));
+    pb_test_require(contains(json, R"("completed_count":0)"));
+    pb_test_require(contains(json, R"("failed_count":1)"));
   }
 
   // -----------------------------------------------------------------------
