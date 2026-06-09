@@ -1027,6 +1027,17 @@ add_test(NAME pb_compile_fail_adapt_direct_member_output_mismatch
 )
 set_tests_properties(pb_compile_fail_adapt_direct_member_output_mismatch PROPERTIES LABELS "compile-fail;diagnostics;adapter")
 
+add_test(NAME pb_compile_fail_adapt_member_output_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/adapt_member_output_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=Adapted\ stage\ output\ mismatch
+    -DEXPECTED_DIAGNOSTICS=adapted_stage
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_adapt_member_output_mismatch PROPERTIES LABELS "compile-fail;diagnostics;adapter")
+
 add_test(NAME pb_compile_fail_adapt_functor_non_default_initializable
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/adapt_functor_non_default_initializable.cpp
