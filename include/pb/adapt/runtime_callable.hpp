@@ -154,6 +154,9 @@ class runtime_callable_binding {
 public:
   explicit runtime_callable_binding(runtime_callable<In, Out>& stage)
       : previous_{runtime_callable<In, Out>::active_binding()} {
+    if (!stage.callable_ || !*stage.callable_) {
+      throw std::bad_function_call{};
+    }
     runtime_callable<In, Out>::active_binding() = stage.callable_.get();
   }
 
