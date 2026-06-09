@@ -3,7 +3,9 @@
 
 #include <cstdlib>
 #include <exception>
+#include <memory>
 #include <stdexcept>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -24,6 +26,10 @@ struct Mid {
 
 struct Out {
   int value{};
+};
+
+struct MoveOnlyOut {
+  std::unique_ptr<int> value;
 };
 
 struct MakeMidSender {
@@ -108,6 +114,14 @@ struct EmptySenderFactory {
   auto operator()(In) const { return sender{}; }
 };
 
+struct MoveOnlySenderFactory {
+  using output_type = MoveOnlyOut;
+
+  auto operator()(In input) const {
+    return pb::sync_just(MoveOnlyOut{std::make_unique<int>(input.value + 10)});
+  }
+};
+
 } // namespace
 
 int main() {
@@ -123,6 +137,20 @@ int main() {
   auto op = pb::sync_just(Mid{7}).connect(CaptureReceiver{&captured});
   op.start();
   pb_test_require(captured.value == 7);
+
+  // sync_value_sender transports move-only values through connect/start.
+  struct MoveOnlyCaptureReceiver {
+    std::unique_ptr<int>* out;
+    void set_value(std::unique_ptr<int> value) { *out = std::move(value); }
+    void set_error(std::exception_ptr) noexcept { std::abort(); }
+    void set_stopped() noexcept { std::abort(); }
+  };
+
+  std::unique_ptr<int> move_only_captured;
+  auto move_only_op = pb::sync_just(std::make_unique<int>(9)).connect(MoveOnlyCaptureReceiver{&move_only_captured});
+  move_only_op.start();
+  pb_test_require(move_only_captured != nullptr);
+  pb_test_require(*move_only_captured == 9);
 
   // Pipeline usage: sender stage unwraps set_value and composes with a normal stage.
   auto engine = pb::compile<Pipeline>(pb::runtime::sequential{});
@@ -140,6 +168,7 @@ int main() {
   pb_test_require(!error_result.has_value());
   pb_test_require(error_result.error().category == pb::runtime::error_category::exception);
   pb_test_require(error_result.error().stage.name == "sync_sender_stage");
+  pb_test_require(error_result.error().message == "sender boom");
 
   // set_stopped and no-completion are explicit exceptions, not silent defaults.
   using StoppedPipeline = pb::from<In>::then<pb::sync_sender_stage<StoppedSenderFactory, In>>::to<Mid>;
@@ -147,12 +176,33 @@ int main() {
   auto stopped_result = stopped_engine.try_run(In{1});
   pb_test_require(!stopped_result.has_value());
   pb_test_require(stopped_result.error().category == pb::runtime::error_category::exception);
+  pb_test_require(stopped_result.error().message == "pb::sync_sender_stage: sender stopped");
+  try {
+    (void)stopped_engine.run(In{1});
+    std::abort();
+  } catch (const pb::sender_stopped& error) {
+    pb_test_require(std::string_view{error.what()} == "pb::sync_sender_stage: sender stopped");
+  }
 
   using EmptyPipeline = pb::from<In>::then<pb::sync_sender_stage<EmptySenderFactory, In>>::to<Mid>;
   auto empty_engine = pb::compile<EmptyPipeline>(pb::runtime::sequential{});
   auto empty_result = empty_engine.try_run(In{1});
   pb_test_require(!empty_result.has_value());
   pb_test_require(empty_result.error().category == pb::runtime::error_category::exception);
+  pb_test_require(empty_result.error().message == "pb::sync_sender_stage: sender produced no value");
+  try {
+    (void)empty_engine.run(In{1});
+    std::abort();
+  } catch (const pb::sender_no_value& error) {
+    pb_test_require(std::string_view{error.what()} == "pb::sync_sender_stage: sender produced no value");
+  }
+
+  // Direct sync_sender_stage use preserves move-only sender outputs.
+  {
+    auto move_only = pb::sync_sender_stage<MoveOnlySenderFactory, In>{}(In{12});
+    pb_test_require(move_only.value != nullptr);
+    pb_test_require(*move_only.value == 22);
+  }
 
   return 0;
 }
