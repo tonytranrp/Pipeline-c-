@@ -1802,6 +1802,15 @@ if(PB_BUILD_CLI)
   add_test(NAME pb_cli_export_json COMMAND pb_cli export --json)
   set_tests_properties(pb_cli_export_json PROPERTIES LABELS "cli;export;json")
 
+  add_test(NAME pb_cli_export_text
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      "-DCOMMAND_ARGS=export;--text"
+      "-DEXPECTED_TOKENS=Compact text export;Library API:  pb::to_text<Pipeline>();CLI:          pb_cli describe <name> --format=text;Use case:"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_command.cmake
+  )
+  set_tests_properties(pb_cli_export_text PROPERTIES LABELS "cli;export;text")
+
   add_test(NAME pb_cli_validate    COMMAND pb_cli validate)
   set_tests_properties(pb_cli_validate PROPERTIES LABELS "cli;reserved")
 

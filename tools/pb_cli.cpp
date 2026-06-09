@@ -11,7 +11,7 @@
 //   pb_cli list                                     list built‑in example pipelines
 //   pb_cli describe <name> --format=<dot|json>      emit graph for a built‑in pipeline
 //                  [--out=<path>]                   (default: stdout)
-//   pb_cli export [--dot|--json]                    show export-API docs
+//   pb_cli export [--dot|--json|--text]             show export-API docs
 // ─────────────────────────────────────────────────────────────
 //
 // EXTENSION POINT — registering MORE pipelines
@@ -388,7 +388,7 @@ void print_banner() {
   std::cout << "       --format <dot|json|text>      Split-form equivalent\n";
   std::cout << "       --out=<path>                  Write to file instead of stdout\n";
   std::cout << "       --out <path>                  Split-form equivalent\n";
-  std::cout << "  export [--dot|--json]              Print export-API documentation\n";
+  std::cout << "  export [--dot|--json|--text]       Print export-API documentation\n";
   std::cout << "  validate <pipeline>                (reserved) Validate a pipeline definition\n";
 }
 
