@@ -385,7 +385,9 @@ void print_banner() {
   std::cout << "  schema                             Print helper-export schema metadata\n";
   std::cout << "  describe <name> [options]          Emit graph for an example pipeline\n";
   std::cout << "       --format=<dot|json|text>      Export format (default: dot)\n";
+  std::cout << "       --format <dot|json|text>      Split-form equivalent\n";
   std::cout << "       --out=<path>                  Write to file instead of stdout\n";
+  std::cout << "       --out <path>                  Split-form equivalent\n";
   std::cout << "  export [--dot|--json]              Print export-API documentation\n";
   std::cout << "  validate <pipeline>                (reserved) Validate a pipeline definition\n";
 }
@@ -529,6 +531,25 @@ struct option_pair {
   return {arg.substr(0, eq), arg.substr(eq + 1)};
 }
 
+[[nodiscard]] bool looks_like_option(std::string_view arg) noexcept {
+  return arg.starts_with("--");
+}
+
+[[nodiscard]] bool consume_option_value(int argc, char* argv[], int& index,
+                                        std::string_view inline_value,
+                                        std::string_view& value) {
+  if (!inline_value.empty()) {
+    value = inline_value;
+    return true;
+  }
+  if (index + 1 >= argc || looks_like_option(argv[index + 1])) {
+    return false;
+  }
+  ++index;
+  value = argv[index];
+  return true;
+}
+
 int run_describe(int argc, char* argv[]) {
   if (argc < 3) {
     std::cerr << "describe: missing pipeline name. Try `pb_cli list`.\n";
@@ -540,8 +561,13 @@ int run_describe(int argc, char* argv[]) {
   std::string_view out_path{};
 
   for (int i = 3; i < argc; ++i) {
-    const auto [key, value] = split_option(argv[i]);
+    const auto [key, inline_value] = split_option(argv[i]);
     if (key == "--format") {
+      std::string_view value;
+      if (!consume_option_value(argc, argv, i, inline_value, value)) {
+        std::cerr << "describe: --format requires a value: 'dot', 'json', or 'text'.\n";
+        return 2;
+      }
       if (value != "dot" && value != "json" && value != "text") {
         std::cerr << "describe: --format must be 'dot', 'json', or 'text' (got '"
                   << value << "').\n";
@@ -549,7 +575,8 @@ int run_describe(int argc, char* argv[]) {
       }
       format = value;
     } else if (key == "--out") {
-      if (value.empty()) {
+      std::string_view value;
+      if (!consume_option_value(argc, argv, i, inline_value, value)) {
         std::cerr << "describe: --out requires a non-empty path.\n";
         return 2;
       }
