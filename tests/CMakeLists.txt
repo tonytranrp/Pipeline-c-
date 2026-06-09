@@ -1933,6 +1933,18 @@ add_test(NAME pb_compile_fail_policy_error_conflict
 set_tests_properties(pb_compile_fail_policy_error_conflict
   PROPERTIES LABELS "compile-fail;diagnostics;policy;dsl;axes")
 
+add_test(NAME pb_compile_fail_policy_error_duplicate
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/policy_error_duplicate.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pb::pipeline_state::with\ accepts\ at\ most\ one\ pb::policy::errors::*\ marker
+    -DEXPECTED_DIAGNOSTICS=duplicate\ or\ conflicting\ error\ policies\ are\ rejected
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_policy_error_duplicate
+  PROPERTIES LABELS "compile-fail;diagnostics;policy;dsl;axes")
+
 add_test(NAME pb_compile_fail_policy_diagnostics_conflict
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/policy_diagnostics_conflict.cpp
@@ -1945,6 +1957,18 @@ add_test(NAME pb_compile_fail_policy_diagnostics_conflict
 set_tests_properties(pb_compile_fail_policy_diagnostics_conflict
   PROPERTIES LABELS "compile-fail;diagnostics;policy;dsl;axes")
 
+add_test(NAME pb_compile_fail_policy_diagnostics_duplicate
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/policy_diagnostics_duplicate.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pb::pipeline_state::with\ accepts\ at\ most\ one\ pb::policy::diagnostics::*\ marker
+    -DEXPECTED_DIAGNOSTICS=duplicate\ or\ conflicting\ diagnostics\ policies\ are\ rejected
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_policy_diagnostics_duplicate
+  PROPERTIES LABELS "compile-fail;diagnostics;policy;dsl;axes")
+
 add_test(NAME pb_compile_fail_policy_copying_conflict
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/policy_copying_conflict.cpp
@@ -1955,4 +1979,16 @@ add_test(NAME pb_compile_fail_policy_copying_conflict
     -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
 )
 set_tests_properties(pb_compile_fail_policy_copying_conflict
+  PROPERTIES LABELS "compile-fail;diagnostics;policy;dsl;axes")
+
+add_test(NAME pb_compile_fail_policy_copying_duplicate
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/policy_copying_duplicate.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pb::pipeline_state::with\ accepts\ at\ most\ one\ pb::policy::copying
+    -DEXPECTED_DIAGNOSTICS=copying\ policies\ are\ rejected
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_policy_copying_duplicate
   PROPERTIES LABELS "compile-fail;diagnostics;policy;dsl;axes")
