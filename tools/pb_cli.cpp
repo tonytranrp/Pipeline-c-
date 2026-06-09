@@ -536,7 +536,7 @@ void print_examples() {
   for (const auto& entry : registry().entries()) {
     std::cout << "  " << entry.name << "  [" << entry.topology << "]  — " << entry.description << "\n";
   }
-  std::cout << "\nRender with: pb_cli describe <name> --format=<dot|json>\n";
+  std::cout << "\nRender with: pb_cli describe <name> --format=<dot|json|text>\n";
 }
 
 // Split "--key=value" → {key, value}.  If no '=', value is empty.
