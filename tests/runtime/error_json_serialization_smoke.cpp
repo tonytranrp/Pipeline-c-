@@ -113,7 +113,27 @@ int main() {
     pb_test_require(via_error == via_record);
   }
 
-  // ── 5. Empty stage + empty message still produce well-formed JSON. ──
+  // ── 5. Escaped stage identity still round-trips through to_record/to_json. ──
+  {
+    const pb::runtime::error e{
+        .stage = {.key = "key:\"slash\\line\n", .name = "name\t\"quoted\""},
+        .category = pb::runtime::error_category::contract_violation,
+        .message = "msg:\n\t\"\\end"};
+    const auto record = pb::runtime::to_record(e);
+    pb_test_require(record.stage_key == "key:\"slash\\line\n");
+    pb_test_require(record.stage_name == "name\t\"quoted\"");
+    pb_test_require(record.category == "contract_violation");
+    pb_test_require(record.message == "msg:\n\t\"\\end");
+
+    const auto via_error  = pb::runtime::to_json(e);
+    const auto via_record = pb::runtime::to_json(record);
+    pb_test_require(via_error == via_record);
+    pb_test_require(contains(via_error, R"("stage":{"key":"key:\"slash\\line\n","name":"name\t\"quoted\""})"));
+    pb_test_require(contains(via_error, R"("category":"contract_violation")"));
+    pb_test_require(contains(via_error, R"("message":"msg:\n\t\"\\end")"));
+  }
+
+  // ── 6. Empty stage + empty message still produce well-formed JSON. ──
   {
     const pb::runtime::error e{};  // all fields default-empty, category=stage_failure
     const auto json = pb::runtime::to_json(e);
@@ -125,7 +145,7 @@ int main() {
     pb_test_require(!json.empty() && json.back() == '}');
   }
 
-  // ── 6. Direct error_record serialization preserves edge fields. ──
+  // ── 7. Direct error_record serialization preserves edge fields. ──
   {
     const pb::runtime::error_record record{
         .stage_key = "key\\with\"quote",
@@ -140,7 +160,7 @@ int main() {
     pb_test_require(contains(json, "\"message\":\"msg\\tvalue\""));
   }
 
-  // ── 7. Default error_record still emits the stable v1 object shape. ──
+  // ── 8. Default error_record still emits the stable v1 object shape. ──
   {
     const auto json = pb::runtime::to_json(pb::runtime::error_record{});
     pb_test_require(json ==
@@ -148,7 +168,7 @@ int main() {
                     "\"category\":\"\",\"message\":\"\"}");
   }
 
-  // ── 8. Schema-version constant is reachable through pb:: alias. ──
+  // ── 9. Schema-version constant is reachable through pb:: alias. ──
   {
     static_assert(pb::error_schema_version == std::string_view{"pb.error.v1"},
                   "pb::error_schema_version MUST match the v1 contract");
