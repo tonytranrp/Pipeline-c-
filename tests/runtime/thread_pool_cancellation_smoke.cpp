@@ -13,7 +13,9 @@
 ///     case is reported skipped, its stage never runs, and the run completes
 ///     deterministically (no hang / no UB);
 ///   • WITHOUT a token (default), the fan-in result matches the normal,
-///     uncancelled result byte-for-byte.
+///     uncancelled result byte-for-byte;
+///   • stop requests are idempotent, and copied token views remain valid after
+///     their source object leaves scope.
 /// main() returns 0 on success; assertions abort otherwise.
 
 #include <pb/pipeline.hpp>
@@ -175,33 +177,47 @@ int main() {
   static_assert(pb::cancellation_schema_version == std::string_view{"pb.cancel.v1"});
 
   // 0) Source and token copies share a single cooperative stop flag. A
-  //    default token stays detached and never reports a stop.
+  //    default token stays detached and never reports a stop. Repeated stop
+  //    requests are idempotent, and token views keep the flag alive after the
+  //    source object that produced them leaves scope.
   {
     pb::cancellation_token default_token{};
     require(!default_token.can_be_cancelled());
     require(!default_token.stop_requested());
 
-    pb::cancellation_source source;
-    auto token = source.token();
-    auto token_copy = token;
-    auto source_copy = source;
-    auto copied_source_token = source_copy.token();
+    pb::cancellation_token token_after_source_lifetime{};
+    {
+      pb::cancellation_source source;
+      auto token = source.token();
+      auto token_copy = token;
+      auto source_copy = source;
+      auto copied_source_token = source_copy.token();
+      token_after_source_lifetime = token_copy;
 
-    require(token.can_be_cancelled());
-    require(token_copy.can_be_cancelled());
-    require(copied_source_token.can_be_cancelled());
-    require(!source.stop_requested());
-    require(!source_copy.stop_requested());
-    require(!token.stop_requested());
-    require(!token_copy.stop_requested());
-    require(!copied_source_token.stop_requested());
+      require(token.can_be_cancelled());
+      require(token_copy.can_be_cancelled());
+      require(copied_source_token.can_be_cancelled());
+      require(token_after_source_lifetime.can_be_cancelled());
+      require(!source.stop_requested());
+      require(!source_copy.stop_requested());
+      require(!token.stop_requested());
+      require(!token_copy.stop_requested());
+      require(!copied_source_token.stop_requested());
+      require(!token_after_source_lifetime.stop_requested());
 
-    source_copy.request_stop();
-    require(source.stop_requested());
-    require(source_copy.stop_requested());
-    require(token.stop_requested());
-    require(token_copy.stop_requested());
-    require(copied_source_token.stop_requested());
+      source_copy.request_stop();
+      source.request_stop();
+      source_copy.request_stop();
+      require(source.stop_requested());
+      require(source_copy.stop_requested());
+      require(token.stop_requested());
+      require(token_copy.stop_requested());
+      require(copied_source_token.stop_requested());
+      require(token_after_source_lifetime.stop_requested());
+    }
+
+    require(token_after_source_lifetime.can_be_cancelled());
+    require(token_after_source_lifetime.stop_requested());
     require(!default_token.stop_requested());
   }
 
