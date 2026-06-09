@@ -298,8 +298,45 @@ void test_try_current_state_outside_scope() {
   pb_test_require(pb::try_current_state<counter_state>() == nullptr);
 }
 
+
 // ────────────────────────────────────────────────────────────────────────────
-// 12) Composability: with_state under with_throw_on_error
+// 12) same-type nested frames restore the previous active frame
+// ────────────────────────────────────────────────────────────────────────────
+
+void test_state_context_restores_same_type_nested_frames() {
+  counter_state outer{.hits = 10, .misses = 0};
+  counter_state inner{.hits = 20, .misses = 0};
+
+  pb_test_require(pb::try_current_state<counter_state>() == nullptr);
+  {
+    pb::state_context<counter_state> outer_frame{outer};
+    pb_test_require(pb::try_current_state<counter_state>() == &outer);
+    {
+      pb::state_context<counter_state> inner_frame{inner};
+      pb_test_require(pb::try_current_state<counter_state>() == &inner);
+      pb_test_require(&pb::current_state<counter_state>() == &inner);
+    }
+    pb_test_require(pb::try_current_state<counter_state>() == &outer);
+    pb_test_require(&pb::current_state<counter_state>() == &outer);
+  }
+  pb_test_require(pb::try_current_state<counter_state>() == nullptr);
+
+  // Defensive lifetime hardening: if callers allocate frames dynamically and
+  // destroy an older frame before a newer same-type frame, the older destructor
+  // must remove its own frame instead of blindly popping the active one.
+  auto outer_frame = std::make_unique<pb::state_context<counter_state>>(outer);
+  auto inner_frame = std::make_unique<pb::state_context<counter_state>>(inner);
+  pb_test_require(pb::try_current_state<counter_state>() == &inner);
+
+  outer_frame.reset();
+  pb_test_require(pb::try_current_state<counter_state>() == &inner);
+
+  inner_frame.reset();
+  pb_test_require(pb::try_current_state<counter_state>() == nullptr);
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 13) Composability: with_state under with_throw_on_error
 // ────────────────────────────────────────────────────────────────────────────
 
 void test_composability_with_throw_on_error() {
@@ -320,7 +357,7 @@ void test_composability_with_throw_on_error() {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// 13) state_context push/pop balanced even when stage throws
+// 14) state_context push/pop balanced even when stage throws
 // ────────────────────────────────────────────────────────────────────────────
 
 void test_stateful_batch_runs_keep_state_context() {
@@ -392,7 +429,7 @@ void test_state_context_balanced_on_exception() {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// 14) borrowed: shadowing owned state via run_with_state
+// 15) borrowed: shadowing owned state via run_with_state
 // ────────────────────────────────────────────────────────────────────────────
 
 void test_owned_with_run_with_state_shadows() {
@@ -408,7 +445,7 @@ void test_owned_with_run_with_state_shadows() {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// 15) Forwarding surface mirrors the other wrappers
+// 16) Forwarding surface mirrors the other wrappers
 // ────────────────────────────────────────────────────────────────────────────
 
 void test_forwarding_surface() {
@@ -436,6 +473,7 @@ void test_state_dsl_smoke() {
   test_multi_state_pipeline();
   test_current_state_outside_scope_throws();
   test_try_current_state_outside_scope();
+  test_state_context_restores_same_type_nested_frames();
   test_composability_with_throw_on_error();
   test_stateful_batch_runs_keep_state_context();
   test_state_context_balanced_on_exception();
