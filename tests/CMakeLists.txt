@@ -1059,6 +1059,28 @@ add_test(NAME pb_compile_fail_sync_sender_stage_missing_start
 )
 set_tests_properties(pb_compile_fail_sync_sender_stage_missing_start PROPERTIES LABELS "compile-fail;diagnostics;adapter;sender-receiver")
 
+add_test(NAME pb_compile_fail_sync_sender_stage_factory_input_mismatch
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/sync_sender_stage_factory_input_mismatch.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pb::sync_sender_stage:
+    -DEXPECTED_DIAGNOSTICS=Input
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_sync_sender_stage_factory_input_mismatch PROPERTIES LABELS "compile-fail;diagnostics;adapter;sender-receiver")
+
+add_test(NAME pb_compile_fail_sync_sender_stage_missing_connect
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/sync_sender_stage_missing_connect.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=no\ member\ named
+    -DEXPECTED_DIAGNOSTICS=connect
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_sync_sender_stage_missing_connect PROPERTIES LABELS "compile-fail;diagnostics;adapter;sender-receiver")
+
 add_test(NAME pb_compile_fail_invalid_stage
   COMMAND ${CMAKE_COMMAND}
     -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/invalid_stage.cpp
