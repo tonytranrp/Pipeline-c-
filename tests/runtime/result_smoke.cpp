@@ -95,6 +95,36 @@ int main()
     assert(!moved_error.has_value());
     assert(moved_error.error().message == "move-only bad");
 
+    const auto const_ok = result<std::string>{std::string{"stable"}};
+    assert(const_ok.value() == "stable");
+    assert(const_ok.value_or("fallback") == "stable");
+
+    auto move_only_ok = result<std::unique_ptr<int>>{std::make_unique<int>(34)};
+    assert(move_only_ok.has_value());
+    auto moved_payload = std::move(move_only_ok).value_or(std::make_unique<int>(0));
+    assert(*moved_payload == 34);
+
+    auto move_only_failed = result<std::unique_ptr<int>>{error{.message = "no pointer"}};
+    auto fallback_payload = std::move(move_only_failed).value_or(std::make_unique<int>(55));
+    assert(*fallback_payload == 55);
+
+    struct move_only_error {
+        explicit move_only_error(std::unique_ptr<int> payload_value) : payload(std::move(payload_value)) {}
+        move_only_error(move_only_error&&) noexcept = default;
+        move_only_error& operator=(move_only_error&&) noexcept = default;
+        move_only_error(const move_only_error&) = delete;
+        move_only_error& operator=(const move_only_error&) = delete;
+        std::unique_ptr<int> payload;
+    };
+
+    auto move_only_error_ok = result<int, move_only_error>{9};
+    auto fallback_error = std::move(move_only_error_ok).error_or(move_only_error{std::make_unique<int>(12)});
+    assert(*fallback_error.payload == 12);
+
+    auto move_only_error_failed = result<int, move_only_error>{move_only_error{std::make_unique<int>(77)}};
+    auto propagated_error = std::move(move_only_error_failed).error_or(move_only_error{std::make_unique<int>(0)});
+    assert(*propagated_error.payload == 77);
+
     struct void_expected {
         using value_type = void;
         using error_type = std::string;
