@@ -166,38 +166,46 @@ inline void append_graph_edge_json(std::string& output, const pb::runtime::descr
 
 } // namespace detail
 
-template <ValidPipeline Pipeline>
+template <class Pipeline>
 [[nodiscard]] auto to_json() -> std::string {
-  constexpr auto descriptor = pb::runtime::make_descriptor<Pipeline>();
-  constexpr auto topology = decltype(descriptor)::topology == pb::runtime::descriptor_topology::fan_in
+  static_assert(ValidPipeline<Pipeline>,
+                "pb::to_json<Pipeline> requires pb::ValidPipeline; export helpers accept only "
+                "pb::from<...>::...::to<...> pipeline types");
+
+  if constexpr (!ValidPipeline<Pipeline>) {
+    return {};
+  } else {
+    constexpr auto descriptor = pb::runtime::make_descriptor<Pipeline>();
+    constexpr auto topology = decltype(descriptor)::topology == pb::runtime::descriptor_topology::fan_in
                                 ? std::string_view{"fan_in"}
                                 : (decltype(descriptor)::topology == pb::runtime::descriptor_topology::branch
                                        ? std::string_view{"branch"}
                                        : std::string_view{"linear"});
 
-  std::string output;
-  output.reserve(128U + (descriptor.stage_count * 96U) + (descriptor.edge_count * 96U));
-  output += "{\"schema_version\":\"pb.core.graph.v1\",\"topology\":";
-  detail::append_json_string(output, topology);
-  output += ",\"stage_count\":";
-  output += std::to_string(descriptor.stage_count);
-  output += ",\"edge_count\":";
-  output += std::to_string(descriptor.edge_count);
-  output += ",\"stages\":[";
-  detail::append_graph_stages_json(output, descriptor);
-  output += "],\"edges\":[";
+    std::string output;
+    output.reserve(128U + (descriptor.stage_count * 96U) + (descriptor.edge_count * 96U));
+    output += "{\"schema_version\":\"pb.core.graph.v1\",\"topology\":";
+    detail::append_json_string(output, topology);
+    output += ",\"stage_count\":";
+    output += std::to_string(descriptor.stage_count);
+    output += ",\"edge_count\":";
+    output += std::to_string(descriptor.edge_count);
+    output += ",\"stages\":[";
+    detail::append_graph_stages_json(output, descriptor);
+    output += "],\"edges\":[";
 
-  bool first_edge = true;
-  for (const auto& edge : descriptor.edge_records()) {
-    if (!first_edge) {
-      output.push_back(',');
+    bool first_edge = true;
+    for (const auto& edge : descriptor.edge_records()) {
+      if (!first_edge) {
+        output.push_back(',');
+      }
+      first_edge = false;
+      detail::append_graph_edge_json(output, edge);
     }
-    first_edge = false;
-    detail::append_graph_edge_json(output, edge);
-  }
 
-  output += "]}";
-  return output;
+    output += "]}";
+    return output;
+  }
 }
 
 

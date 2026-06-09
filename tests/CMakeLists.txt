@@ -360,6 +360,42 @@ pb_apply_project_options(pb_export_golden_compile_pass PRIVATE)
 add_test(NAME pb_export_golden_compile_pass COMMAND pb_export_golden_compile_pass)
 set_tests_properties(pb_export_golden_compile_pass PROPERTIES LABELS "compile-pass;export;golden;branch")
 
+add_test(NAME pb_compile_fail_export_text_non_pipeline_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/export_text_non_pipeline_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pb::to_text<Pipeline>\ requires\ pb::ValidPipeline
+    -DEXPECTED_DIAGNOSTICS=export\ helpers\ accept\ only\ pb::from<...>::...::to<...>\ pipeline\ types
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_export_text_non_pipeline_misuse
+  PROPERTIES LABELS "compile-fail;diagnostics;export;text")
+
+add_test(NAME pb_compile_fail_export_json_non_pipeline_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/export_json_non_pipeline_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pb::to_json<Pipeline>\ requires\ pb::ValidPipeline
+    -DEXPECTED_DIAGNOSTICS=export\ helpers\ accept\ only\ pb::from<...>::...::to<...>\ pipeline\ types
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_export_json_non_pipeline_misuse
+  PROPERTIES LABELS "compile-fail;diagnostics;export;json")
+
+add_test(NAME pb_compile_fail_export_dot_non_pipeline_misuse
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/export_dot_non_pipeline_misuse.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pb::to_dot<Pipeline>\ requires\ pb::ValidPipeline
+    -DEXPECTED_DIAGNOSTICS=export\ helpers\ accept\ only\ pb::from<...>::...::to<...>\ pipeline\ types
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_export_dot_non_pipeline_misuse
+  PROPERTIES LABELS "compile-fail;diagnostics;export;dot")
+
 add_executable(pb_branch_join_validation_compile_pass compile_pass/branch_join_validation_compile_pass.cpp)
 target_link_libraries(pb_branch_join_validation_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_branch_join_validation_compile_pass PRIVATE)

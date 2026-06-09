@@ -324,9 +324,17 @@ private:
 
 } // namespace detail
 
-template <ValidPipeline Pipeline>
+template <class Pipeline>
 [[nodiscard]] auto to_dot(std::string_view graph_name = "pipeline") -> std::string {
-  return detail::dot_emitter<Pipeline, detail::pipeline_has_branch_v<Pipeline>>::emit(graph_name);
+  static_assert(ValidPipeline<Pipeline>,
+                "pb::to_dot<Pipeline> requires pb::ValidPipeline; export helpers accept only "
+                "pb::from<...>::...::to<...> pipeline types");
+
+  if constexpr (!ValidPipeline<Pipeline>) {
+    return {};
+  } else {
+    return detail::dot_emitter<Pipeline, detail::pipeline_has_branch_v<Pipeline>>::emit(graph_name);
+  }
 }
 
 template <class Pipeline>

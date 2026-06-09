@@ -79,34 +79,42 @@ inline void append_edge_text(string_sink& stream,
 
 } // namespace detail
 
-template <ValidPipeline Pipeline>
+template <class Pipeline>
 [[nodiscard]] auto to_text() -> std::string {
-  constexpr auto descriptor = pb::runtime::make_descriptor<Pipeline>();
-  constexpr auto topology = decltype(descriptor)::topology;
+  static_assert(ValidPipeline<Pipeline>,
+                "pb::to_text<Pipeline> requires pb::ValidPipeline; export helpers accept only "
+                "pb::from<...>::...::to<...> pipeline types");
 
-  detail::string_sink stream;
-  stream << "# pb.core.graph.v1  topology=" << detail::topology_label(topology)
-         << "  stages=" << descriptor.stage_count << "  edges=" << descriptor.edge_count << "\n";
+  if constexpr (!ValidPipeline<Pipeline>) {
+    return {};
+  } else {
+    constexpr auto descriptor = pb::runtime::make_descriptor<Pipeline>();
+    constexpr auto topology = decltype(descriptor)::topology;
 
-  const auto& stage_records = descriptor.stage_records();
-  const auto& branch_case_records = descriptor.branch_case_records();
+    detail::string_sink stream;
+    stream << "# pb.core.graph.v1  topology=" << detail::topology_label(topology)
+           << "  stages=" << descriptor.stage_count << "  edges=" << descriptor.edge_count << "\n";
 
-  for (const auto& stage : stage_records) {
-    detail::append_stage_text(stream, stage);
-    if (stage.topology == pb::runtime::descriptor_topology::branch ||
-        stage.topology == pb::runtime::descriptor_topology::fan_in) {
-      detail::append_branch_cases_text(stream, stage.index, branch_case_records);
+    const auto& stage_records = descriptor.stage_records();
+    const auto& branch_case_records = descriptor.branch_case_records();
+
+    for (const auto& stage : stage_records) {
+      detail::append_stage_text(stream, stage);
+      if (stage.topology == pb::runtime::descriptor_topology::branch ||
+          stage.topology == pb::runtime::descriptor_topology::fan_in) {
+        detail::append_branch_cases_text(stream, stage.index, branch_case_records);
+      }
     }
-  }
 
-  if (descriptor.edge_count > 0) {
-    stream << "edges:\n";
-    for (const auto& edge : descriptor.edge_records()) {
-      detail::append_edge_text(stream, edge);
+    if (descriptor.edge_count > 0) {
+      stream << "edges:\n";
+      for (const auto& edge : descriptor.edge_records()) {
+        detail::append_edge_text(stream, edge);
+      }
     }
-  }
 
-  return std::move(stream).str();
+    return std::move(stream).str();
+  }
 }
 
 
