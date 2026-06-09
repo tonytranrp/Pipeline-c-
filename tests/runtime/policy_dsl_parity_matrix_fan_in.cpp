@@ -210,6 +210,22 @@ void test_case_failures_aggregate_to_success() {
     // Join still ran successfully.
     pb_test_require(contains(log, "[pb.verbose] stage_success stage=aggregate-join"));
   }
+  // verbose_engine: case exceptions also aggregate into join input, preserving
+  // policy-level success while recording the case_failed exception diagnostic.
+  {
+    std::ostringstream sink;
+    auto engine = pb::with_verbose_diagnostics(fresh_engine<CaseExceptionPipeline>(), &sink);
+    const auto outcome = engine.try_run(Input{.value = 0});
+    pb_test_require(outcome.has_value());
+    pb_test_require(outcome.value().value == -1);
+    const auto log = sink.str();
+    pb_test_require(contains(log, "[pb.verbose] case_failed"));
+    pb_test_require(contains(log, "stage=boom-case"));
+    pb_test_require(contains(log, "category=exception"));
+    pb_test_require(contains(log, "message=case boom"));
+    // Join still ran successfully after the case exception was captured.
+    pb_test_require(contains(log, "[pb.verbose] stage_success stage=aggregate-join"));
+  }
 }
 
 // ────────────────────────────────────────────────────────────────────────────
