@@ -768,14 +768,25 @@ struct append_branch;
 template <class ExistingPolicies, class... NewPolicies>
 struct append_policies;
 
+template <template <class> class Predicate, class... Policies>
+inline constexpr auto policy_axis_count_v =
+    (std::size_t{0} + ... + (Predicate<Policies>::value ? std::size_t{1} : std::size_t{0}));
+
 template <class... ExistingPolicies, class... NewPolicies>
 struct append_policies<meta::type_list<ExistingPolicies...>, NewPolicies...> {
+  static constexpr auto error_policy_count =
+      policy_axis_count_v<pb::policy::is_error_policy, ExistingPolicies..., NewPolicies...>;
+  static constexpr auto diagnostics_policy_count =
+      policy_axis_count_v<pb::policy::is_diagnostics_policy, ExistingPolicies..., NewPolicies...>;
   static constexpr auto copying_policy_count =
-      (std::size_t{0} + ... +
-       (pb::policy::is_copying_policy_v<ExistingPolicies> ? std::size_t{1} : std::size_t{0})) +
-      (std::size_t{0} + ... +
-       (pb::policy::is_copying_policy_v<NewPolicies> ? std::size_t{1} : std::size_t{0}));
+      policy_axis_count_v<pb::policy::is_copying_policy, ExistingPolicies..., NewPolicies...>;
 
+  static_assert(error_policy_count <= 1,
+                "pb::pipeline_state::with accepts at most one pb::policy::errors::* marker; "
+                "duplicate or conflicting error policies are rejected");
+  static_assert(diagnostics_policy_count <= 1,
+                "pb::pipeline_state::with accepts at most one pb::policy::diagnostics::* marker; "
+                "duplicate or conflicting diagnostics policies are rejected");
   static_assert(copying_policy_count <= 1,
                 "pb::pipeline_state::with accepts at most one pb::policy::copying::* marker; "
                 "duplicate or conflicting copying policies are rejected");
