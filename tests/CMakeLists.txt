@@ -88,6 +88,7 @@ add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers/adapt_fn.cpp
   compile_pass/public_headers/adapt_member.cpp
   compile_pass/public_headers/adapt_void.cpp
+  compile_pass/public_headers/adapt_reflect.cpp
   compile_pass/public_headers/adaptors.cpp
   compile_pass/public_headers/tooling_cli_registry.cpp
   compile_pass/public_headers/core_concepts.cpp
@@ -1692,6 +1693,18 @@ target_link_libraries(pb_reflect_stage_gate_compile_pass PRIVATE pb::pipeline)
 pb_apply_project_options(pb_reflect_stage_gate_compile_pass PRIVATE)
 add_test(NAME pb_reflect_stage_gate_compile_pass COMMAND pb_reflect_stage_gate_compile_pass)
 set_tests_properties(pb_reflect_stage_gate_compile_pass PROPERTIES LABELS "compile-pass;features;cpp26;reflection")
+
+add_test(NAME pb_compile_fail_reflect_stage_without_reflection
+  COMMAND ${CMAKE_COMMAND}
+    -DTEST_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/reflect_stage_without_reflection.cpp
+    -DTEST_COMPILER=${CMAKE_CXX_COMPILER}
+    -DTEST_INCLUDE_DIR=${PROJECT_SOURCE_DIR}/include
+    -DEXPECT_DIAGNOSTIC=pb::reflect_stage<T>\ requires\ C++26\ static\ reflection\ \(P2996\)
+    "-DEXPECTED_DIAGNOSTICS=C++26\ static\ reflection;PB_HAS_REFLECTION=1"
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_compile_fail.cmake
+)
+set_tests_properties(pb_compile_fail_reflect_stage_without_reflection
+  PROPERTIES LABELS "compile-fail;diagnostics;features;cpp26;reflection")
 
 # ─────────────────────────────────────────────────────────────
 # Branch / fan-in compile-time smoke (mirrors the
