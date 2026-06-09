@@ -95,3 +95,14 @@ pb_apply_project_options(pb_coroutine_stage_demo PRIVATE)
 pb_enable_pch_if_requested(pb_coroutine_stage_demo)
 add_test(NAME pb_example_coroutine_stage_demo COMMAND pb_coroutine_stage_demo)
 set_tests_properties(pb_example_coroutine_stage_demo PROPERTIES LABELS "examples;adapter;coroutine")
+
+# ---------------------------------------------------------------------------
+# Synchronous sender/receiver adapter scaffold example
+# ---------------------------------------------------------------------------
+
+add_executable(pb_sender_receiver_stage_demo sender_receiver_stage_demo.cpp)
+target_link_libraries(pb_sender_receiver_stage_demo PRIVATE pb::pipeline)
+pb_apply_project_options(pb_sender_receiver_stage_demo PRIVATE)
+pb_enable_pch_if_requested(pb_sender_receiver_stage_demo)
+add_test(NAME pb_example_sender_receiver_stage_demo COMMAND pb_sender_receiver_stage_demo)
+set_tests_properties(pb_example_sender_receiver_stage_demo PROPERTIES LABELS "examples;adapter;sender-receiver")
