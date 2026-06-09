@@ -1,8 +1,9 @@
 /// @file policy_axes_runtime_smoke.cpp
 /// @brief Runtime verification that the diagnostics policy axis
 ///        (`::with<pb::policy::diagnostics::verbose>`) is enforced by
-///        `pb::compile<P>(sequential{})`, and that it composes AROUND the
-///        error-policy wrapper.
+///        `pb::compile<P>(sequential{})`, that it composes AROUND the
+///        error-policy wrapper, and that copying-axis markers remain carried +
+///        queryable without changing bare sequential runtime behaviour.
 ///
 ///   - `::with<diagnostics::verbose>`                     -> compile wraps the
 ///        engine in a verbose engine that logs `[pb.verbose]` lines.
@@ -21,6 +22,7 @@
 #include <pb/pipeline.hpp>
 
 #include <cstdlib>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -43,6 +45,14 @@ struct Input {
 
 struct Output {
   int value{};
+};
+
+struct MoveInput {
+  std::unique_ptr<int> value;
+};
+
+struct MoveOutput {
+  std::unique_ptr<int> value;
 };
 
 // Always-succeeding stage.
@@ -68,6 +78,17 @@ struct FailingStage {
   }
 };
 
+struct MoveIncrement {
+  using input_type = MoveInput;
+  using output_type = MoveOutput;
+  static constexpr auto stage_key() noexcept { return "move_increment"; }
+  static constexpr auto stage_name() noexcept { return "move_increment"; }
+  MoveOutput operator()(MoveInput input) const {
+    ++(*input.value);
+    return MoveOutput{.value = std::move(input.value)};
+  }
+};
+
 // Pipelines built purely through the research-plan DSL syntax.
 using VerboseSuccessPipeline =
     pb::from<Input>::with<pb::policy::diagnostics::verbose>::then<Increment>::to<Output>;
@@ -78,13 +99,24 @@ using ThrowingVerboseFailurePipeline = pb::from<Input>::with<pb::policy::errors:
 
 using PlainPipeline = pb::from<Input>::then<Increment>::to<Output>;
 
-// Compile-time confirmation that the diagnostics marker is detected.
+using CopyingValuePipeline =
+    pb::from<Input>::with<pb::policy::copying::value>::then<Increment>::to<Output>;
+using CopyingMoveOnlyPipeline =
+    pb::from<MoveInput>::with<pb::policy::copying::move_only>::then<MoveIncrement>::to<MoveOutput>;
+
+// Compile-time confirmation that policy markers are detected.
 static_assert(pb::has_diagnostics_policy_v<VerboseSuccessPipeline>);
 static_assert(std::is_same_v<pb::pipeline_diagnostics_policy_t<VerboseSuccessPipeline>,
                              pb::policy::diagnostics::verbose>);
 static_assert(pb::has_diagnostics_policy_v<ThrowingVerboseFailurePipeline>);
 static_assert(pb::has_error_policy_v<ThrowingVerboseFailurePipeline>);
 static_assert(!pb::has_diagnostics_policy_v<PlainPipeline>);
+static_assert(pb::has_copying_policy_v<CopyingValuePipeline>);
+static_assert(std::is_same_v<pb::pipeline_copying_policy_t<CopyingValuePipeline>,
+                             pb::policy::copying::value>);
+static_assert(pb::has_copying_policy_v<CopyingMoveOnlyPipeline>);
+static_assert(std::is_same_v<pb::pipeline_copying_policy_t<CopyingMoveOnlyPipeline>,
+                             pb::policy::copying::move_only>);
 
 } // namespace
 
@@ -144,6 +176,27 @@ int main() {
 
     const auto a = plain.run(Input{.value = 10});
     require(a.value == 11);
+  }
+
+  // 4. Copying-axis markers are carried + queryable only for the sequential
+  //    backend: compile<> does not add a runtime wrapper or alter movement
+  //    semantics.  The value marker keeps bare-engine shape; move_only accepts
+  //    an rvalue move-only payload and moves it through the stage.
+  {
+    auto value_engine = pb::compile<CopyingValuePipeline>(pb::runtime::sequential{});
+    static_assert(!requires(decltype(value_engine)& engine) { engine.set_sink(nullptr); },
+                  "copying::value must not select the diagnostics wrapper or add a runtime sink");
+
+    const auto out = value_engine.run(Input{.value = 4});
+    require(out.value == 5);
+
+    auto move_engine = pb::compile<CopyingMoveOnlyPipeline>(pb::runtime::sequential{});
+    static_assert(!requires(decltype(move_engine)& engine) { engine.set_sink(nullptr); },
+                  "copying::move_only must not select the diagnostics wrapper or add a runtime sink");
+
+    auto moved = move_engine.run(MoveInput{.value = std::make_unique<int>(8)});
+    require(moved.value != nullptr);
+    require(*moved.value == 9);
   }
 
   return 0;
