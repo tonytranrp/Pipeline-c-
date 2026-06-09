@@ -100,6 +100,7 @@ add_executable(pb_public_headers_compile_pass
   compile_pass/public_headers/runtime_fan_in_error.cpp
   compile_pass/public_headers/adapt_coroutine.cpp
   compile_pass/public_headers/adapt_runtime_callable.cpp
+  compile_pass/public_headers/adapt_sender_receiver.cpp
   compile_pass/public_headers/runtime_sequential.cpp
   compile_pass/public_headers/runtime_cancellation.cpp
   compile_pass/public_headers/runtime_observer.cpp
@@ -1800,6 +1801,13 @@ pb_apply_project_options(pb_runtime_callable_adapter_smoke PRIVATE)
 pb_enable_pch_if_requested(pb_runtime_callable_adapter_smoke)
 add_test(NAME pb_runtime_callable_adapter_smoke COMMAND pb_runtime_callable_adapter_smoke)
 set_tests_properties(pb_runtime_callable_adapter_smoke PROPERTIES LABELS "runtime;adapter;runtime-callable")
+
+add_executable(pb_runtime_sender_receiver_adapter_smoke runtime/sender_receiver_adapter_smoke.cpp)
+target_link_libraries(pb_runtime_sender_receiver_adapter_smoke PRIVATE pb::pipeline)
+pb_apply_project_options(pb_runtime_sender_receiver_adapter_smoke PRIVATE)
+pb_enable_pch_if_requested(pb_runtime_sender_receiver_adapter_smoke)
+add_test(NAME pb_runtime_sender_receiver_adapter_smoke COMMAND pb_runtime_sender_receiver_adapter_smoke)
+set_tests_properties(pb_runtime_sender_receiver_adapter_smoke PROPERTIES LABELS "runtime;adapter;sender-receiver")
 
 add_executable(pb_backend_scaffolds_smoke_compile_pass compile_pass/backend_scaffolds_smoke.cpp)
 target_link_libraries(pb_backend_scaffolds_smoke_compile_pass PRIVATE pb::pipeline)
