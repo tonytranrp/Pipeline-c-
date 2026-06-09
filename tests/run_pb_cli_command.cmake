@@ -9,7 +9,7 @@
 #   EXPECT_FAIL              optional: if ON, expect non-zero status and check stderr tokens
 #   EXPECTED_STDERR_TOKENS   optional: semicolon-separated substrings expected in stderr on failure
 #
-# Successful commands must keep stderr empty.
+# Successful commands must keep stderr empty; expected failures must keep stdout empty.
 
 if(NOT DEFINED CLI_PATH)
   message(FATAL_ERROR "CLI_PATH is required")
@@ -41,6 +41,13 @@ if(EXPECT_FAIL)
 "
       "stdout: ${cli_stdout}
 stderr: ${cli_stderr}")
+  endif()
+  if(NOT cli_stdout STREQUAL "")
+    message(FATAL_ERROR
+      "pb_cli ${COMMAND_ARGS} wrote to stdout on an expected failure.
+"
+      "stdout:
+${cli_stdout}")
   endif()
   if(DEFINED EXPECTED_STDERR_TOKENS)
     foreach(token IN LISTS EXPECTED_STDERR_TOKENS)

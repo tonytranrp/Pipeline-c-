@@ -1914,6 +1914,18 @@ if(PB_BUILD_CLI)
   )
   set_tests_properties(pb_cli_describe_out_missing_value PROPERTIES LABELS "cli;describe;error;args")
 
+  add_test(NAME pb_cli_describe_unknown_pipeline_split_out_no_file
+    COMMAND ${CMAKE_COMMAND}
+      -DCLI_PATH=$<TARGET_FILE:pb_cli>
+      -DPIPELINE_NAME=does-not-exist
+      "-DDESCRIBE_ARGS=--format;json;--out;${pb_cli_describe_dir}/unknown_split.json"
+      -DOUT_FILE=${pb_cli_describe_dir}/unknown_split.json
+      -DEXPECT_FAIL=ON
+      "-DEXPECTED_STDERR_TOKENS=unknown pipeline 'does-not-exist';Run `pb_cli list` for available names"
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/run_pb_cli_describe_args.cmake
+  )
+  set_tests_properties(pb_cli_describe_unknown_pipeline_split_out_no_file PROPERTIES LABELS "cli;describe;error;args;output-file")
+
   add_test(NAME pb_cli_describe_order_linear_dot
     COMMAND ${CMAKE_COMMAND}
       -DCLI_PATH=$<TARGET_FILE:pb_cli>

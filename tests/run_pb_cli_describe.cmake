@@ -1,6 +1,7 @@
 # Runs `pb_cli describe <PIPELINE_NAME> --format=<FORMAT> --out=<OUT_FILE>`,
 # verifies the executable exits with the expected status, and confirms the
 # output file contains every substring listed in EXPECTED_TOKENS.
+# Successful --out runs must keep stdout and stderr empty.
 #
 # Inputs:
 #   CLI_PATH         absolute path to the pb_cli executable
@@ -51,6 +52,13 @@ if(EXPECT_FAIL)
       "Expected pb_cli describe '${PIPELINE_NAME}' to fail, but it succeeded.\n"
       "stdout: ${cli_stdout}\nstderr: ${cli_stderr}")
   endif()
+  if(NOT cli_stdout STREQUAL "")
+    message(FATAL_ERROR
+      "pb_cli describe failure wrote to stdout.
+"
+      "stdout:
+${cli_stdout}")
+  endif()
   if(EXISTS "${OUT_FILE}")
     message(FATAL_ERROR
       "pb_cli describe failure unexpectedly produced '${OUT_FILE}'.\n"
@@ -73,6 +81,22 @@ if(NOT cli_result EQUAL 0)
   message(FATAL_ERROR
     "pb_cli describe '${PIPELINE_NAME}' failed with status ${cli_result}.\n"
     "stdout: ${cli_stdout}\nstderr: ${cli_stderr}")
+endif()
+
+if(NOT cli_stdout STREQUAL "")
+  message(FATAL_ERROR
+    "pb_cli describe '${PIPELINE_NAME}' wrote to stdout while --out was used.
+"
+    "stdout:
+${cli_stdout}")
+endif()
+
+if(NOT cli_stderr STREQUAL "")
+  message(FATAL_ERROR
+    "pb_cli describe '${PIPELINE_NAME}' wrote to stderr on a successful --out run.
+"
+    "stderr:
+${cli_stderr}")
 endif()
 
 if(NOT EXISTS "${OUT_FILE}")
