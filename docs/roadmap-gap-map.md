@@ -8,7 +8,7 @@ For a compact release-governance table that maps each gap to evidence, tests, re
 
 Historical local audit baseline: `aa3b8f6` on `main`. That MVP audit found the linear pipeline builder sound and locally green: developer configure/build/CTest completed with **78/78 tests passed**.
 
-Current working tree HEAD `f9cbe26` (wave-1/2/3 features integrated): **220/220 ctest** on `clang-dev-ninja`. The `modules-ninja` preset builds the C++20 module and `pb_use_module` passes.
+Current working tree HEAD `a7494d3` (wave-1/2/3 plus post-wave diagnostics/batch-run/export optimization commits integrated): **224/224 ctest** on `clang-dev-ninja`. The `modules-ninja` preset builds the C++20 module and `pb_use_module` passes.
 
 The previous cross-compiler-validated SHA is still `87299c14c813753d170911239e251064cbbfee6f`; cross-compiler validation has not yet been rerun on the new SHA.
 
@@ -198,7 +198,7 @@ This queue is the durable docs-lane view of the current missing-feature push. It
 
 | Priority | Missing feature / evidence gap | Current docs-lane status | Promotion gate |
 | --- | --- | --- | --- |
-| 1 | Cross-compiler validation rerun on HEAD f9cbe26 | **Not yet run.** 220/220 ctest on `clang-dev-ninja`; `modules-ninja` preset passes. Last cross-compiler-validated SHA is `87299c14c813753d170911239e251064cbbfee6f`. | Rerun the GitHub Cross Compiler Validation workflow on HEAD f9cbe26; record GCC/Clang/MSVC/package results. |
+| 1 | Cross-compiler validation rerun on HEAD a7494d3 | **Not yet run.** 224/224 ctest on `clang-dev-ninja`; `modules-ninja` preset passes. Last cross-compiler-validated SHA is `87299c14c813753d170911239e251064cbbfee6f`. | Rerun the GitHub Cross Compiler Validation workflow on HEAD a7494d3; record GCC/Clang/MSVC/package results. |
 | 2 | Runtime-enforced `::with<pb::policy::errors::...>` DSL | **Shipped.** `compile<P>(sequential{})` inspects the `Policies` type-list and wraps the engine in the matching error-policy wrapper; `pb::has_error_policy_v<P>` is queryable. Tests: `tests/runtime/with_policy_dsl_runtime_smoke.cpp`, `tests/compile_pass/with_policy_dsl_compile_pass.cpp`. | Promote when reflected in release-notes wording. |
 | 3 | Diagnostics policy axis (`::with<diagnostics::verbose/quiet>`) | **Shipped.** `::with<diagnostics::verbose>` wraps the (possibly error-policy-wrapped) engine in `pb::with_verbose_diagnostics`. Tests: `tests/runtime/policy_axes_runtime_smoke.cpp`, `tests/compile_pass/policy_axes_compile_pass.cpp`. | Promote when reflected in release-notes wording. |
 | 4 | Copying policy axis (`::with<copying::...>`) | **Shipped as carried + queryable.** Runtime enforcement of the copying axis beyond `pb::shared_view` / `pb::unique_clone` is forward-looking. | Add runtime enforcement; update docs. |
@@ -211,9 +211,9 @@ This queue is the durable docs-lane view of the current missing-feature push. It
 | 11 | Optional backend integration seams | **Shipped as dormant compile-guarded scaffolds.** `include/pb/backends/{tbb,taskflow,stdexec}.hpp`; `*_backend_available_v == false` on default build. | Working backend promotion requires `find_package` integration, isolation tests, and matrix evidence. |
 | 12 | C++20 named module build | **Shipped.** `PB_BUILD_MODULE` + `modules-ninja` preset + `tests/module/use_module.cpp` passing on clang 22. | Broader compiler compatibility evidence and install/export story. |
 | 13 | `pb::tooling::pipeline_registry` + pb_cli refactor | **Shipped.** Five built-in pipelines; `pb::tooling::pipeline_registry` is the documented extension point. | Stable CLI contract for arbitrary user-defined pipelines. |
-| 14 | Release/package evidence on candidate SHA | Current working tree at 220/220 ctest. Last cross-compiler-validated SHA has local full/package validation plus GitHub CI evidence. | Rerun package-release on HEAD f9cbe26 and record archive path plus workflow URL. |
+| 14 | Release/package evidence on candidate SHA | Current working tree at 224/224 ctest. Last cross-compiler-validated SHA has local full/package validation plus GitHub CI evidence. | Rerun package-release on HEAD a7494d3 and record archive path plus workflow URL. |
 | 15 | Backend feature matrix | `sequential` and `thread_pool_backend` supported; oneTBB/Taskflow/stdexec dormant scaffolds only. | Working backend promotion requires activation, isolation tests, matrix evidence. |
-| 16 | Full release compiler matrix | GitHub evidence exists for SHA `87299c14c813753d170911239e251064cbbfee6f`: GCC C++20/C++23, Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release passed 163/163. MSVC C++23, C++26 gates, and Windows package-release remain unclaimed. | Rerun on HEAD f9cbe26; record compiler IDs, preset, configure/build/test/package logs. |
+| 16 | Full release compiler matrix | GitHub evidence exists for SHA `87299c14c813753d170911239e251064cbbfee6f`: GCC C++20/C++23, Clang C++20/C++23, MSVC C++20, and clean Ubuntu package-release passed 163/163. MSVC C++23, C++26 gates, and Windows package-release remain unclaimed. | Rerun on HEAD a7494d3; record compiler IDs, preset, configure/build/test/package logs. |
 
 ## Current support summary
 
@@ -241,7 +241,7 @@ The current repository can safely claim:
 - typed C++26 / C++23 feature gate constants (`pb::features::has_cpp26`, `has_reflection`, `has_contracts`, `has_pack_indexing`, `has_std_expected`, `has_deducing_this`)
 - reflection adapter scaffold in `include/pb/adapt/reflect.hpp` gated on `PB_HAS_REFLECTION` with a graceful C++20 fallback
 - stateful storage DSL (`pb.state.v1`) including thread-local storage policy (`pb::with_thread_local_state<State>`)
-- current working tree at **220/220 local ctest** on `clang-dev-ninja`; `modules-ninja` preset builds the module and `pb_use_module` passes; cross-compiler validation on the new SHA pending
+- current working tree at **224/224 local ctest** on `clang-dev-ninja`; `modules-ninja` preset builds the module and `pb_use_module` passes; cross-compiler validation on the new SHA pending
 - release-readiness documentation plus GitHub GCC/Clang/MSVC/package validation evidence and local package evidence for code SHA `87299c14c813753d170911239e251064cbbfee6f`
 
 The current repository should **not** claim:
@@ -274,6 +274,6 @@ Use these as the first finite batches when the next 3-agent team resumes:
 
 1. **Core API / diagnostics:** improve one small compile-time diagnostics or metadata ergonomics gap, then add compile-pass/compile-fail evidence.
 2. **Runtime / adapters:** activate and test a working optional backend (TBB recommended first — the `PB_ENABLE_TBB` CMake hook is already wired) with isolation tests and a matrix evidence run.
-3. **Updater / docs:** rerun cross-compiler validation on HEAD f9cbe26 and update `docs/cross-compiler-validation.md` and the evidence in `research/not done.md`.
+3. **Updater / docs:** rerun cross-compiler validation on HEAD a7494d3 and update `docs/cross-compiler-validation.md` and the evidence in `research/not done.md`.
 
 The next safe work should continue from shipped MVP surfaces. Preemptive cancellation, working dependency-backend execution beyond the thread-pool slice, runtime enforcement of the copying policy axis, async/sender coroutine backends, and stable descriptor/export compatibility remain separate design/implementation phases, not opportunistic follow-ups inside a routine hardening batch.
