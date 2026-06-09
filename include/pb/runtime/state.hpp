@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <iterator>
@@ -169,9 +170,19 @@ public:
 
   static void push(State* value) { storage().push_back(value); }
 
-  static void pop() noexcept {
+  static void pop(State* value) noexcept {
     auto& s = storage();
-    if (!s.empty()) s.pop_back();
+    if (s.empty()) {
+      return;
+    }
+    if (s.back() == value) {
+      s.pop_back();
+      return;
+    }
+    const auto match = std::find(s.rbegin(), s.rend(), value);
+    if (match != s.rend()) {
+      s.erase(std::next(match).base());
+    }
   }
 };
 
@@ -185,8 +196,8 @@ public:
 template <class State>
 class state_context {
 public:
-  explicit state_context(State& value) noexcept : valid_{true} {
-    runtime::detail::state_stack<State>::push(&value);
+  explicit state_context(State& value) noexcept : value_{&value}, valid_{true} {
+    runtime::detail::state_stack<State>::push(value_);
   }
 
   state_context() = delete;
@@ -197,11 +208,12 @@ public:
 
   ~state_context() noexcept {
     if (valid_) {
-      runtime::detail::state_stack<State>::pop();
+      runtime::detail::state_stack<State>::pop(value_);
     }
   }
 
 private:
+  State* value_{nullptr};
   bool valid_{false};
 };
 
