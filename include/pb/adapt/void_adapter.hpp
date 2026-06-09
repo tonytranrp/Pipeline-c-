@@ -55,6 +55,9 @@ struct void_adapter {
                 "pb::void_adapter: Fn must be default-constructible so the runtime engine "
                 "can construct the stage with its default policy. "
                 "For free functions, use pb::adapt_fn<&func, Input, void> instead.");
+  static_assert(adapt_detail::any_void_invocable<Fn, Input>,
+                "pb::void_adapter: Fn must be callable with Input and return void. "
+                "Use pb::adapt_functor for value-returning callables or adjust the declared Input type.");
 
   using input_type = Input;
   using output_type = Input; // Pass-through: side-effect-only stages propagate their input

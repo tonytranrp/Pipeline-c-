@@ -2,6 +2,7 @@
 
 #include <string_view>
 #include <type_traits>
+#include <utility>
 
 // ---------------------------------------------------------------------------
 // Functor void adapter (stateless, default-constructible)
@@ -120,6 +121,12 @@ static_assert(!pb::is_noexcept_stage_v<VoidLambdaAdapter, Token>,
               "void_adapter with non-noexcept lambda must not be noexcept");
 static_assert(pb::is_noexcept_stage_v<VoidLambdaNoexceptAdapter, Token>,
               "void_adapter with noexcept lambda must be noexcept");
+static_assert(!noexcept(std::declval<VoidLogAdapter>()(LogEntry{})),
+              "throwing void_adapter call expression must remain throwing");
+static_assert(noexcept(std::declval<VoidLogNoexceptAdapter>()(LogEntry{})),
+              "noexcept void_adapter call expression must preserve noexcept");
+static_assert(std::same_as<decltype(std::declval<VoidLogAdapter>()(LogEntry{})), LogEntry>,
+              "void_adapter must return the original input type by value");
 
 // Pipeline validity
 static_assert(pb::valid<LogPipeline>,
